@@ -59,7 +59,7 @@ class MyPublisher:
 
 if __name__ == '__main__':
 
-    pubTopic = "IEQmidAndGUI/bucketyPi/LivingRoom/Temperature"
+    pubTopic = "IEQmidAndGUI/apartment_1/LivingRoom/Temperature"
     print(pubTopic)
     myPub = MyPublisher("54234", pubTopic)
     myPub.start()
