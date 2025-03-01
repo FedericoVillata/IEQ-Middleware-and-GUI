@@ -1,0 +1,47 @@
+version: "3"
+
+services:
+  influxdb:
+    image: influxdb:latest
+    volumes:
+      - influxdb-storage:/var/lib/influxdb2:rw
+    env_file:
+      - .env
+    entrypoint: ["./entrypoint.sh"]
+    restart: on-failure:10
+    ports:
+      - ${DOCKER_INFLUXDB_INIT_PORT}:8086
+    networks:
+      net:
+        ipv4_address: 192.68.0.21
+  adaptor:
+    build: adaptor
+    volumes:
+      - adaptor-storage:/var/lib/adaptor:rw
+    links:
+      - influxdb
+    depends_on:
+      - influxdb
+    ports:
+      - 8080:8080
+    networks:
+      net:
+        ipv4_address: 192.68.0.25
+  pub_simulator:
+    build: pubsimulator
+    depends_on:
+      - adaptor
+    restart: always
+    networks:
+      net:
+        ipv4_address: 192.68.0.26
+  
+volumes:
+  influxdb-storage:
+  adaptor-storage:
+networks:
+  net:
+    ipam: 
+      driver: default
+      config:
+        - subnet: "192.68.0.0/24"
