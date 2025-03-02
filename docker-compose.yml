@@ -25,6 +25,16 @@ services:
     networks:
       net:
         ipv4_address: 192.68.0.25
+  registry:
+    build: registry
+    volumes:
+      - registry-storage:/var/lib/registry:rw
+    ports:
+      - 8081:8081
+    restart: always
+    networks:
+      net:
+        ipv4_address: 192.68.0.24
   pub_simulator:
     build: pubsimulator
     depends_on:
@@ -37,6 +47,7 @@ services:
 volumes:
   influxdb-storage:
   adaptor-storage:
+  registry-storage:
 networks:
   net:
     ipam: 

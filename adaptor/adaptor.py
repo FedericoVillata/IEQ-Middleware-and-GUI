@@ -53,7 +53,7 @@ class Adaptor(object):
         self.url = settings["adaptor_url"]
         self.influxUrl = settings["url_db"]
         self.registryBaseUrl = settings["registry_url"]
-        self.possServices = settings["services4db"]
+        #self.possServices = settings["services4db"]
         self.port = settings["adaptor_port"]
         self.client = InfluxDBClient(url=self.influxUrl, token=self.token)
         self.bucket_api = self.client.buckets_api()
@@ -313,8 +313,8 @@ class MyPublisher:
         print ("Connected to %s with result code: %d" % (self.messageBroker, rc))
 
 if __name__ == '__main__':
-    #adaptor = Adaptor()
-    #adaptor.start()
+    adaptor = Adaptor()
+    adaptor.start()
     
     reciver = MQTTreciver(2, "mqttReciver")
     reciver.run()

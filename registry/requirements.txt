@@ -1,0 +1,3 @@
+CherryPy
+paho_mqtt==1.6.1
+Requests==2.31.0
