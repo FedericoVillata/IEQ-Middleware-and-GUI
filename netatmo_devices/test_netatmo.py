@@ -200,11 +200,11 @@ class NetatmoAPI:
         plt.show()
 
 if __name__ == '__main__':
-    # Load configuration from JSON file
+    
     with open('netatmo_config.json') as config_file:
         config = json.load(config_file)
 
-    # Define modules
+    
     modules = {
         'stanza 1': config['mac'],  # Main module
         'stanza 2': '03:00:00:0c:e0:b2',      # Internal module 1
@@ -213,7 +213,7 @@ if __name__ == '__main__':
         'esterno': '02:00:00:af:60:ee'        # External module
     }
 
-    # Example usage:
+    
     netatmo = NetatmoAPI(
         clientId=config['client_id'],
         clientSecret=config['client_secret'],
@@ -225,7 +225,6 @@ if __name__ == '__main__':
         scope='read_station'
     )
 
-    # Continuous loop to get measurements and print them
     while True:
         netatmo.get_measurements()
         time.sleep(1800)  # Wait for 30 min before the next request
