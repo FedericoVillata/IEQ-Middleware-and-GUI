@@ -97,7 +97,7 @@ class Catalog(object):
         if found == 0:
             return "User not found"
             
-    def add_apartment(self, apt_json):
+    def add_apartment(self, adaptor_url, apt_json):
         self.load_file()
         found = 0
         foundP = 0
@@ -111,13 +111,13 @@ class Catalog(object):
             if user["userId"] == apt_json["userId"]:
                 found = 1
                 for apt in user["apartments"]:
-                    if apt == apt_json["apatmentId"]:
+                    if apt == apt_json["apartmentId"]:
                         foundP = 1
                         return "Apartment already registered"
                 if foundP == 0:
                     apt_res ={
                         "userId": apt_json["userId"],
-                        "apartmentId": apt_json["apatmentId"],
+                        "apartmentId": apt_json["apartmentId"],
                         #"plantCode": plant_json["plantCode"],
                         #"type": plant_json["type"],
                         #"state": "auto",
@@ -127,33 +127,36 @@ class Catalog(object):
                         #"manual_end": "00:00",
                         #"report_frequency": "daily"
                     }
-                    user["apartments"].append(apt_json["apatmentId"])
+                    headers = {'content-type': 'application/json; charset=UTF-8'}
+                    response = requests.post(adaptor_url + "/addApartment", data=json.dumps(apt_res), headers=headers)
+                    response = {"status": "OK", "code": 200, "message": "Data processed"}
+                    user["apartments"].append(apt_json["apartmentId"])
                     self.catalog["apartments"].append(apt_res)
                     self.write_catalog()
                     return "done"
         if found == 0:
             return "User not found"
 
-    def removeFromApartments(self, apatmentId):
+    def removeFromApartments(self, apartmentId):
         """Remove the apartment also into catalog['plants']"""
         index = 0
         for apt in self.catalog["apartments"]:
-            if apt["apatmentId"] == apatmentId:
-                del self.catalog["apatments"][index]
+            if apt["apartmentId"] == apartmentId:
+                del self.catalog["apartments"][index]
             index +=1
 
-    def remove_apartment(self, userId, apatmentId):
+    def remove_apartment(self, userId, apartmentId):
         self.load_file()
         found = 0
         foundP = 0
         for user in self.catalog["users"]:
             if user["userId"] == userId:
                 found = 1
-                for apt in user["apatments"]:
-                    if apt == apatmentId:
+                for apt in user["apartments"]:
+                    if apt == apartmentId:
                         foundP = 1
-                        user["apatments"].remove(apt)
-                        self.removeFromApartments(apatmentId)
+                        user["apartments"].remove(apt)
+                        self.removeFromApartments(apartmentId)
                         self.write_catalog()
                         return "Apartment removed"
                 if foundP == 0:
@@ -296,16 +299,14 @@ class Webserver(object):
                             "code": 400}
                 #raise cherrypy.HTTPError("400", "User already registered")
                 return json.dumps(response)
-            else:
-                headers = {'content-type': 'application/json; charset=UTF-8'}
-                response = requests.post(self.settings["adaptor_url"] + "/addUser", data=json.dumps(body), headers=headers)
-                response = {"status": "OK", "code": 200, "message": "Data processed"}
+            else:          
+                response = {"status": "OK", "code": 200}
                 return json.dumps(response)
                 
         if uri[0] == 'add_apt':
             # Add new apartment.
             body = json.loads(cherrypy.request.body.read())  # Read body data
-            out = self.cat.add_apartment(body)
+            out = self.cat.add_apartment(self.settings["adaptor_url"], body)
             if out == "Apartment already registered":
                 response = {"status": "NOT_OK", "code": 400, "message": "Plant already registered"}
                 return json.dumps(response)
@@ -407,11 +408,12 @@ class Webserver(object):
                 response = {"status": "NOT_OK","code": 400}
                 return json.dumps(response)
             else:
-                response = requests.delete(self.settings["adaptor_url"] + "/deleteUser/" + uri[1])
                 response = {"status": "OK", "code": 200}
                 return json.dumps(response)           
         elif uri[0] == 'del_apt':
-            out = self.cat.remove_plant(uri[1], uri[2])
+            out = self.cat.remove_apartment(uri[1], uri[2])
+            response = requests.delete(self.settings["adaptor_url"] + "/deleteApartment/" + uri[1] + "-" + uri[2])
+            response = {"status": "OK", "code": 200}
             if out == "User not found":
                 raise cherrypy.HTTPError("400", "user not found")
             if out == "Apartment not found":

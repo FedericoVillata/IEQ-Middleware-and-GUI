@@ -28,19 +28,18 @@ def get_request(url):
     return []
 
 def senmlToInflux(senml, roomCode):
-    """Change data format from senML to influxDB standard"""
+    """Change data format from senML to influxDB standard, including time."""
     output = []   
     for e in senml["e"]:
         point = {
-        "measurement":"",
-        "tags":"",
-        "fields": ""
+            "measurement": roomCode,
+            "tags": {"unit": e["u"]},
+            "fields": {e["n"]: e["v"]},
+            "time": int(float(e["t"]) * 1e9)
         }
-        point["measurement"] = roomCode
-        point["tags"] = {"unit": e["u"]}
-        point["fields"] = {e["n"]:e["v"]}
         output.append(point)
-    return output  
+    return output
+
 
 class Adaptor(object):
     """WebServer for the adaptor"""
@@ -139,23 +138,23 @@ class Adaptor(object):
     
     def POST(self,*uri,**params):
         """Add user bucket"""
-        if uri[0] == "addUser":
+        if uri[0] == "addApartment":
             body = json.loads(cherrypy.request.body.read())  # Read body data
-            self.addUserBuckets(body["userId"])
+            self.addBucket(body["userId"], body["apartmentId"])
             response = {"status": "OK", "code": 200}
             return response 
     def DELETE(self,*uri,**params):
         """Delete user bucket"""
-        if uri[0] == "deleteUser":
+        if uri[0] == "deleteApartment":
             self.deleteUserBuckets(uri[1])
             print(f"Deleted {uri[1]}'s buckets")
             response = {"status": "OK", "code": 200}
             return response   
 
-    def addUserBuckets(self, userID):  
+    def addBucket(self, userID, apartmentId):  
         "Function that adds bucket to Influx"
         retention_rules = BucketRetentionRules(type="expire", every_seconds=2592000)
-        created_bucket = self.bucket_api.create_bucket(bucket_name=f"{userID}", retention_rules = retention_rules,org = self.org)
+        created_bucket = self.bucket_api.create_bucket(bucket_name=f"{userID}-{apartmentId}", retention_rules = retention_rules,org = self.org)
         print(created_bucket)
         
     def listBuckets(self):
@@ -185,10 +184,10 @@ class MySubscriber:
                 data = json.load(file)
             self.measures = data["measures"]
             self.org = data["influx_org"]
-            #self.registry_url = data["registry_url"]
-            #url = self.registry_url + "/users"
-            #self.users = get_request(url)
-            #self.time = time.time()
+            self.registry_url = data["registry_url"]
+            url = self.registry_url + "/users"
+            self.users = get_request(url)
+            self.time = time.time()
 
         def update_users(self):
             url = self.registry_url + "/users"
@@ -209,15 +208,15 @@ class MySubscriber:
         def myOnConnect (self, paho_mqtt, userdata, flags, rc):
             print ("Connected to %s with result code: %d" % (self.messageBroker, rc))
             
-        def checkUserPlantPresence(self, userId, plantCode):
+        def checkUserApartmentPresence(self, userId, apartmentId):
             """Update users only after 10 seconds"""
-            if time.time() > self.time + 10:
+            if time.time() > self.time + 60:
                 self.update_users()
                 self.time = time.time()
             for user in self.users:
                 if user["userId"] == userId:
-                    for plant in user["plants"]:
-                        if plant == plantCode:
+                    for apt in user["apartments"]:
+                        if apt == apartmentId:
                             return True
             return False
         
@@ -233,15 +232,19 @@ class MySubscriber:
             """Check it the message recived can be registered into DB adn write it"""
             print("msg received: ", msg.topic)
             if len(msg.topic.split("/")) > 3:
-                userId = msg.topic.split("/")[1]
+                Id = msg.topic.split("/")[1]
+                userId = Id.split("-")[0]
+                apartmentId =Id.split("-")[1]
                 roomCode = msg.topic.split("/")[2]
                 measure = msg.topic.split("/")[3]
                 msgJson = json.loads(msg.payload)                
-                if measure in self.measures :##and self.checkUserPlantPresence(userId, plantCode) and self.checkBnNotAlive(msgJson["bn"]):
+                if measure in self.measures and self.checkUserApartmentPresence(userId, apartmentId) and self.checkBnNotAlive(msgJson["bn"]):
                     converted = senmlToInflux(msgJson, roomCode)
                     for c in converted:
                         print(c)                
-                        self.write_api.write(bucket=userId, org=self.org, record= c)
+                        self.write_api.write(bucket=Id, org=self.org, record= c)
+                else:
+                    print("Invalid message")
 
 # Threads
 class MQTTreciver(threading.Thread):
