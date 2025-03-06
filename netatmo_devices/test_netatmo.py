@@ -7,6 +7,13 @@ import numpy as np
 import time
 from os import getenv
 from os.path import expanduser
+from pathlib import Path
+import paho.mqtt.client as PahoMQTT
+import time
+from queue import Queue
+import json
+
+
 
 """class ClientAuth:
     
@@ -120,22 +127,26 @@ class NetatmoAPI:
         self.expiration = int(resp['expire_in'] + time.time())
 
     def get_measurements(self):
-        if self.first_request:
+        """if self.first_request:
             date_start = datetime.now() - timedelta(days=1)
             self.first_request = False
         else:
-            date_start = datetime.now() - timedelta(minutes=30)
+            date_start = datetime.now() - timedelta(minutes=30)"""
+        date_start = datetime.now() - timedelta(minutes=30)
         
         date_start = int(date_start.replace(tzinfo=None).timestamp())
         date_end = int(datetime.now().timestamp())
 
+        myPub = MyPublisher("54234")
+        myPub.start()
         for module_name, module_id in self.modules.items():
+            pubTopic = f"IEQmidAndGUI/apartment_1/{module_name}/Temperature"
             url = f'{self.base_url}/api/getmeasure'
             params = {
                 'device_id': self.mac,
                 'module_id': module_id,
                 'scale': '30min',
-                'type': 'temperature,humidity,co2,pressure,noise',
+                'type': 'Temperature,Humidity,CO2,Pressure,Noise',
                 'date_begin': date_start,
                 'date_end': date_end,
                 'limit': '1024',
@@ -162,29 +173,42 @@ class NetatmoAPI:
                 continue
 
             values = {
-                'temperature': [val[0] for val in body['value']],
-                'humidity': [val[1] for val in body['value']],
-                'co2': [val[2] for val in body['value']],
-                'pressure': [val[3] for val in body['value']],
-                'noise': [val[4] for val in body['value']]
+                'Temperature': [val[0] for val in body['value']],
+                'Humidity': [val[1] for val in body['value']],
+                'CO2': [val[2] for val in body['value']],
+                'Pressure': [val[3] for val in body['value']],
+                'Noise': [val[4] for val in body['value']]
             }
 
             datetime_start = datetime.fromtimestamp(body['beg_time'])
             step_time = body.get('step_time', 1)
 
-            values['timestamp'] = [datetime_start + timedelta(seconds=i * step_time) for i in range(len(values['temperature']))]
+            values['timestamp'] = [datetime_start + timedelta(seconds=i * step_time) for i in range(len(values['Temperature']))]
 
             self.data[module_name] = pd.DataFrame.from_dict(values)
             self.data[module_name] = self.data[module_name].set_index('timestamp')
             print(f"Data for {module_name}:")
             print(self.data[module_name].head())
-
-            json_data = {
+            Event =[]
+            """event = {"n": "Temperature", "u": "Celsius", "t": str(time.time()), "v": 30}#VolumetricWaterContent
+                out = {"bn": pubTopic,"e":[event]}"""
+            i = 0
+            for val in values['Temperature']:
+                event = {"n": "Temperature", "u": "Celsius", "t": str(values['timestamp'][i]), "v": float(val)}
+                Event.append(event)
+                i += 1
+            out = {"bn": pubTopic,"e":Event}
+            print(out)
+            
+            myPub.myPublish(json.dumps(out), pubTopic)
+            myPub.stop()
+            time.sleep(12)
+            """json_data = {
                 "module_name": module_name,
                 "measurements": self.data[module_name].to_dict(orient='records')
             }
             # Print data in JSON format
-            print(json.dumps(json_data, indent=4))
+            print(json.dumps(json_data, indent=4))"""
 
     def plot_measurements(self):
         plt.figure(figsize=(12, 10))
@@ -199,17 +223,49 @@ class NetatmoAPI:
         plt.tight_layout()
         plt.show()
 
+class MyPublisher:
+    def __init__(self, clientID):
+        self.clientID = clientID  + "Temperature"
+    
+		# create an instance of paho.mqtt.client
+        self._paho_mqtt = PahoMQTT.Client(self.clientID, False) 
+		# register the callback
+        self._paho_mqtt.on_connect = self.myOnConnect
+        try:
+            with open("settings.json", "r") as fs:                
+                self.settings = json.loads(fs.read())            
+        except Exception:
+            print("Problem in loading settings")
+        self.messageBroker = self.settings["messageBroker"]
+        self.port = self.settings["brokerPort"]
+        self.qos = self.settings["qos"]
+
+    def start (self):
+		#manage connection to broker
+        self._paho_mqtt.connect(self.messageBroker, self.port)
+        self._paho_mqtt.loop_start()
+
+    def stop (self):
+        self._paho_mqtt.loop_stop()
+        self._paho_mqtt.disconnect()
+
+    def myPublish(self, message, topic):
+		# publish a message with a certain topic
+        self._paho_mqtt.publish(topic, message, self.qos)
+
+    def myOnConnect (self, paho_mqtt, userdata, flags, rc):
+        print ("Connected to %s with result code: %d" % (self.messageBroker, rc))
 if __name__ == '__main__':
     
-    with open('netatmo_config.json') as config_file:
+    with open('./netatmo_config.json') as config_file:
         config = json.load(config_file)
 
     
     modules = {
-        'stanza 1': config['mac'],  # Main module
-        'stanza 2': '03:00:00:0c:e0:b2',      # Internal module 1
-        'stanza 3': '03:00:00:0c:e0:98',      # Internal module 2
-        'stanza 4': '03:00:00:0d:34:20',      # Internal module 3
+        'stanza_1': config['mac'],  # Main module
+        'stanza_2': '03:00:00:0c:e0:b2',      # Internal module 1
+        'stanza_3': '03:00:00:0c:e0:98',      # Internal module 2
+        'stanza_4': '03:00:00:0d:34:20',      # Internal module 3
         'esterno': '02:00:00:af:60:ee'        # External module
     }
 
