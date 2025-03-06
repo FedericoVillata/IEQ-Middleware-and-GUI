@@ -1,0 +1,55 @@
+Mtech company provide services similar to our purpose. So they provide the implementation of a middleware
+able to connect different devices.
+in fact:Transform your home into a smart home and connect all your multimedia devices so they can communicate with each other and ctbe controlled remotely
+you can easily manage everyday processes using your smartphone, computer, voice commands or even hand signals.
+To do this they use the junction boxes with modular use to connect the system to the high speed network and the use of cloud technology to integrate different devices.
+Access motion detectors, cameras and contact detectors, reduce energy consumption by using electricity only when you are indoors.
+The difference is that they provide actuators. (Automate the raising of blinds, the opening of garage doors or the modern lighting of stairs via motion detectors).
+
+Mtech offers services aligned with our goals, providing middleware that connects various devices. 
+Their solution enables the transformation of a home into a smart home, where multimedia devices communicate and are remotely controlled through smartphones, computers, voice commands, or hand signals. 
+They use modular junction boxes to connect systems to high-speed networks and cloud technology for device integration. 
+Their services include managing motion detectors, cameras, and contact detectors, as well as optimizing energy use by activating electricity only when needed. 
+The key difference is that Mtech also provides actuators for automating tasks like raising blinds, opening garage doors, or controlling lighting via motion sensors.
+
+Gewiss
+This company manages the Indoor Environmental Quality (IEQ) control providing a service that control: there is hygrometric comfort, thermal and acoustic comfort, environmental comfort as well as lighting comfort.
+The use of cloud technology and standard technologies such as Zigbee (wireless) and KNX (wired) guarantees maximum reliability and openness towards the integration of third-party systems and IoT products.
+In this way they provide the possibility to Smart Gateway overcomes all barriers, allowing different technologies and systems to be integrated into the same system,
+such as a burglar alarm, 2N video entry phone system, SONOS audio entertainment system or ISEO Smart Locks.
+
+This company provides Indoor Environmental Quality (IEQ) control, managing hygrometric, thermal, acoustic, environmental, and lighting comfort. 
+They ensure high reliability and compatibility with third-party systems and IoT products by using cloud technology and standards like Zigbee (wireless) and KNX (wired). 
+Their Smart Gateway integrates various technologies and systems, such as burglar alarms, 2N video entry phones, SONOS audio systems, and ISEO Smart Locks, into a unified system.
+
+
+Isi Lastem
+The physical environment is made up of many elements connected by a complex relationship. Each occupant receives stimuli from the different environmental components like climate, air chemical quality, 
+light and noise and reacts defining a higher or lower environment comfort and thus defining his psychophysical status.
+Understanding Indoor Environmental Quality (IEQ) helps designers, architects and industrial hygienists creating more comfortable environments from the point of view of the psychophysical wellbeing of the occupants.
+LSI LASTEM offers solutions with multi-measurement characteristics and, thanks to radio technology, also multi-point. 
+In fact, each data logger (M-Log and R-Log) can be connected to a large variety of sensors that allow to evaluate even the most complex conditions.
+LSI LASTEM creates tools for monitoring the conservation, restoration, handling and use of energy safe mechanism.
+
+
+The physical environment consists of interconnected elements that impact occupants through factors like climate, air quality, light, and noise, influencing their comfort and psychophysical wellbeing. 
+Understanding Indoor Environmental Quality (IEQ) helps professionals design spaces that enhance comfort. 
+LSI LASTEM offers multi-measurement solutions, including multi-point monitoring via radio technology. 
+Their data loggers (M-Log and R-Log) connect to various sensors, enabling evaluation of complex conditions. 
+LSI LASTEM also provides tools for monitoring conservation, restoration, and energy-safe mechanisms.
+
+I data logger M-Log e R-Log sono dispositivi utilizzati per monitorare e registrare dati ambientali nel tempo
+M-Log: è un data logger pensato per monitoraggi ambientali di lunga durata. 
+Si distingue per la capacità di collegarsi a diversi sensori e registrare dati in modo continuo e accurato, anche in situazioni complesse.
+
+R-Log: è simile all’M-Log, ma con la particolarità di poter trasmettere i dati raccolti via radio. 
+Questo permette la creazione di reti di monitoraggio multi-punto, 
+dove più dispositivi raccolgono dati da luoghi differenti e li inviano in tempo reale a un sistema centrale.
+
+testo: 
+They monitor the indoor enviroment using advanced technologies like 21 CFR Part 11 to soddisfare  gli standards GxP.
+that guarantee: real time monitoring, registration and documentation of the measured values and intelligent allarm for critical events.
+AS a middleware they use the testo Saveris 1: it is a modular system with battery, that collects and analyse the enviroment data and sends allarms when the measured values are over a threshold.
+Monitoring via ethernet and wify that include the possibility of ultra-range measurements.
+In this way it provides suggestions to help the final user to optimize his enviroment.
+High cost sensors used in different sectors: industry, houses, officies.

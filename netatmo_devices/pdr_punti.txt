@@ -1,0 +1,34 @@
+iniziare a dire 
+: per fare il db protemmo usare( elecnco) PERCHE':
+-- quindi un blocco dove mostriamo i vari blocchi (flusso di pezzi)
+    poi mostrare elenco dei kit e cosa fanno (sensori connessione, pro contro)
+    per capetti e netatmo ( station, wifi --cloud(proprietari))--come comunicano                      ex stam
+
+-hardware
+-databse
+-microprocessore-- ipotesi: uno app che visualizza i dati e un possibile rasberry con uno schermo che mettiamo la app --> visualizzatore differnza tra rap e arduino.
+-gui: disegno cell, e sensore e un display  opzioni su come visualizzare 
+
+far vedere che stiamo usando i sensori 
+
+-kpi lista e scelta dei sensori su cosa fanno (KPI): - visualizzazione dati principali - low/high (può avere light) base
+        							     - semplice- kpi pallino che si colora per dire bene ecc.. umidità alta o bassa co2 no
+								     - prof time series + suggerimenti
+monitorare con sensori
+clacolati:
+-co2 icone: quanto tempo cumulato sta nelle soglie-> istantanea o cumulato 
+-indoor quality - co2, voch, air-- 
+-air care 
+-pmv-ppd climatizzati- inverno, adactive thermal confort --> storico temperatura esterna 
+clo e 0,002 fissa 
+temperature su soglia
+illuminamento-- quantità luxe
+decibel acustica
+flusso termico, caldaia-- consumi elettrici
+
+feedback-- tempature , umidità, voto complessivo, feedback sui suggestion 
+
+carpet plot 
+ci basiamo su ciò che offrono le aziende 
+
+licenza web server, mac e cosa serve per la capetti
