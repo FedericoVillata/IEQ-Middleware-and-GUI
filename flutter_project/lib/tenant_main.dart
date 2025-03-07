@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'pages_tenant/tenant_home_page.dart';
-import 'pages_tenant/tenant_feedback_page.dart';
-import 'pages_tenant/tenant_suggestions_page.dart';
+import 'pages/tenant_home_page.dart';
+import 'pages/tenant_feedback_page.dart';
+import 'pages/tenant_suggestions_page.dart';
 
 class MyAppTenant extends StatelessWidget {
   @override
