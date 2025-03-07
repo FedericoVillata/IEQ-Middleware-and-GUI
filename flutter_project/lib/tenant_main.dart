@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'pages_tenant/home_page.dart';
-import 'pages_tenant/feedback_page.dart';
-import 'pages_tenant/suggestions_page.dart';
+import 'pages_tenant/tenant_home_page.dart';
+import 'pages_tenant/tenant_feedback_page.dart';
+import 'pages_tenant/tenant_suggestions_page.dart';
 
 void main() {
   runApp(const MyApp());
