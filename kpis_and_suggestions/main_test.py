@@ -19,7 +19,7 @@ result["Month"] = result["_time"].dt.month
 result["Season"] = result["Month"].apply(lambda m: "warm" if 5 <= m <= 9 else "cold")
 
 # Apply classification functions
-result["Temperature_Class"] = result["Temperature"].apply(lambda x: classify_temperature(x, result["Season"].mode()[0]))
+result["Temperature_Class"] = result.apply(lambda row: classify_temperature(row["Temperature"], row["Season"]), axis=1)
 result["Humidity_Class"] = result["Humidity"].apply(classify_humidity)
 result["CO2_Class"] = result["CO2"].apply(classify_co2)
 
