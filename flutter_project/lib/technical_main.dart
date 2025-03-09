@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'pages/location_selection_page.dart';
+import 'pages/technical_location_selection_page.dart';
 import 'pages/technical_home_page.dart';
 import 'pages/technical_feedback_page.dart';
 import 'pages/technical_threshold_page.dart';
