@@ -1,47 +1,68 @@
-from influxdb_client import InfluxDBClient
-import pandas as pd
-from kpis_classification import *
 import json
+import pandas as pd
 import requests
+from kpis_classification import *
 
 # Load configuration from settings file
 SETTINGS = "settings.json"
 with open(SETTINGS, 'r') as file:
     config = json.load(file)
 
-INFLUX_URL = config["url_db"]
-INFLUX_TOKEN = config["influx_token"]
-INFLUX_ORG = config["influx_org"]
-INFLUX_BUCKET = config["influx_bucket"]
+# Adaptor API endpoint
+ADAPTOR_URL = config["adaptor_url"]
 
-# Function to retrieve data from InfluxDB
-def get_data_from_influx():
-    client = InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
-    query_api = client.query_api()
-    
-    query = f'''
-    from(bucket: "{INFLUX_BUCKET}")
-    |> range(start: -24h)
-    |> filter(fn: (r) => r["_measurement"] == "IEQ_Sensors")
-    |> filter(fn: (r) => r["_field"] == "CO2" or r["_field"] == "Temperature" or r["_field"] == "Humidity" or r["_field"] == "PM10" or r["_field"] == "TVOC")
-    |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-    '''
-    
-    result = query_api.query_data_frame(org=INFLUX_ORG, query=query)
-    client.close()
-    return result
+# Function to retrieve data from the adaptor
 
-# Retrieve data
-result = get_data_from_influx()
+def get_data_from_adaptor(user_id, plant_code, measurement, duration=24):
+    """
+    Retrieves sensor data from the adaptor API.
+    user_id: The user ID
+    plant_code: The plant code (apartment ID)
+    measurement: The type of measurement (e.g., CO2, Temperature)
+    duration: Time duration (default: last 24 hours)
+    return: Data in a pandas DataFrame
+    """
+    url = f"{ADAPTOR_URL}/getData/{user_id}/{plant_code}?measurament={measurement}&duration={duration}"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        df = pd.DataFrame(data)
+        if not df.empty:
+            df["t"] = pd.to_datetime(df["t"])
+        return df
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data: {e}")
+        return pd.DataFrame()
 
-# Process data if it is not empty
-if not result.empty and "_time" in result.columns:
-    result["_time"] = pd.to_datetime(result["_time"])
-    result["Month"] = result["_time"].dt.month
+# Retrieve and merge data for multiple measurements
+measurements = ["CO2", "Temperature", "Humidity", "PM10", "TVOC"]
+user_id = "user123"  # Replace with actual user ID
+plant_code = "apartment456"  # Replace with actual apartment ID
+
+df_list = []
+for measurement in measurements:
+    df = get_data_from_adaptor(user_id, plant_code, measurement)
+    if not df.empty:
+        df.rename(columns={"v": measurement}, inplace=True)
+        df_list.append(df)
+
+# Merge dataframes on timestamp
+if df_list:
+    result = df_list[0]
+    for df in df_list[1:]:
+        result = pd.merge(result, df, on="t", how="outer")
+else:
+    print("Error: No valid data found.")
+    exit()
+
+# Process data
+if not result.empty:
+    result["Month"] = result["t"].dt.month
     result["Season"] = result["Month"].apply(lambda m: "warm" if 5 <= m <= 9 else "cold")
 
     # Handle missing values
-    for col in ["Temperature", "Humidity", "CO2", "PM10", "TVOC"]:
+    for col in measurements:
         if col not in result.columns:
             result[col] = -999  # Assign default missing values
 
