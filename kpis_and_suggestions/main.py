@@ -1,34 +1,41 @@
 from influxdb_client import InfluxDBClient
 import pandas as pd
 from kpis_classification import *
+import json
+import requests
 
-# Database connection configuration
-INFLUX_URL = "http://localhost:8086"
-INFLUX_TOKEN = "your_token"
-INFLUX_ORG = "your_organization"
-INFLUX_BUCKET = "your_bucket"
+# Load configuration from settings file
+SETTINGS = "settings.json"
+with open(SETTINGS, 'r') as file:
+    config = json.load(file)
 
-# Create the InfluxDB client
-client = InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
+INFLUX_URL = config["url_db"]
+INFLUX_TOKEN = config["influx_token"]
+INFLUX_ORG = config["influx_org"]
+INFLUX_BUCKET = config["influx_bucket"]
 
-# Query to retrieve data from the last 24 hours
-query = f'''
-from(bucket: "{INFLUX_BUCKET}")
-|> range(start: -24h)
-|> filter(fn: (r) => r["_measurement"] == "IEQ_Sensors")
-|> filter(fn: (r) => r["_field"] == "CO2" or r["_field"] == "Temperature" or r["_field"] == "Humidity" or r["_field"] == "PM10" or r["_field"] == "TVOC")
-|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-'''
+# Function to retrieve data from InfluxDB
+def get_data_from_influx():
+    client = InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
+    query_api = client.query_api()
+    
+    query = f'''
+    from(bucket: "{INFLUX_BUCKET}")
+    |> range(start: -24h)
+    |> filter(fn: (r) => r["_measurement"] == "IEQ_Sensors")
+    |> filter(fn: (r) => r["_field"] == "CO2" or r["_field"] == "Temperature" or r["_field"] == "Humidity" or r["_field"] == "PM10" or r["_field"] == "TVOC")
+    |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+    '''
+    
+    result = query_api.query_data_frame(org=INFLUX_ORG, query=query)
+    client.close()
+    return result
 
-# Execute the query and store the results in a Pandas DataFrame
-query_api = client.query_api()
-result = query_api.query_data_frame(org=INFLUX_ORG, query=query)
+# Retrieve data
+result = get_data_from_influx()
 
-# Close the database connection
-client.close()
-
-# Process data
-if "_time" in result.columns:
+# Process data if it is not empty
+if not result.empty and "_time" in result.columns:
     result["_time"] = pd.to_datetime(result["_time"])
     result["Month"] = result["_time"].dt.month
     result["Season"] = result["Month"].apply(lambda m: "warm" if 5 <= m <= 9 else "cold")
@@ -36,10 +43,10 @@ if "_time" in result.columns:
     # Handle missing values
     for col in ["Temperature", "Humidity", "CO2", "PM10", "TVOC"]:
         if col not in result.columns:
-            result[col] = -999  # Default missing values
+            result[col] = -999  # Assign default missing values
 
     # Apply classification functions
-    result["Temperature_Class"] = result["Temperature"].apply(lambda x: classify_temperature(x, result["Season"].mode()[0]))
+    result["Temperature_Class"] = result.apply(lambda row: classify_temperature(row["Temperature"], row["Season"]), axis=1)
     result["Humidity_Class"] = result["Humidity"].apply(classify_humidity)
     result["CO2_Class"] = result["CO2"].apply(classify_co2)
 
@@ -54,9 +61,8 @@ if "_time" in result.columns:
     result["PPD_Class"] = result["PPD"].apply(classify_ppd)
     result["IEQI_Class"] = result["IEQI"].apply(classify_ieqi)
 
-    # Save the classified data
+    # Save the classified data to CSV file
     result.to_csv("classified_kpis.csv", index=False)
     print("Advanced KPIs saved to 'classified_kpis.csv'")
-
 else:
     print("Error: No valid data found.")
