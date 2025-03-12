@@ -10,5 +10,5 @@
     "registry_url": "http://192.68.0.24:8081",
     "measures": ["Humidity", "Temperature", "CO2", "VOC", "PM1", "PM2.5", "PM10", "Noise", "Light", "Pressure"],
     "alive_topic": "IEQmidAndGUI/microservices/Adaptor",
-    "test": 1
+    "test": 0
 }

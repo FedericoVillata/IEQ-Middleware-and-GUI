@@ -52,12 +52,12 @@ class Adaptor(object):
         self.url = settings["adaptor_url"]
         self.influxUrl = settings["url_db"]
         self.registryBaseUrl = settings["registry_url"]
-        #self.possServices = settings["services4db"]
+        self.possMeasures = settings["measures"]
         self.port = settings["adaptor_port"]
         self.client = InfluxDBClient(url=self.influxUrl, token=self.token)
         self.bucket_api = self.client.buckets_api()
         self.test = settings["test"]
-        #self.loadUsers()
+        self.loadUsers()
         
     def loadUsers(self):
         url = self.registryBaseUrl + "/users"
@@ -65,18 +65,18 @@ class Adaptor(object):
         
     def checkUserPresent(self, userId):
         """Check if user is present"""
-        #self.loadUsers()
+        self.loadUsers()
         for user in self.users:
             if user["userId"] == userId:
                 return True
         return False
-    def checkPlantPresent(self,userId, plantCode):
-        """CHeck if plant is present"""
-        #self.loadUsers()
+    def checkApartmentPresent(self,userId, apartmentId):
+        """CHeck if apartment is present"""
+        self.loadUsers()
         for user in self.users:
             if user["userId"] == userId:
-                for plant in user["plants"]:
-                    if plant == plantCode:
+                for apt in user["apartments"]:
+                    if apt == apartmentId:
                         return True
         return False
                 
@@ -98,12 +98,12 @@ class Adaptor(object):
         
     def GET(self,*uri,**params):
         """Get data from InfluxDB"""
-        #http://localhost:8080/getData/userId/plantCode?measurament=humidity&duration=1 
+        #http://localhost:8080/getApartmentData/userId/aptId/?measurament=humidity&duration=1 
         if len(uri)!=0:
-            if uri[0] == "getData":
+            if uri[0] == "getApartmentData":
                 if self.checkUserPresent(uri[1]):
-                    if self.checkPlantPresent(uri[1],uri[2]): 
-                        if params["measurament"] in self.possServices:
+                    if self.checkApartmentPresent(uri[1],uri[2]): 
+                        if params["measurament"] in self.possMeasures:
                             try:
                                 duration = int(params["duration"])
                             except:
@@ -112,10 +112,38 @@ class Adaptor(object):
                                 timeInterval = "m"
                             else:
                                 timeInterval = "h"
-                            bucket = uri[1]
+                            bucket = uri[1] + "-" + uri[2]
                             query = f'from(bucket: "{bucket}") \
                                 |> range(start: -{duration}{timeInterval}) \
-                                    |> filter(fn: (r) => r["_measurement"] == "{uri[2]}") \
+                                        |> filter(fn: (r) => r["_field"] == "{params["measurament"]}")'
+                            tables = self.client.query_api().query(org=self.org, query=query)
+                            out = []
+                            for table in tables:
+                                for row in table.records:
+                                    line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value()}
+                                    out.append(line)
+                            return json.dumps(out)
+                    else:
+                        raise cherrypy.HTTPError("400", "Invalid plantCode")                    
+                else:
+                    raise cherrypy.HTTPError("400", "Invalid User")
+            elif uri[0] == "getRoomData":
+                #http://localhost:8080/getRoomData/userId/aptId/roomCode?measurament=humidity&duration=1 
+                if self.checkUserPresent(uri[1]):
+                    if self.checkApartmentPresent(uri[1],uri[2]): 
+                        if params["measurament"] in self.possMeasures:
+                            try:
+                                duration = int(params["duration"])
+                            except:
+                                raise cherrypy.HTTPError("400", "invalid duration")
+                            if self.test == 1:
+                                timeInterval = "m"
+                            else:
+                                timeInterval = "h"
+                            bucket = uri[1] + "-" + uri[2]
+                            query = f'from(bucket: "{bucket}") \
+                                |> range(start: -{duration}{timeInterval}) \
+                                    |> filter(fn: (r) => r["_measurement"] == "{uri[3]}") \
                                         |> filter(fn: (r) => r["_field"] == "{params["measurament"]}")'
                             tables = self.client.query_api().query(org=self.org, query=query)
                             out = []
