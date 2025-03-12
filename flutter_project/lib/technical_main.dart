@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'pages/location_selection_page.dart';
+import 'pages/technical_location_selection_page.dart';
 import 'pages/technical_home_page.dart';
 import 'pages/technical_feedback_page.dart';
 import 'pages/technical_threshold_page.dart';
@@ -14,7 +14,7 @@ class TechnicalMainPage extends StatefulWidget {
 }
 
 class _TechnicalMainPageState extends State<TechnicalMainPage> {
-  String? selectedLocation; 
+  String? selectedLocation;
   int _currentIndex = 0;
 
   late List<Widget> pages;
@@ -22,7 +22,7 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
   @override
   void initState() {
     super.initState();
-    // All'inizio non c’è location selezionata, quindi potresti lasciarle vuote 
+    // Pagine di placeholder finché non viene selezionata la Location
     pages = [
       const Placeholder(),
       const Placeholder(),
@@ -35,7 +35,6 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
   void onLocationSelected(String loc) {
     setState(() {
       selectedLocation = loc;
-      // Ricostruiamo le pagine con la location scelta
       pages = [
         TechnicalHomePage(location: selectedLocation),
         TechnicalFeedbackPage(location: selectedLocation),
@@ -48,111 +47,165 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Se non hai ancora selezionato la location, mostra la pagina "LocationSelectionPage"
+    // Se non è stata selezionata la location, mostra la pagina di selezione
     if (selectedLocation == null) {
       return LocationSelectionPage(onLocationSelected: onLocationSelected);
     }
 
-    // Altrimenti mostra la sidebar fissa + content
+    // Altrimenti, mostra la UI con la sidebar a sinistra
     return Scaffold(
-      // Mostriamo un AppBar in alto (se vuoi replicare la UI delle slide, 
-      // potresti anche toglierla e fare un header personalizzato)
       appBar: AppBar(
         title: Text("Technical Interface - $selectedLocation"),
         actions: [
-          // Bottone per aprire il profilo
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
-              // Logica per il profilo
+              // Eventuale logica per il profilo
             },
           )
         ],
       ),
       body: Row(
         children: [
-          // ---- SIDEBAR SINISTRA ----
+          // ------ SIDEBAR MODERNA ------
           Container(
-            width: 200,
-            color: Colors.blue.shade50,
-            child: Column(
-              children: [
-                // Un header della sidebar (es. immagine/logo)
-                Container(
-                  height: 80,
-                  color: Colors.blue.shade100,
-                  child: const Center(
-                    child: Text(
-                      "Sidebar Menu",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            width: 240,
+            decoration: const BoxDecoration(
+              // Esempio di gradiente diagonale
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF1A73E8), // Blu più chiaro
+                  Color(0xFF1669C1), // Blu più scuro
+                ],
+              ),
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // Header in alto con avatar e titolo
+                  const SizedBox(height: 20),
+                  CircleAvatar(
+                    radius: 35,
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.engineering_rounded,
+                      size: 40,
+                      color: Colors.blueAccent,
                     ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "Technical Menu",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Divider per separare header e voci di menu
+                  const Divider(
+                    color: Colors.white54,
+                    thickness: 1,
+                    indent: 16,
+                    endIndent: 16,
+                  ),
+                  const SizedBox(height: 4),
 
-                // Pulsante 1: Detailed Metrics
-                ListTile(
-                  leading: const Icon(Icons.home),
-                  title: const Text("Detailed Metrics"),
-                  selected: _currentIndex == 0,
-                  onTap: () {
-                    setState(() => _currentIndex = 0);
-                  },
-                ),
-                // Pulsante 2: Feedback
-                ListTile(
-                  leading: const Icon(Icons.bar_chart),
-                  title: const Text("Tenant Feedback"),
-                  selected: _currentIndex == 1,
-                  onTap: () {
-                    setState(() => _currentIndex = 1);
-                  },
-                ),
-                // Pulsante 3: Threshold
-                ListTile(
-                  leading: const Icon(Icons.settings),
-                  title: const Text("Threshold Adjust."),
-                  selected: _currentIndex == 2,
-                  onTap: () {
-                    setState(() => _currentIndex = 2);
-                  },
-                ),
-                // Pulsante 4: Deleted Suggestions
-                ListTile(
-                  leading: const Icon(Icons.delete_forever),
-                  title: const Text("Deleted Suggs."),
-                  selected: _currentIndex == 3,
-                  onTap: () {
-                    setState(() => _currentIndex = 3);
-                  },
-                ),
-                // Pulsante 5: Tech Suggestions
-                ListTile(
-                  leading: const Icon(Icons.lightbulb),
-                  title: const Text("Tech. Suggestions"),
-                  selected: _currentIndex == 4,
-                  onTap: () {
-                    setState(() => _currentIndex = 4);
-                  },
-                ),
+                  // Voci di menu (Home, Feedback, ecc.)
+                  _buildSidebarItem(
+                    icon: Icons.home,
+                    label: "Detailed Metrics",
+                    index: 0,
+                  ),
+                  _buildSidebarItem(
+                    icon: Icons.bar_chart,
+                    label: "Tenant Feedback",
+                    index: 1,
+                  ),
+                  _buildSidebarItem(
+                    icon: Icons.settings,
+                    label: "Threshold Adjust.",
+                    index: 2,
+                  ),
+                  _buildSidebarItem(
+                    icon: Icons.delete_forever,
+                    label: "Deleted Suggs.",
+                    index: 3,
+                  ),
+                  _buildSidebarItem(
+                    icon: Icons.lightbulb,
+                    label: "Tech. Suggestions",
+                    index: 4,
+                  ),
 
-                const Spacer(), // Spinge verso il basso se vuoi un pulsante in fondo
-                // Eventuale bottone "logout" o "switch location"
-                ListTile(
-                  leading: const Icon(Icons.logout),
-                  title: const Text("Change Location"),
-                  onTap: () {
-                    setState(() => selectedLocation = null);
-                  },
-                ),
-              ],
+                  // Spazio per spingere in basso il resto
+                  const Spacer(),
+
+                  // Bottone per cambiare location (logout)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.blue,
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: const Icon(Icons.logout),
+                      label: const Text("Change Location"),
+                      onPressed: () {
+                        setState(() {
+                          selectedLocation = null;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
 
-          // ---- AREA CENTRALE (Expanded) ----
+          // ------ CONTENUTO PRINCIPALE ------
           Expanded(
             child: pages[_currentIndex],
           ),
         ],
+      ),
+    );
+  }
+
+  /// Widget di supporto per costruire le voci della sidebar
+  Widget _buildSidebarItem({
+    required IconData icon,
+    required String label,
+    required int index,
+  }) {
+    final bool selected = _currentIndex == index;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _currentIndex = index;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: selected ? Colors.white.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: ListTile(
+          leading: Icon(icon, color: Colors.white),
+          title: Text(
+            label,
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
       ),
     );
   }

@@ -127,12 +127,12 @@ class NetatmoAPI:
         self.expiration = int(resp['expire_in'] + time.time())
 
     def get_measurements(self):
-        """if self.first_request:
+        if self.first_request:
             date_start = datetime.now() - timedelta(days=1)
             self.first_request = False
         else:
-            date_start = datetime.now() - timedelta(minutes=30)"""
-        date_start = datetime.now() - timedelta(minutes=30)
+            date_start = datetime.now() - timedelta(minutes=30)
+        #date_start = datetime.now() - timedelta(minutes=30)
         
         date_start = int(date_start.replace(tzinfo=None).timestamp())
         date_end = int(datetime.now().timestamp())
@@ -140,7 +140,7 @@ class NetatmoAPI:
         myPub = MyPublisher("54234")
         myPub.start()
         for module_name, module_id in self.modules.items():
-            pubTopic = f"IEQmidAndGUI/apartment_1/{module_name}/Temperature"
+            pubTopic = f"IEQmidAndGUI/user1-apartment1/{module_name}/Temperature"
             url = f'{self.base_url}/api/getmeasure'
             params = {
                 'device_id': self.mac,
@@ -171,6 +171,7 @@ class NetatmoAPI:
                 print(f"Error parsing response: {e}")
                 print(response.content)
                 continue
+            
 
             values = {
                 'Temperature': [val[0] for val in body['value']],
@@ -183,8 +184,7 @@ class NetatmoAPI:
             datetime_start = datetime.fromtimestamp(body['beg_time'])
             step_time = body.get('step_time', 1)
 
-            values['timestamp'] = [datetime_start + timedelta(seconds=i * step_time) for i in range(len(values['Temperature']))]
-
+            values['timestamp'] = [(datetime_start + timedelta(seconds=i * step_time)).timestamp() for i in range(len(values['Temperature']))]
             self.data[module_name] = pd.DataFrame.from_dict(values)
             self.data[module_name] = self.data[module_name].set_index('timestamp')
             print(f"Data for {module_name}:")
@@ -199,10 +199,10 @@ class NetatmoAPI:
                 i += 1
             out = {"bn": pubTopic,"e":Event}
             print(out)
-            
+            #if module_name != 'stanza_1':
             myPub.myPublish(json.dumps(out), pubTopic)
-            myPub.stop()
-            time.sleep(12)
+            #myPub.stop()
+            time.sleep(1)
             """json_data = {
                 "module_name": module_name,
                 "measurements": self.data[module_name].to_dict(orient='records')
