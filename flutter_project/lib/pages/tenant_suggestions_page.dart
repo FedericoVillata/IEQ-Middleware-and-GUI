@@ -15,15 +15,9 @@ class SuggestionsPage extends StatelessWidget {
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 2,
         title: Text("Daily Suggestion History", style: TextStyle(color: Colors.black)),
         centerTitle: true,
-        actions: [
-          Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: Icon(Icons.account_circle, color: Colors.black, size: 30),
-          ),
-        ],
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
