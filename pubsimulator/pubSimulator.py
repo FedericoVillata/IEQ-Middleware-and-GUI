@@ -59,17 +59,17 @@ class MyPublisher:
 
 if __name__ == '__main__':
 
-    pubTopic = "IEQmidAndGUI/user0-apartment0/LivingRoom/Temperature"
-    pubTopic2 = "IEQmidAndGUI/user0-apartment0/Kitchen/Temperature"
+    pubTopic = "IEQmidAndGUI/apartment0"
+    pubTopic2 = "IEQmidAndGUI/apartment0"
     print(pubTopic)
     myPub = MyPublisher("54234", pubTopic)
     myPub.start()
     while True:              
-        event = {"n": "Temperature", "u": "Celsius", "t": str(time.time()), "v": 30}#VolumetricWaterContent
+        event = {"n": "Temperature/room0/sensor0", "u": "Celsius", "t": str(time.time()), "v": 30}#VolumetricWaterContent
         out = {"bn": pubTopic,"e":[event]}
         print(out)
         myPub.myPublish(json.dumps(out), pubTopic)
-        event = {"n": "Temperature", "u": "Celsius", "t": str(time.time()), "v": 34}#VolumetricWaterContent
+        event = {"n": "Temperature/room1/sensor1", "u": "Celsius", "t": str(time.time()), "v": 34}#VolumetricWaterContent
         out = {"bn": pubTopic2,"e":[event]}
         myPub.myPublish(json.dumps(out), pubTopic2)
             

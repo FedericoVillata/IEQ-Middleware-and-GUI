@@ -1,7 +1,35 @@
 {
   "users": [
+    {
+      "userId": "user0",
+      "password": "asd",
+      "permissions": "Base",
+      "apartments": [
+        "apartment0"
+      ]
+    }
   ],
   "apartments": [
+    {
+      "users": [
+        "user0"
+      ],
+      "apartmentId": "apartment0",
+      "rooms": [
+        {
+          "roomId": "room0",
+          "sensors": [
+            "sensor0"
+          ]
+        },
+        {
+          "roomId": "room1",
+          "sensors": [
+            "sensor1"
+          ]
+        }
+      ]
+    }
   ],
   "devices": [],
   "services": []
