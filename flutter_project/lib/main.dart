@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// Importa i file con le classi TenantMainPage e TechnicalMainPage
 import 'tenant_main.dart';
 import 'technical_main.dart';
 
@@ -40,9 +39,10 @@ class SelectionScreen extends StatelessWidget {
                 textStyle: TextStyle(fontSize: 18),
               ),
               onPressed: () {
+                // LANCIA MyAppTenant (che contiene la login e la main)
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => TenantMainPage()),
+                  MaterialPageRoute(builder: (context) => MyAppTenant()),
                 );
               },
             ),
