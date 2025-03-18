@@ -285,7 +285,19 @@ class Catalog(object):
         for index in sorted(removable, reverse=True):
                 del self.catalog['services'][index]
         self.write_catalog()
-
+    def login(self, body):
+        """Login user."""
+        self.load_file()
+        found = 0
+        for user in self.catalog["users"]:
+            if user["userId"] == body["userId"]:
+                found = 1
+                if user["password"] == body["password"]:
+                    return user['permissions']
+                else:
+                    return "Invalid password"
+        if found == 0:
+            return "User not found"
 class Webserver(object):
     """CherryPy webserver."""
     exposed = True
@@ -395,7 +407,19 @@ class Webserver(object):
             else:
                 response = {"status": "OK", "code": 200, "message": "Data processed"}
                 return json.dumps(response)
-            
+        if uri[0] == 'login':
+            # Login user.
+            body = json.loads(cherrypy.request.body.read())
+            out = self.cat.login(body)
+            if out == "User not found":
+                response = {"status": "NOT_OK", "code": 400, "message": "User not found"}
+                return json.dumps(response)
+            elif out == "Invalid password":
+                response = {"status": "NOT_OK", "code": 400, "message": "Invalid password"}
+                return json.dumps(response)
+            else:
+                response = {"status": "OK", "code": 200, "message": out}
+                return json.dumps(response)
             
 
     def PUT(self, *uri, **params):
