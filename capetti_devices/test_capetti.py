@@ -112,25 +112,25 @@ class CapettiAPI:
             print(response.content)
             return
 
-        pubTopic = f"IEQmidAndGUI/user1-apartment1/0000E795/Temperature"
-        #myPub = MyPublisher("54234")
-        #myPub.start()
+        pubTopic = f"IEQmidAndGUI/apartment1"
+        myPub = MyPublisher("54234")
+        myPub.start()
         for item in data:
             event = {
-                "n": "Temperature",
+                "n": "Temperature/room0/0000E795",
                 "u": "Celsius",
-                "t": str(datetime.utcfromtimestamp(int(item['timeStamp']))),
+                "t": str((int(item['timeStamp']))), #datetime.utcfromtimestamp
                 "v": float(item['value'])
             }
             out = {"bn": pubTopic, "e": [event]}
             print(out)
-            #myPub.myPublish(json.dumps(out), pubTopic)
+            myPub.myPublish(json.dumps(out), pubTopic)
             #myPub.stop()
             time.sleep(0.1)
         
 
     def get_current_values(self):
-        pubTopic = f"IEQmidAndGUI/user1-apartment1/0000E795/Temperature"
+        pubTopic = f"IEQmidAndGUI/apartment1"
         if not self.token:
             print("Error: User token not available.")
             return
@@ -176,8 +176,8 @@ class CapettiAPI:
             'value': [],
             'unit': []
         }
-        #myPub = MyPublisher("54234")
-        #myPub.start()
+        myPub = MyPublisher("54234")
+        myPub.start()
         for item in data:
             if item['sensorMac'] == '0000E795':  
                 values['sensorName'].append(item['sensorName'])
@@ -191,14 +191,14 @@ class CapettiAPI:
 
                 if item['channel'] == '1':
                     event = {
-                            "n": "Temperature",
+                            "n": "Temperature/room0/0000E795",
                             "u": "Celsius",
-                            "t": str(datetime.utcfromtimestamp(int(item['timeStamp']))),
+                            "t": str((int(item['timeStamp']))),
                             "v": float(item['value'])
                         }
                     out = {"bn": pubTopic, "e": [event]}
                     print(out)
-                    #myPub.myPublish(json.dumps(out), pubTopic)
+                    myPub.myPublish(json.dumps(out), pubTopic)
                     #myPub.stop()
         #print(sensor)
 
@@ -256,4 +256,6 @@ if __name__ == '__main__':
             capetti.get_current_values()"""
         capetti.get_sensor_list(capetti.first_request)
         capetti.first_request = False
-        time.sleep(600) # 10 minutes  
+        time.sleep(60) # 10 minutes  
+
+        #
