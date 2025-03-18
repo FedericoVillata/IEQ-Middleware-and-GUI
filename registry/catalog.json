@@ -1,11 +1,11 @@
 {
   "users": [
     {
-      "userId": "user0",
+      "userId": "Luca",
       "password": "asd",
       "permissions": "Base",
       "apartments": [
-        "apartment0"
+        "apartment1"
       ]
     }
   ],
@@ -26,6 +26,46 @@
           "roomId": "room1",
           "sensors": [
             "sensor1"
+          ]
+        }
+      ]
+    },
+    {
+      "users": [
+        "Luca"
+      ],
+      "apartmentId": "apartment1",
+      "MAC": [
+        {
+          "name": "netatmo",
+          "MAC": "70:ee:50:af:8a:ea",
+          "accessToken": "67251bc704bee2bc3e05de23|29340711a8de4a6917e8a54d93fdfa29",
+          "refreshToken": "67251bc704bee2bc3e05de23|8beda81bc4df97612b221ffc60af411b"
+        }
+      ],
+      "rooms": [
+        {
+          "roomId": "livingroom",
+          "sensors": [
+            "03:00:00:0c:e0:98"
+          ]
+        },
+        {
+          "roomId": "bathroom",
+          "sensors": [
+            "03:00:00:0d:34:20"
+          ]
+        },
+        {
+          "roomId": "exterior",
+          "sensors": [
+            "02:00:00:af:60:ee"
+          ]
+        },
+        {
+          "roomId": "bedroom",
+          "sensors": [
+            "03:00:00:0c:e0:b2"
           ]
         }
       ]

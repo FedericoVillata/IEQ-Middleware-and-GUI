@@ -15,78 +15,35 @@ import json
 
 
 
-"""class ClientAuth:
-    
-    Request authentication and keep access token available through token method. Renew it automatically if necessary
+def get_users():
+    users_url = "http://localhost:8081/users"
+    response = requests.get(users_url)
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch users data: {response.status_code}")
+    return response.json()
 
-    Args:
-        clientId (str): Application clientId delivered by Netatmo on dev.netatmo.com
-        clientSecret (str): Application Secret key delivered by Netatmo on dev.netatmo.com
-        username (str): Netatmo account username
-        password (str): Netatmo account password
-    
+def get_apartments():
+    apartments_url = "http://localhost:8081/apartments"
+    response = requests.get(apartments_url)
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch apartments data: {response.status_code}")
+    return response.json()
 
-    def __init__(self, clientId=None, clientSecret=None, username=None, password=None, scope='read_station', credentialFile=None):
-        clientId = getenv("CLIENT_ID", clientId)
-        clientSecret = getenv("CLIENT_SECRET", clientSecret)
-        username = getenv("USERNAME", username)
-        password = getenv("PASSWORD", password)
+def get_user_data(users, user_id):
+    for user in users:
+        if user['userId'] == user_id:
+            return user
+    raise Exception(f"User {user_id} not found in registry")
 
-        if not (clientId and clientSecret and username and password):
-            self._credentialFile = credentialFile or expanduser("./netatmo_config.json")
-            with open(self._credentialFile, "r", encoding="utf-8") as f:
-                cred = {k.upper(): v for k, v in json.loads(f.read()).items()}
-        else:
-            self._credentialFile = None
-
-        self._clientId = clientId or cred["CLIENT_ID"]
-        self._clientSecret = clientSecret or cred["CLIENT_SECRET"]
-        self._accessToken = None
-        self.username = username or cred["USERNAME"]
-        self.password = password or cred["PASSWORD"]
-        self.scope = scope
-        self.expiration = 0
-
-        self.manual_refresh()
-
-    @property
-    def accessToken(self):
-        if self.expiration < time.time():
-            self.manual_refresh()
-        return self._accessToken
-
-    def manual_refresh(self):
-        postParams = {
-            "grant_type": "password",
-            "username": self.username,
-            "password": self.password,
-            "client_id": self._clientId,
-            "client_secret": self._clientSecret,
-            "scope": self.scope
-        }
-        response = requests.post("https://api.netatmo.com/oauth2/token", data=postParams)
-        resp = response.json()
-
-        if 'access_token' not in resp:
-            print(f"Error refreshing token manually: {resp}")
-            return
-
-        self._accessToken = resp['access_token']
-        self.expiration = int(resp['expire_in'] + time.time())
-
-        cred = {
-            "CLIENT_ID": self._clientId,
-            "CLIENT_SECRET": self._clientSecret,
-            "USERNAME": self.username,
-            "PASSWORD": self.password
-        }
-        if self._credentialFile:
-            with open(self._credentialFile, "w", encoding="utf-8") as f:
-                f.write(json.dumps(cred, indent=True))"""
-
+def get_apartment_data(apartments, user_id):
+    for apartment in apartments:
+        if user_id in apartment['users']:
+            print("apt: ", apartment)
+            return apartment
+    raise Exception(f"Apartment for user {user_id} not found in registry")
 
 class NetatmoAPI:
-    def __init__(self, clientId, clientSecret, username, password,accessToken, mac, modules, scope='read_station'):
+    def __init__(self, clientId, clientSecret, username, password, accessToken, mac, modules, scope='read_station'):
         self.clientId = clientId
         self.clientSecret = clientSecret
         self.username = username
@@ -132,7 +89,6 @@ class NetatmoAPI:
             self.first_request = False
         else:
             date_start = datetime.now() - timedelta(minutes=30)
-        #date_start = datetime.now() - timedelta(minutes=30)
         
         date_start = int(date_start.replace(tzinfo=None).timestamp())
         date_end = int(datetime.now().timestamp())
@@ -140,7 +96,8 @@ class NetatmoAPI:
         myPub = MyPublisher("54234")
         myPub.start()
         for module_name, module_id in self.modules.items():
-            pubTopic = f"IEQmidAndGUI/user1-apartment1/{module_name}/Temperature"
+            print(f"Getting measurements for {apartment_id}...")
+            pubTopic = f"IEQmidAndGUI/{apartment_id}"
             url = f'{self.base_url}/api/getmeasure'
             params = {
                 'device_id': self.mac,
@@ -171,7 +128,6 @@ class NetatmoAPI:
                 print(f"Error parsing response: {e}")
                 print(response.content)
                 continue
-            
 
             values = {
                 'Temperature': [val[0] for val in body['value']],
@@ -189,26 +145,16 @@ class NetatmoAPI:
             self.data[module_name] = self.data[module_name].set_index('timestamp')
             print(f"Data for {module_name}:")
             print(self.data[module_name].head())
-            Event =[]
-            """event = {"n": "Temperature", "u": "Celsius", "t": str(time.time()), "v": 30}#VolumetricWaterContent
-                out = {"bn": pubTopic,"e":[event]}"""
+            Event = []
             i = 0
             for val in values['Temperature']:
-                event = {"n": "Temperature", "u": "Celsius", "t": str(values['timestamp'][i]), "v": float(val)}
+                event = {"n": f"Temperature/{module_name}/{module_id}", "u": "Celsius", "t": str(values['timestamp'][i]), "v": float(val)}
                 Event.append(event)
                 i += 1
-            out = {"bn": pubTopic,"e":Event}
+            out = {"bn": pubTopic, "e": Event}
             print(out)
-            #if module_name != 'stanza_1':
             myPub.myPublish(json.dumps(out), pubTopic)
-            #myPub.stop()
             time.sleep(1)
-            """json_data = {
-                "module_name": module_name,
-                "measurements": self.data[module_name].to_dict(orient='records')
-            }
-            # Print data in JSON format
-            print(json.dumps(json_data, indent=4))"""
 
     def plot_measurements(self):
         plt.figure(figsize=(12, 10))
@@ -225,59 +171,53 @@ class NetatmoAPI:
 
 class MyPublisher:
     def __init__(self, clientID):
-        self.clientID = clientID  + "Temperature"
-    
-		# create an instance of paho.mqtt.client
-        self._paho_mqtt = PahoMQTT.Client(self.clientID, False) 
-		# register the callback
+        self.clientID = clientID + "Temperature"
+        self._paho_mqtt = PahoMQTT.Client(self.clientID, False)
         self._paho_mqtt.on_connect = self.myOnConnect
         try:
-            with open("settings.json", "r") as fs:                
-                self.settings = json.loads(fs.read())            
+            with open("settings.json", "r") as fs:
+                self.settings = json.loads(fs.read())
         except Exception:
             print("Problem in loading settings")
         self.messageBroker = self.settings["messageBroker"]
         self.port = self.settings["brokerPort"]
         self.qos = self.settings["qos"]
 
-    def start (self):
-		#manage connection to broker
+    def start(self):
         self._paho_mqtt.connect(self.messageBroker, self.port)
         self._paho_mqtt.loop_start()
 
-    def stop (self):
+    def stop(self):
         self._paho_mqtt.loop_stop()
         self._paho_mqtt.disconnect()
 
     def myPublish(self, message, topic):
-		# publish a message with a certain topic
         self._paho_mqtt.publish(topic, message, self.qos)
 
-    def myOnConnect (self, paho_mqtt, userdata, flags, rc):
-        print ("Connected to %s with result code: %d" % (self.messageBroker, rc))
+    def myOnConnect(self, paho_mqtt, userdata, flags, rc):
+        print("Connected to %s with result code: %d" % (self.messageBroker, rc))
+
 if __name__ == '__main__':
-    
+
     with open('./netatmo_config.json') as config_file:
         config = json.load(config_file)
+    users = get_users()
+    user_data = get_user_data(users, "Luca1")
+    apartments = get_apartments()
+    apartment_data = get_apartment_data(apartments, "Luca1")
 
-    
-    modules = {
-        'stanza_1': config['mac'],  # Main module
-        'stanza_2': '03:00:00:0c:e0:b2',      # Internal module 1
-        'stanza_3': '03:00:00:0c:e0:98',      # Internal module 2
-        'stanza_4': '03:00:00:0d:34:20',      # Internal module 3
-        'esterno': '02:00:00:af:60:ee'        # External module
-    }
+    mac_data = apartment_data['MAC'][0]
+    sensors = {room['roomId']: room['sensors'][0] for room in apartment_data['rooms']}
+    apartment_id = apartment_data['apartmentId']
 
-    
     netatmo = NetatmoAPI(
         clientId=config['client_id'],
         clientSecret=config['client_secret'],
         username=config['email'],
         password=config['password'],
-        accessToken=config['access_token'],
-        mac=config['mac'],
-        modules=modules,
+        accessToken=mac_data['accessToken'], #accessToken="67251bc704bee2bc3e05de23|29340711a8de4a6917e8a54d93fdfa29"
+        mac=mac_data['MAC'],
+        modules=sensors,
         scope='read_station'
     )
 
