@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class LocationSelectionPage extends StatefulWidget {
   final Function(String) onLocationSelected;
@@ -11,28 +13,68 @@ class LocationSelectionPage extends StatefulWidget {
 }
 
 class _LocationSelectionPageState extends State<LocationSelectionPage> {
+  static const String REGISTRY_URL = "http://localhost:8081/apartments";
+
   final TextEditingController _searchController = TextEditingController();
 
-  // Mock di location
-  final List<String> allLocations = [
-    "Location 1",
-    "Location 2",
-    "Location 3",
-    "Location 4",
-    "Aula Magna",
-    "Sala Riunioni",
-  ];
-
+  // Questa sarà la lista che popoliamo via GET dal registry
+  List<String> allLocations = [];
   String filter = "";
+
+  // Aggiungiamo una variabile di stato per indicare se stiamo caricando o se c’è stato un errore
+  bool isLoading = false;
+  String? errorMessage;
 
   @override
   void initState() {
     super.initState();
+
+    // Avviamo il caricamento delle location da registry
+    _fetchLocationsFromRegistry();
+
     _searchController.addListener(() {
       setState(() {
         filter = _searchController.text;
       });
     });
+  }
+
+  /// Effettua la GET al registry e aggiorna `allLocations` con gli apartmentId
+  Future<void> _fetchLocationsFromRegistry() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final response = await http.get(Uri.parse(REGISTRY_URL));
+
+      if (response.statusCode == 200) {
+        // Il registry risponde con una lista di oggetti JSON
+        // Ciascun oggetto dovrebbe avere "apartmentId": es. { "apartmentId": "apartment0", ... }
+        final List<dynamic> data = json.decode(response.body);
+
+        // Estraiamo la lista di id
+        final List<String> apartments = data
+            .map((apt) => apt["apartmentId"] as String)
+            .toList();
+
+        setState(() {
+          allLocations = apartments;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+          errorMessage = "Server error: ${response.statusCode}";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        errorMessage = "Connessione fallita: $e";
+      });
+    }
   }
 
   @override
@@ -48,7 +90,6 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
         centerTitle: true,
       ),
       body: Container(
-        // Sfondo più chiaro, se vuoi puoi inserire un gradiente
         color: Colors.grey[200],
         child: Column(
           children: [
@@ -75,16 +116,31 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
               ),
             ),
 
-            // Lista delle location filtrate
-            Expanded(
-              child: ListView.builder(
-                itemCount: filteredLocations.length,
-                itemBuilder: (context, index) {
-                  final loc = filteredLocations[index];
-                  return _buildLocationTile(loc);
-                },
+            // Se è in corso il caricamento mostriamo uno spinner
+            if (isLoading)
+              const Center(child: CircularProgressIndicator()),
+
+            // Altrimenti se c'è errore, visualizziamo l’errore
+            if (!isLoading && errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  errorMessage!,
+                  style: const TextStyle(color: Colors.red),
+                ),
               ),
-            ),
+
+            // Se non è in loading e non abbiamo errori, mostriamo la lista
+            if (!isLoading && errorMessage == null)
+              Expanded(
+                child: ListView.builder(
+                  itemCount: filteredLocations.length,
+                  itemBuilder: (context, index) {
+                    final loc = filteredLocations[index];
+                    return _buildLocationTile(loc);
+                  },
+                ),
+              ),
           ],
         ),
       ),
