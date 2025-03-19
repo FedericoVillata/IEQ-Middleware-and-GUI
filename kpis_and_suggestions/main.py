@@ -1,89 +1,99 @@
 import json
-import pandas as pd
 import requests
+from adaptor import Adaptor
 from kpis_classification import *
+from pubsimulator import PubSimulator
 
-# Load configuration from settings file
-SETTINGS = "settings.json"
-with open(SETTINGS, 'r') as file:
-    config = json.load(file)
+REGISTRY_URL = 'http://localhost:8080/catalog'
+MQTT_BASE_TOPIC = 'home'
 
-# Adaptor API endpoint
-ADAPTOR_URL = config["adaptor_url"]
-
-# Function to retrieve data from the adaptor
-
-def get_data_from_adaptor(user_id, plant_code, measurement, duration=24):
-    """
-    Retrieves sensor data from the adaptor API.
-    user_id: The user ID
-    plant_code: The plant code (apartment ID)
-    measurement: The type of measurement (e.g., CO2, Temperature)
-    duration: Time duration (default: last 24 hours)
-    return: Data in a pandas DataFrame
-    """
-    url = f"{ADAPTOR_URL}/getData/{user_id}/{plant_code}?measurament={measurement}&duration={duration}"
+def get_catalog():
     try:
-        response = requests.get(url)
+        response = requests.get(REGISTRY_URL)
         response.raise_for_status()
-        data = response.json()
-        df = pd.DataFrame(data)
-        if not df.empty:
-            df["t"] = pd.to_datetime(df["t"])
-        return df
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching data: {e}")
-        return pd.DataFrame()
+        return response.json()
+    except requests.RequestException as e:
+        print(f"Error fetching catalog: {e}")
+        exit(1)
 
-# Retrieve and merge data for multiple measurements
-measurements = ["CO2", "Temperature", "Humidity", "PM10", "TVOC"]
-user_id = "user123"  # Replace with actual user ID
-plant_code = "apartment456"  # Replace with actual apartment ID
+def get_season_from_timestamp(timestamp):
+    month = int(timestamp.split('-')[1])
+    return "warm" if 4 <= month <= 9 else "cold"
 
-df_list = []
-for measurement in measurements:
-    df = get_data_from_adaptor(user_id, plant_code, measurement)
-    if not df.empty:
-        df.rename(columns={"v": measurement}, inplace=True)
-        df_list.append(df)
+def process_apartment(apartment, publisher, adaptor):
+    apartment_id = apartment['apartmentId']
+    ventilation = apartment.get('ventilation', 'nat')
+    print(f"\nProcessing Apartment: {apartment_id} with ventilation: {ventilation}")
 
-# Merge dataframes on timestamp
-if df_list:
-    result = df_list[0]
-    for df in df_list[1:]:
-        result = pd.merge(result, df, on="t", how="outer")
-else:
-    print("Error: No valid data found.")
-    exit()
+    for room in apartment['rooms']:
+        room_id = room['roomId']
+        print(f"  -> Processing Room: {room_id}")
+        room_data = []
 
-# Process data
-if not result.empty:
-    result["Month"] = result["t"].dt.month
-    result["Season"] = result["Month"].apply(lambda m: "warm" if 5 <= m <= 9 else "cold")
+        for sensor_id in room['sensors']:
+            sensor_data = adaptor.get_sensor_data(sensor_id)
+            if sensor_data:
+                room_data.append(sensor_data)
 
-    # Handle missing values
-    for col in measurements:
-        if col not in result.columns:
-            result[col] = -999  # Assign default missing values
+        if room_data:
+            # Calcolo delle medie per la stanza
+            avg_temp = sum(d['temperature'] for d in room_data) / len(room_data)
+            avg_humidity = sum(d['humidity'] for d in room_data) / len(room_data)
+            avg_co2 = sum(d['co2'] for d in room_data) / len(room_data)
+            avg_pm10 = sum(d.get('pm10', 0) for d in room_data) / len(room_data)
+            avg_tvoc = sum(d.get('tvoc', 0) for d in room_data) / len(room_data)
 
-    # Apply classification functions
-    result["Temperature_Class"] = result.apply(lambda row: classify_temperature(row["Temperature"], row["Season"]), axis=1)
-    result["Humidity_Class"] = result["Humidity"].apply(classify_humidity)
-    result["CO2_Class"] = result["CO2"].apply(classify_co2)
+            # Determino la stagione prendendo il primo timestamp
+            season = get_season_from_timestamp(room_data[0]['timestamp'])
 
-    # Compute Advanced KPIs
-    result["PMV"] = result.apply(lambda row: calculate_pmv(1.2, 0.5, row["Temperature"], row["Temperature"], 0.1, row["Humidity"]), axis=1)
-    result["PPD"] = result["PMV"].apply(calculate_ppd)
-    result["IEQI"] = result.apply(lambda row: calculate_ieqi(row["CO2"], row["PM10"], row["TVOC"]), axis=1)
-    result["ICONE"] = result.apply(lambda row: calculate_icone(row["CO2"], row["TVOC"], row["PM10"], row["Humidity"], row["Temperature"]), axis=1)
+            # 🔥 Calcolo Adaptive Comfort
+            outdoor_temps = [d.get('outdoor_temp', avg_temp) for d in room_data][-7:]
+            adaptive_comfort = adaptive_thermal_comfort(outdoor_temps)
 
-    # Classify Advanced KPIs
-    result["PMV_Class"] = result["PMV"].apply(classify_pmv)
-    result["PPD_Class"] = result["PPD"].apply(classify_ppd)
-    result["IEQI_Class"] = result["IEQI"].apply(classify_ieqi)
+            t_ext = adaptive_comfort['Running Mean Temperature'] if adaptive_comfort else avg_temp
+            temp_class = classify_temperature(avg_temp, season, ventilation, t_ext)
 
-    # Save the classified data to CSV file
-    result.to_csv("classified_kpis.csv", index=False)
-    print("Advanced KPIs saved to 'classified_kpis.csv'")
-else:
-    print("Error: No valid data found.")
+            # Classificazioni base
+            hum_class = classify_humidity(avg_humidity)
+            co2_class = classify_co2(avg_co2, ventilation)
+
+            # Advanced KPIs
+            pmv = calculate_pmv(season, avg_temp, avg_temp, 0.1, avg_humidity)
+            pmv_class = classify_pmv(pmv)
+
+            ppd = calculate_ppd(pmv)
+            ppd_class = classify_ppd(ppd)
+
+            icone = calculate_icone(avg_co2, avg_pm10, avg_tvoc)
+            icone_class = classify_icone(icone)
+
+            ieqi = calculate_ieqi(icone, avg_temp, avg_humidity)
+            ieqi_class = classify_ieqi(ieqi)
+
+            metrics_payload = {
+                "temperature": {"value": avg_temp, "classification": temp_class},
+                "humidity": {"value": avg_humidity, "classification": hum_class},
+                "co2": {"value": avg_co2, "classification": co2_class},
+                "pmv": {"value": pmv, "classification": pmv_class},
+                "ppd": {"value": ppd, "classification": ppd_class},
+                "icone": {"value": icone, "classification": icone_class},
+                "ieqi": {"value": ieqi, "classification": ieqi_class},
+                "adaptive_comfort": adaptive_comfort
+            }
+
+            print(f"      Final Metrics for {room_id}: {json.dumps(metrics_payload, indent=2)}")
+            topic = f"{MQTT_BASE_TOPIC}/{apartment_id}/{room_id}/metrics"
+            publisher.publish(topic, json.dumps(metrics_payload))
+        else:
+            print(f"      No valid data to compute metrics for {room_id}")
+
+def main():
+    catalog = get_catalog()
+    publisher = Publisher()
+    adaptor = Adaptor()
+
+    for apartment in catalog['apartments']:
+        process_apartment(apartment, publisher, adaptor)
+
+if __name__ == "__main__":
+    main()
