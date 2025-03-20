@@ -67,7 +67,13 @@ class CapettiAPI:
             'Content-Type': 'application/json',
             'Authorization': f"Bearer {self.token}"
         }
+
         response = requests.get(url=url, params=params, headers=headers, verify=False)
+
+        if response.status_code == 401:  # Token expired
+            print("UserToken expired. Renewing token...")
+            self.get_user_token()
+            return self.get_sensor_list(first_request)  # retray with new token
 
         if response.status_code != 200:
             print(f"Error: {response.status_code}")
@@ -81,28 +87,21 @@ class CapettiAPI:
             print(response.content)
             return
 
-        for item in data:
-            if item['sensorMac'] in self.sensor_room_mapping:
-                room_id = self.sensor_room_mapping[item['sensorMac']]
-                if first_request:
-                    for channel in [1, 2, 3, 4]:  # Itera su tutti i canali
-                        self.get_history_values(sensor_mac=item['sensorMac'], sensor_ch=channel, room_id=room_id)
-                else:
-                    self.get_current_values()
+        if first_request:
+            date_to = int(time.time())
+            date_from = date_to - 24 * 3600  # last 24 hours
+            self.get_history_values(date_from=date_from, date_to=date_to)
+        else:
+            self.get_current_values()
 
-    def get_history_values(self, sensor_mac, sensor_ch, room_id):
+    def get_history_values(self, date_from, date_to, start_index=0):
         if not self.token:
             print("Error: User token not available.")
             return
 
-        date_to = int(time.time())
-        date_from = date_to - 24 * 3600  # 24 hours
-
-        url = f'{self.base_url}?action=getChannelHistory'
+        url = f'{self.base_url}?action=getSystemHistory'
         params = {
             'wliMac': self.mac,
-            'sensorMac': sensor_mac,
-            'sensorCh': sensor_ch,
             'dateFrom': date_from,
             'dateTo': date_to
         }
@@ -113,6 +112,11 @@ class CapettiAPI:
 
         response = requests.get(url=url, params=params, headers=headers, verify=False)
 
+        if response.status_code == 401:  # Token scaduto
+            print("UserToken expired. Renewing token...")
+            self.get_user_token()
+            return self.get_history_values(date_from, date_to, start_index)  # Riprova con il nuovo token
+
         if response.status_code != 200:
             print(f"Error: {response.status_code}")
             print(response.content)
@@ -125,49 +129,56 @@ class CapettiAPI:
             print(response.content)
             return
 
+        channel_type_mapping = {
+            1: ("Temperature", "Celsius"),
+            2: ("Humidity", "%"),
+            5: ("CO2", "ppm"),
+            13: ("Pressure", "hPa"),
+            32: ("VOC", "ppb"),
+            39: ("PM2.5", "µg/m³"),
+            41: ("PM10.0", "µg/m³")
+        }
+
         pubTopic = f"IEQmidAndGUI/{self.apartment_id}"
         myPub = MyPublisher("54234")
         myPub.start()
 
-        for item in data:
+        for index, item in enumerate(data[start_index:], start=start_index):
+            sensor_mac = item['sensorMac']
+            channel_type = int(item['channelType'])
             value = item['value']
             timestamp = item['timeStamp']
-            if value == '':
+            invalid = int(item['invalid'])
+            alarm = int(item['alarm'])
+
+            if invalid == 1 or alarm == 1 or value == '':
+                continue
+            if channel_type not in channel_type_mapping:
                 continue
 
-            if sensor_ch == 1:# channel type
-                measure_type = "Temperature"
-                unit = "Celsius"
-            elif sensor_ch == 2:
-                measure_type = "Humidity" if sensor_mac not in ["0000F258", "0000F257"] else "CO2"
-                unit = "%" if sensor_mac not in ["0000F258", "0000F257"] else "ppm"
-            elif sensor_ch == 3:
-                if sensor_mac in ["0000F258", "0000F257"]:
-                    measure_type = "PM2.5"
-                    unit = "µg/m3"
-                elif sensor_mac == "0000F264":
-                    measure_type = "VOC"
-                    unit = "ppb"
-                else:
-                    measure_type = "CO2"
-                    unit = "ppm"
-            elif sensor_ch == 4:
-                measure_type = "Pressure" if sensor_mac not in ["0000F258", "0000F257"] else "PM10"
-                unit = "hPa" if sensor_mac not in ["0000F258", "0000F257"] else "µg/m3"
-            else:
-                continue  
+            measure_type, unit = channel_type_mapping[channel_type]
 
-            event = {
-                "n": f"{measure_type}/{room_id}/{sensor_mac}",
-                "u": unit,
-                "t": str((int(timestamp))),
-                "v": float(value)
-            }
-            out = {"bn": pubTopic, "e": [event]}
-            print(out)
-            myPub.myPublish(json.dumps(out), pubTopic)
-            time.sleep(0.2)
+            if sensor_mac in self.sensor_room_mapping:
+                room_id = self.sensor_room_mapping[sensor_mac]
+                # Costruisci il campo `n`
+                n_field = f"{measure_type}/{room_id}/{sensor_mac}"
+                if "/" not in n_field or len(n_field.split("/")) < 3:
+                    print(f"Invalid 'n' field: {n_field}")
+                    continue  # Salta se il campo `n` non è valido
 
+                event = {
+                    "n": n_field,
+                    "u": unit,
+                    "t": str((int(timestamp))),
+                    "v": float(value)
+                }
+                out = {"bn": pubTopic, "e": [event]}
+                print(f"Publishing message: {out}")
+                myPub.myPublish(json.dumps(out), pubTopic)
+
+            # Salva l'indice corrente in caso di errore
+            start_index = index
+            time.sleep(0.1)
     def get_current_values(self):
         pubTopic = f"IEQmidAndGUI/{self.apartment_id}"
         if not self.token:
@@ -197,44 +208,50 @@ class CapettiAPI:
 
         myPub = MyPublisher("54234")
         myPub.start()
+        channel_type_mapping = {
+        1: ("Temperature", "Celsius"),
+        2: ("Humidity", "%"),
+        5: ("CO2", "ppm"),
+        13: ("Pressure", "hPa"),
+        32: ("VOC", "ppb"),
+        39: ("PM2.5", "µg/m³"),
+        41: ("PM10.0", "µg/m³")
+        }
+
+        pubTopic = f"IEQmidAndGUI/{self.apartment_id}"
+        myPub = MyPublisher("54234")
+        myPub.start()
+
         for item in data:
             sensor_mac = item['sensorMac']
+            channel_type = int(item['channelType'])
+            value = item['value']
+            timestamp = item['timeStamp']
+            invalid = int(item['invalid'])
+            alarm = int(item['alarm'])
+
+            
+
+            measure_type, unit = channel_type_mapping[channel_type]
+
             if sensor_mac in self.sensor_room_mapping:
                 room_id = self.sensor_room_mapping[sensor_mac]
-                channels = item.get('channels', {})
+                # Costruisci il campo `n`
+                n_field = f"{measure_type}/{room_id}/{sensor_mac}"
+                if "/" not in n_field or len(n_field.split("/")) < 3:
+                    print(f"Invalid 'n' field: {n_field}")
+                    continue  # Salta se il campo `n` non è valido
 
-                for channel, value in channels.items():
-                    if channel == 1:
-                        measure_type = "Temperature"
-                        unit = "Celsius"
-                    elif channel == 2:
-                        measure_type = "Humidity" if sensor_mac not in ["0000F258", "0000F257"] else "CO2"
-                        unit = "%" if sensor_mac not in ["0000F258", "0000F257"] else "ppm"
-                    elif channel == 3:
-                        if sensor_mac in ["0000F258", "0000F257"]:
-                            measure_type = "PM2.5"
-                            unit = "µg/m3"
-                        elif sensor_mac == "0000F264":
-                            measure_type = "VOC"
-                            unit = "ppb"
-                        else:
-                            measure_type = "CO2"
-                            unit = "ppm"
-                    elif channel == 4:
-                        measure_type = "Pressure" if sensor_mac not in ["0000F258", "0000F257"] else "PM10"
-                        unit = "hPa" if sensor_mac not in ["0000F258", "0000F257"] else "µg/m3"
-                    else:
-                        continue
-
-                    event = {
-                        "n": f"{measure_type}/{room_id}/{sensor_mac}",
-                        "u": unit,
-                        "t": str((int(item['timeStamp']))),
-                        "v": float(value)
-                    }
-                    out = {"bn": pubTopic, "e": [event]}
-                    print(out)
-                    myPub.myPublish(json.dumps(out), pubTopic)
+                event = {
+                    "n": n_field,
+                    "u": unit,
+                    "t": str((int(timestamp))),
+                    "v": float(value)
+                }
+                out = {"bn": pubTopic, "e": [event]}
+                print(f"Publishing message: {out}")
+                myPub.myPublish(json.dumps(out), pubTopic)
+            time.sleep(0.1)
 
 class MyPublisher:
     def __init__(self, clientID):
@@ -292,4 +309,4 @@ if __name__ == '__main__':
         while True:
             capetti.get_sensor_list(capetti.first_request)
             capetti.first_request = False
-            time.sleep(10)  # 10 minutes
+            time.sleep(40)  # 10 minutes
