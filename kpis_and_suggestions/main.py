@@ -1,8 +1,13 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+
 import json
 import requests
-from adaptor import Adaptor
+from adaptor.adaptor import *
 from kpis_classification import *
-from pubsimulator import PubSimulator
+#from pubsimulator.pubSimulator import MyPublisher
 
 REGISTRY_URL = 'http://localhost:8080/catalog'
 MQTT_BASE_TOPIC = 'home'
@@ -36,24 +41,24 @@ def process_apartment(apartment, publisher, adaptor):
                 room_data.append(sensor_data)
 
         if room_data:
-            # Calcolo delle medie per la stanza
+            # Compute average values per room
             avg_temp = sum(d['temperature'] for d in room_data) / len(room_data)
             avg_humidity = sum(d['humidity'] for d in room_data) / len(room_data)
             avg_co2 = sum(d['co2'] for d in room_data) / len(room_data)
             avg_pm10 = sum(d.get('pm10', 0) for d in room_data) / len(room_data)
             avg_tvoc = sum(d.get('tvoc', 0) for d in room_data) / len(room_data)
 
-            # Determino la stagione prendendo il primo timestamp
+            # Determine the season based on the first timestamp
             season = get_season_from_timestamp(room_data[0]['timestamp'])
 
-            # 🔥 Calcolo Adaptive Comfort
+            # Adaptive Thermal Comfort calculation
             outdoor_temps = [d.get('outdoor_temp', avg_temp) for d in room_data][-7:]
             adaptive_comfort = adaptive_thermal_comfort(outdoor_temps)
 
             t_ext = adaptive_comfort['Running Mean Temperature'] if adaptive_comfort else avg_temp
             temp_class = classify_temperature(avg_temp, season, ventilation, t_ext)
 
-            # Classificazioni base
+            # Base classifications
             hum_class = classify_humidity(avg_humidity)
             co2_class = classify_co2(avg_co2, ventilation)
 
@@ -70,6 +75,13 @@ def process_apartment(apartment, publisher, adaptor):
             ieqi = calculate_ieqi(icone, avg_temp, avg_humidity)
             ieqi_class = classify_ieqi(ieqi)
 
+            # Compute the overall environment score
+            env_score = compute_environment_score(
+                temp_class, hum_class, co2_class, pmv_class, ppd_class, ieqi_class, icone_class
+            )
+            env_classification = classify_environment_score(env_score)
+
+            # Prepare final payload
             metrics_payload = {
                 "temperature": {"value": avg_temp, "classification": temp_class},
                 "humidity": {"value": avg_humidity, "classification": hum_class},
@@ -78,22 +90,32 @@ def process_apartment(apartment, publisher, adaptor):
                 "ppd": {"value": ppd, "classification": ppd_class},
                 "icone": {"value": icone, "classification": icone_class},
                 "ieqi": {"value": ieqi, "classification": ieqi_class},
-                "adaptive_comfort": adaptive_comfort
+                "adaptive_comfort": adaptive_comfort,
+                "environment_score": {
+                    "score_percent": env_score,
+                    "classification": env_classification
+                }
             }
 
             print(f"      Final Metrics for {room_id}: {json.dumps(metrics_payload, indent=2)}")
+
             topic = f"{MQTT_BASE_TOPIC}/{apartment_id}/{room_id}/metrics"
-            publisher.publish(topic, json.dumps(metrics_payload))
+            print(f"Publishing on topic: {topic}")
+            publisher.myPublish(json.dumps(metrics_payload), topic)
+
         else:
             print(f"      No valid data to compute metrics for {room_id}")
 
 def main():
     catalog = get_catalog()
-    publisher = Publisher()
+    publisher = MyPublisher("KPIModule", "test_topic")
+    publisher.start()
     adaptor = Adaptor()
 
     for apartment in catalog['apartments']:
         process_apartment(apartment, publisher, adaptor)
+
+    publisher.stop()
 
 if __name__ == "__main__":
     main()

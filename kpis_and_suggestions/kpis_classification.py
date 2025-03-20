@@ -194,3 +194,52 @@ def classify_icone(icone):
         return "Poor"
     else:
         return "Very Poor"
+
+#Total score
+
+def compute_environment_score(temp_class, hum_class, co2_class, pmv_class, ppd_class, ieqi_class, icone_class):
+    """
+    Compute an overall environment score (0-100) based on individual KPI classifications.
+    """
+    # Scoring system: each classification is mapped to a numerical score
+    scores = {
+        "Excellent": 100,
+        "Too Good": 100,
+        "G": 100,
+        "Good": 80,
+        "Neutral": 80,
+        "Y": 60,
+        "Acceptable": 60,
+        "Medium": 60,
+        "Moderate": 60,
+        "Poor": 40,
+        "Critical": 20,
+        "R": 20,
+        "Very Poor": 0,
+        "Very Warm": 0,
+        "Very Cold": 0
+    }
+
+    components = [temp_class, hum_class, co2_class, pmv_class, ppd_class, ieqi_class, icone_class]
+    total_score = 0
+    for score in components:
+        total_score += scores.get(score, 50)  # Default to 50 if classification is unknown
+
+    percentage_score = total_score / len(components)
+    return percentage_score
+
+
+def classify_environment_score(score):
+    """
+    Classify the overall environment score into qualitative categories.
+    """
+    if score >= 90:
+        return "Excellent"
+    elif score >= 75:
+        return "Good"
+    elif score >= 60:
+        return "Moderate"
+    elif score >= 40:
+        return "Poor"
+    else:
+        return "Critical"
