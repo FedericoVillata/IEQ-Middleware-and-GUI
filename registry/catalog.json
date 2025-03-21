@@ -7,6 +7,12 @@
       "apartments": [
         "apartment1"
       ]
+    },
+    {
+      "userId": "user0",
+      "password": "asd",
+      "permissions": "Base",
+      "apartments": ["apartment0"]
     }
   ],
   "apartments": [
@@ -70,6 +76,17 @@
         }
       ]
     }
+  ],
+  "thresholds": [
+    { "name": "temperature", "value": 22 },
+    { "name": "humidity", "value": 50 },
+    { "name": "co2", "value": 1000 },
+    { "name": "pmv", "value": 0 },
+    { "name": "ppd", "value": 10 },
+    { "name": "icone", "value": 1.5 },
+    { "name": "ieqi", "value": 1.5 },
+    { "name": "adaptive_comfort", "value": 23 },
+    { "name": "environment_score", "value": 75}
   ],
   "devices": [],
   "services": []

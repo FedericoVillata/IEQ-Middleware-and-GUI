@@ -112,7 +112,7 @@ class Adaptor(object):
                                 timeInterval = "m"
                             else:
                                 timeInterval = "h"
-                            bucket = uri[1] + "-" + uri[2]
+                            bucket = uri[2]
                             query = f'from(bucket: "{bucket}") \
                                 |> range(start: -{duration}{timeInterval}) \
                                         |> filter(fn: (r) => r["_field"] == "{params["measurament"]}")'
@@ -120,7 +120,7 @@ class Adaptor(object):
                             out = []
                             for table in tables:
                                 for row in table.records:
-                                    line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value()}
+                                    line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"]}
                                     out.append(line)
                             return json.dumps(out)
                     else:
@@ -140,7 +140,7 @@ class Adaptor(object):
                                 timeInterval = "m"
                             else:
                                 timeInterval = "h"
-                            bucket = uri[1] + "-" + uri[2]
+                            bucket =  uri[2]
                             query = f'from(bucket: "{bucket}") \
                                 |> range(start: -{duration}{timeInterval}) \
                                     |> filter(fn: (r) => r["_measurement"] == "{uri[3]}") \
@@ -156,10 +156,41 @@ class Adaptor(object):
                         raise cherrypy.HTTPError("400", "Invalid plantCode")                    
                 else:
                     raise cherrypy.HTTPError("400", "Invalid User")
+            elif uri[0] == "getDataInPeriod":
+                #http://localhost:8080/getDatainPeriod/userId/aptId/?measurament=Temperature&start=2025-03-20T08:00:00Z&stop=2025-03-21T08:00:00Z
+                #time in RFC3339 format
+                if self.checkUserPresent(uri[1]):
+                    if self.checkApartmentPresent(uri[1],uri[2]): 
+                        if params["measurament"] in self.possMeasures:
+                            try:
+                                start = params["start"]  # Get start date
+                                stop = params["stop"]    # Get stop date
+                            except KeyError:
+                                raise cherrypy.HTTPError("400", "Missing start or stop date")
+                            if self.test == 1:
+                                timeInterval = "m"
+                            else:
+                                timeInterval = "h"
+                            bucket = uri[2]
+                            query = f'from(bucket: "{bucket}") \
+                                |> range(start: {start}, stop: {stop}) \
+                                        |> filter(fn: (r) => r["_field"] == "{params["measurament"]}")'
+                            tables = self.client.query_api().query(org=self.org, query=query)
+                            out = []
+                            for table in tables:
+                                for row in table.records:
+                                    line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"]}
+                                    out.append(line)
+                            return json.dumps(out)
+                    else:
+                        raise cherrypy.HTTPError("400", "Invalid plantCode")                    
+                else:
+                    raise cherrypy.HTTPError("400", "Invalid User")   
             else:
-                raise cherrypy.HTTPError("400", "Invalid operation")
+                raise cherrypy.HTTPError("400", "Invalid operation")     
         else:
             raise cherrypy.HTTPError("400", "no uri")
+        
 
     def PUT(self,*uri,**params):
         return  

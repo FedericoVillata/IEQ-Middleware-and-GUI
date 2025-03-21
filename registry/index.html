@@ -94,6 +94,7 @@
             <h2>Add apartment</h2>
             <div class="row">
                 <input type="text" id="input1_col2" placeholder="UserId">
+                <input type="text" id="input2_col2" placeholder="Apartment Name">
             </div>
             <div id="roomsContainer">
                 <div class="row room">
@@ -228,6 +229,7 @@
         // Function to handle the submission of the Add Apartment form
         function postAddApartment(columnNumber) {
             const userId = document.getElementById(`input1_col${columnNumber}`).value;
+            const apartmentName = document.getElementById(`input2_col${columnNumber}`).value;
 
             // Collect rooms data
             const rooms = [];
@@ -261,6 +263,7 @@
             // Prepare the JSON payload
             const payload = {
                 MAC: gateways,
+                apartmentName: apartmentName,
                 userId: userId,
                 rooms: rooms
             };

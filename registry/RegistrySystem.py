@@ -118,8 +118,10 @@ class Catalog(object):
         apt_res ={
             "users": [apt_json["userId"]],
             "apartmentId": self.find_smallest_missing_apartmentId(),
+            "apartmentName": apt_json["apartmentName"],
             "MAC": apt_json["MAC"],
             "rooms": apt_json["rooms"],
+            "thresholds": self.catalog["thresholds"]
         }
         headers = {'content-type': 'application/json; charset=UTF-8'}
         response = requests.post(adaptor_url + "/addApartment", data=json.dumps(apt_res), headers=headers)
@@ -229,7 +231,20 @@ class Catalog(object):
             }
             self.catalog["services"].append(service_json)
         self.write_catalog()
-
+    def modify_thresholds(self, apt, body):
+        """Modify the thresholds of an apartment."""
+        for th in body["thresholds"]:
+            for apt_th in apt["thresholds"]:
+                if apt_th["name"] == th["name"]:
+                    apt_th["value"] = th["value"]
+        return apt
+    def reset_thresholds(self, apt):
+        """Reset the thresholds of an apartment."""
+        self.load_file()
+        base_thresholds = self.catalog["thresholds"]
+        apt["thresholds"] = base_thresholds
+        self.write_catalog()
+            
     def update_tokens(self, body):
         """
         Update tokens of a Netatmo Gateway.
@@ -336,6 +351,8 @@ class Webserver(object):
             #GET Apartments from catalog    
             if uri[0] == 'apartments':
                 return json.dumps(self.cat.catalog["apartments"])
+            if uri[0] == "thresholds":
+                return json.dumps(self.cat.catalog["thresholds"])
         
 
     def POST(self, *uri, **params):
@@ -457,7 +474,7 @@ class Webserver(object):
             return json.dumps(response) """
         
         if uri[0] == 'mod_apartment':
-            #Update plant data
+            #Update apartment data
             body = json.loads(cherrypy.request.body.read())  # Read body data
             apartmentId = body["apartmentId"]
             newapartmentId = body["new_name"]
@@ -468,6 +485,33 @@ class Webserver(object):
                     index = self.cat.catalog["apartments"].index(plant)
             self.cat.catalog['apartments'][index]['apartmentId'] = newapartmentId 
             self.cat.write_catalog()
+            if not found:   
+                response = {"status": "NOT_OK", "code": 400, "message": "Invalid apartment ID"}
+            else:
+                response = {"status": "OK", "code": 200, "message": "Data updated successfully"}
+            return json.dumps(response)
+        elif uri[0] == 'modify_thresholds':
+            body = json.loads(cherrypy.request.body.read())  # Read body data
+            apartmentId = body["apartmentId"]
+            found = False
+            for apt in self.cat.catalog["apartments"]:
+                if apt["apartmentId"] == apartmentId:
+                    found = True
+                    apt = self.cat.modify_thresholds(apt, body)
+                    self.cat.write_catalog()
+            if not found:   
+                response = {"status": "NOT_OK", "code": 400, "message": "Invalid apartment ID"}
+            else:
+                response = {"status": "OK", "code": 200, "message": "Data updated successfully"}
+            return json.dumps(response)
+        elif uri[0] == 'reset_thresholds':
+            body = json.loads(cherrypy.request.body.read())
+            apartmentId = body["apartmentId"]
+            found = False
+            for apt in self.cat.catalog["apartments"]:
+                if apt["apartmentId"] == apartmentId:
+                    found = True
+                    self.cat.reset_thresholds(apt)
             if not found:   
                 response = {"status": "NOT_OK", "code": 400, "message": "Invalid apartment ID"}
             else:
