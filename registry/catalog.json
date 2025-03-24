@@ -5,14 +5,18 @@
       "password": "asd",
       "permissions": "Base",
       "apartments": [
-        "apartment1"
+        "apartment1",
+        "apartment3"
       ]
     },
     {
-      "userId": "user0",
+      "userId": "user1",
       "password": "asd",
-      "permissions": "Base",
-      "apartments": ["apartment0"]
+      "permissions": "Technical",
+      "apartments": [
+        "apartment1",
+        "apartment3"
+      ]
     }
   ],
   "apartments": [
@@ -38,15 +42,16 @@
     },
     {
       "users": [
-        "Luca"
+        "Luca",
+        "user1"
       ],
       "apartmentId": "apartment1",
       "MAC": [
         {
           "name": "netatmo",
           "MAC": "70:ee:50:af:8a:ea",
-          "accessToken": "67251bc704bee2bc3e05de23|29340711a8de4a6917e8a54d93fdfa29",
-          "refreshToken": "67251bc704bee2bc3e05de23|8beda81bc4df97612b221ffc60af411b"
+          "accessToken": "67251bc704bee2bc3e05de23|57256725644cfa1f0258aac94e900442",
+          "refreshToken": "67251bc704bee2bc3e05de23|072e434207f4cd95ec22dfaa20ed7336"
         }
       ],
       "rooms": [
@@ -72,6 +77,59 @@
           "roomId": "bedroom",
           "sensors": [
             "03:00:00:0c:e0:b2"
+          ]
+        }
+      ]
+    },
+    {
+      "users": [
+        "Luca",
+        "user1"
+      ],
+      "apartmentId": "apartment3",
+      "MAC": [
+        {
+          "name": "capetti",
+          "MAC": "0000B2E6"
+        }
+      ],
+      "rooms": [
+        {
+          "roomId": "1C",
+          "sensors": [
+            "0000F269"
+          ]
+        },
+        {
+          "roomId": "1D",
+          "sensors": [
+            "0000B323",
+            "0000F258"
+          ]
+        },
+        {
+          "roomId": "3C",
+          "sensors": [
+            "0000F26B"
+          ]
+        },
+        {
+          "roomId": "3D",
+          "sensors": [
+            "0000F26C"
+          ]
+        },
+        {
+          "roomId": "2C",
+          "sensors": [
+            "0000F26A",
+            "0000F264"
+          ]
+        },
+        {
+          "roomId": "exterior",
+          "sensors": [
+            "0000F257"
           ]
         }
       ]

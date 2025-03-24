@@ -6,14 +6,14 @@ import time
 import paho.mqtt.client as PahoMQTT
 
 def get_users():
-    users_url = "http://localhost:8081/users"
+    users_url = "http://registry:8081/users"
     response = requests.get(users_url)
     if response.status_code != 200:
         raise Exception(f"Failed to fetch users data: {response.status_code}")
     return response.json()
 
 def get_apartments():
-    apartments_url = "http://localhost:8081/apartments"
+    apartments_url = "http://registry:8081/apartments"
     response = requests.get(apartments_url)
     if response.status_code != 200:
         raise Exception(f"Failed to fetch apartments data: {response.status_code}")

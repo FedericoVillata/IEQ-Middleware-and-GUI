@@ -12,6 +12,7 @@ services:
     networks:
       net:
         ipv4_address: 192.68.0.21
+
   adaptor:
     build: adaptor
     volumes:
@@ -25,6 +26,7 @@ services:
     networks:
       net:
         ipv4_address: 192.68.0.25
+
   registry:
     build: registry
     volumes:
@@ -35,6 +37,7 @@ services:
     networks:
       net:
         ipv4_address: 192.68.0.24
+
   pub_simulator:
     build: pubsimulator
     depends_on:
@@ -43,11 +46,35 @@ services:
     networks:
       net:
         ipv4_address: 192.68.0.26
-  
+
+  capetti:
+    build:
+      context: ./capetti_devices
+      dockerfile: Dockerfile
+    depends_on:
+      - adaptor
+    restart: always
+    networks:
+      net:
+        ipv4_address: 192.68.0.27
+
+  netatmo:
+    build:
+      context: ./netatmo_devices
+      dockerfile: Dockerfile.dockerfile
+    depends_on:
+      - registry
+      - adaptor
+    restart: always
+    networks:
+      net:
+        ipv4_address: 192.68.0.28
+
 volumes:
   influxdb-storage:
   adaptor-storage:
   registry-storage:
+
 networks:
   net:
     ipam: 

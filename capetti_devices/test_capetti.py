@@ -6,14 +6,14 @@ from pathlib import Path
 import paho.mqtt.client as PahoMQTT
 
 def get_users():
-    users_url = "http://localhost:8081/users"
+    users_url = "http://registry:8081/users"
     response = requests.get(users_url)
     if response.status_code != 200:
         raise Exception(f"Failed to fetch users data: {response.status_code}")
     return response.json()
 
 def get_apartments():
-    apartments_url = "http://localhost:8081/apartments"
+    apartments_url = "http://registry:8081/apartments"
     response = requests.get(apartments_url)
     if response.status_code != 200:
         raise Exception(f"Failed to fetch apartments data: {response.status_code}")
@@ -340,11 +340,10 @@ class CapettiAPI:
 
             if sensor_mac in self.sensor_room_mapping:
                 room_id = self.sensor_room_mapping[sensor_mac]
-                # Costruisci il campo `n`
                 n_field = f"{measure_type}/{room_id}/{sensor_mac}"
                 if "/" not in n_field or len(n_field.split("/")) < 3:
                     print(f"Invalid 'n' field: {n_field}")
-                    continue  # Salta se il campo `n` non è valido
+                    continue  
 
                 event = {
                     "n": n_field,
