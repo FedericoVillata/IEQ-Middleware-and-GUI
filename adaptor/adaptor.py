@@ -9,6 +9,7 @@ import threading
 from pathlib import Path
 import requests
 from requests.exceptions import HTTPError
+import queue
 
 P = Path(__file__).parent.absolute()
 SETTINGS = P / "settings.json"
@@ -156,6 +157,45 @@ class Adaptor(object):
                         raise cherrypy.HTTPError("400", "Invalid plantCode")                    
                 else:
                     raise cherrypy.HTTPError("400", "Invalid User")
+            elif uri[0] == "getLastRoomData":
+                #http://localhost:8080/getLastRoomData/userId/aptId/roomCode
+                if self.checkUserPresent(uri[1]):
+                    if self.checkApartmentPresent(uri[1],uri[2]): 
+                        bucket =  uri[2]
+                        query = f'from(bucket: "{bucket}") \
+                            |> range(start: -4h) \
+                                |> filter(fn: (r) => r["_measurement"] == "{uri[3]}") \
+                                    |> last()'
+                        tables = self.client.query_api().query(org=self.org, query=query)
+                        out = []
+                        for table in tables:
+                            for row in table.records:
+                                line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "measurament": row["_field"]}
+                                out.append(line)
+                        return json.dumps(out)
+                    else:
+                        raise cherrypy.HTTPError("400", "Invalid plantCode")                    
+                else:
+                    raise cherrypy.HTTPError("400", "Invalid User")
+            elif uri[0] == "getLastData":
+                #http://localhost:8080/getLastData/userId/aptId/
+                if self.checkUserPresent(uri[1]):
+                    if self.checkApartmentPresent(uri[1],uri[2]): 
+                        bucket =  uri[2]
+                        query = f'from(bucket: "{bucket}") \
+                            |> range(start: -4h) \
+                                |> last()'
+                        tables = self.client.query_api().query(org=self.org, query=query)
+                        out = []
+                        for table in tables:
+                            for row in table.records:
+                                line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"], "measurament": row["_field"]}
+                                out.append(line)
+                        return json.dumps(out)
+                    else:
+                        raise cherrypy.HTTPError("400", "Invalid plantCode")                    
+                else:
+                    raise cherrypy.HTTPError("400", "Invalid User")
             elif uri[0] == "getDataInPeriod":
                 #http://localhost:8080/getDatainPeriod/userId/aptId/?measurament=Temperature&start=2025-03-20T08:00:00Z&stop=2025-03-21T08:00:00Z
                 #time in RFC3339 format
@@ -230,75 +270,80 @@ class Adaptor(object):
                 print(f"Succesfully deleted bucket: {bucket.name}")
 
 class MySubscriber:
-        def __init__(self, clientID, topic, broker, port, write_api):
-            self.clientID = clientID
-            self._paho_mqtt = PahoMQTT.Client(clientID, False) 
-            self._paho_mqtt.on_connect = self.myOnConnect
-            self._paho_mqtt.on_message = self.myOnMessageReceived 
-            self.write_api = write_api
-            self.topic = topic
-            self.messageBroker = broker
-            self.port = port
-            with open(SETTINGS, 'r') as file:
-                data = json.load(file)
-            self.measures = data["measures"]
-            self.org = data["influx_org"]
-            self.registry_url = data["registry_url"]
-            url = self.registry_url + "/apartments"
-            self.apartments = get_request(url)
+    def __init__(self, clientID, topic, broker, port, write_api):
+        self.clientID = clientID
+        self._paho_mqtt = PahoMQTT.Client(clientID, False) 
+        self._paho_mqtt.on_connect = self.myOnConnect
+        self._paho_mqtt.on_message = self.myOnMessageReceived 
+        self.write_api = write_api
+        self.topic = topic
+        self.messageBroker = broker
+        self.port = port
+        with open(SETTINGS, 'r') as file:
+            data = json.load(file)
+        self.measures = data["measures"]
+        self.org = data["influx_org"]
+        self.registry_url = data["registry_url"]
+        url = self.registry_url + "/apartments"
+        self.apartments = get_request(url)
+        self.time = time.time()
+        
+        # Initialize message queue
+        self.message_queue = queue.Queue()
+        self.processing_thread = threading.Thread(target=self.process_messages, daemon=True)
+        self.processing_thread.start()
+
+    def update_apartments(self):
+        url = self.registry_url + "/apartments"
+        self.apartments = get_request(url)
+
+    def start(self):
+        self._paho_mqtt.connect(self.messageBroker, self.port)
+        self._paho_mqtt.loop_start()
+        self._paho_mqtt.subscribe(self.topic, 2)
+
+    def stop(self):
+        self._paho_mqtt.unsubscribe(self.topic)
+        self._paho_mqtt.loop_stop()
+        self._paho_mqtt.disconnect()
+
+    def myOnConnect(self, paho_mqtt, userdata, flags, rc):
+        print("Connected to %s with result code: %d" % (self.messageBroker, rc))
+
+    def checkApartmentPresence(self, apartmentId):
+        if time.time() > self.time + 60:
+            self.update_apartments()
             self.time = time.time()
+        return any(apt["apartmentId"] == apartmentId for apt in self.apartments)
 
-        def update_apartments(self):
-            url = self.registry_url + "/apartments"
-            self.apartments = get_request(url)
-        
+    def checkBnNotAlive(self, bn):
+        return bn not in ["updateCatalogDevice", "updateCatalogService"]
 
-        def start (self):
-            #manage connection to broker
-            self._paho_mqtt.connect(self.messageBroker, self.port)
-            self._paho_mqtt.loop_start()
-            # subscribe for a topic
-            self._paho_mqtt.subscribe(self.topic, 2)
+    def myOnMessageReceived(self, paho_mqtt, userdata, msg):
+        """Push received messages to the queue instead of processing immediately"""
+        print("Message received on topic:", msg.topic)
+        self.message_queue.put(msg)
 
-        def stop (self):
-            self._paho_mqtt.unsubscribe(self.topic)
-            self._paho_mqtt.loop_stop()
-            self._paho_mqtt.disconnect()
+    def process_messages(self):
+        """Worker thread to process messages from the queue"""
+        while True:
+            msg = self.message_queue.get()
+            if msg:
+                try:
+                    apartmentId = msg.topic.split("/")[1]
+                    msgJson = json.loads(msg.payload)
+                    if self.checkApartmentPresence(apartmentId) and self.checkBnNotAlive(msgJson["bn"]):
+                        converted = senmlToInflux(msgJson)
+                        for c in converted:
+                            print("Writing to InfluxDB:", c)
+                            self.write_api.write(bucket=apartmentId, org=self.org, record=c)
+                    else:
+                        print("Invalid message")
+                except Exception as e:
+                    print("Error processing message:", e)
+                finally:
+                    self.message_queue.task_done()
 
-        def myOnConnect (self, paho_mqtt, userdata, flags, rc):
-            print ("Connected to %s with result code: %d" % (self.messageBroker, rc))
-            
-        def checkApartmentPresence(self, apartmentId):
-            """Update users only after 10 seconds"""
-            if time.time() > self.time + 60:
-                self.update_apartments()
-                self.time = time.time()
-            for apt in self.apartments:
-                if apt["apartmentId"] == apartmentId:
-                    return True
-            return False
-        
-        def checkBnNotAlive(self, bn):
-            aliveMessages = ["updateCatalogDevice", "updateCatalogService"]
-            if bn in aliveMessages:
-                return False
-            else:
-                return True
-            
-            
-        def myOnMessageReceived (self, paho_mqtt , userdata, msg):
-            """Check it the message recived can be registered into DB adn write it"""
-            print("msg received: ", msg.topic)
-            if len(msg.topic.split("/")) > 1:
-                apartmentId = msg.topic.split("/")[1]
-                msgJson = json.loads(msg.payload)                
-                if  self.checkApartmentPresence(apartmentId) and self.checkBnNotAlive(msgJson["bn"]):
-                    converted = senmlToInflux(msgJson)
-                    for c in converted:
-                        print(c)                
-                        self.write_api.write(bucket=apartmentId, org=self.org, record= c)
-                else:
-                    print("Invalid message")  
 
 # Threads
 class MQTTreciver(threading.Thread):
