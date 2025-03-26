@@ -1,103 +1,66 @@
-# Revised KPIs Calculation Module (English version)
+# Esempio di aggiornamento del file kpis_classification.py per supportare thresholds dinamiche e parametri MET/CLO
+
 import numpy as np
 
-# Basic Classifications (Temperature, Humidity, CO2)
-def classify_temperature(temp, season, ventilation, t_ext=None):
+def classify_temperature(temp, season, ventilation, thresholds, t_ext=None):
     if temp == -999:
         return "Unknown"
 
     if ventilation == "nat" and t_ext is not None:
-        # Adaptive Comfort based on EN 16798-1 Annex B
         t_comf = 0.33 * t_ext + 18.8
-        if abs(temp - t_comf) <= 3:
+        delta_g = thresholds['adaptive_temp']['green']
+        delta_y = thresholds['adaptive_temp']['yellow']
+        if abs(temp - t_comf) <= delta_g:
             return "G"
-        elif abs(temp - t_comf) <= 4:
+        elif abs(temp - t_comf) <= delta_y:
             return "Y"
         else:
             return "R"
 
-    # Mechanical ventilation -> PMV-based classification
+    warm_g = thresholds['mechanical_temp']['warm_green']
+    cold_g = thresholds['mechanical_temp']['cold_green']
+
     if season == "warm":
-        if 23 <= temp <= 26:
+        if warm_g[0] <= temp <= warm_g[1]:
             return "G"
-        elif 20 <= temp < 23 or 26 < temp <= 27:
-            return "Y"
-        else:
+        elif temp < warm_g[0] or temp > warm_g[1]:
             return "R"
+        else:
+            return "Y"
     elif season == "cold":
-        if 20 <= temp <= 23:
+        if cold_g[0] <= temp <= cold_g[1]:
             return "G"
-        elif 19 <= temp < 20 or 23 < temp <= 26:
-            return "Y"
-        else:
+        elif temp < cold_g[0] or temp > cold_g[1]:
             return "R"
-    return "Unknown season"
+        else:
+            return "Y"
+    return "Unknown"
 
-def classify_humidity(humidity):
+
+def classify_humidity(humidity, thresholds):
     if humidity == -999:
         return "Unknown"
-    if 30 <= humidity <= 60:
+    if thresholds['humidity']['green'][0] <= humidity <= thresholds['humidity']['green'][1]:
         return "G"
-    elif 20 <= humidity < 30 or 60 < humidity <= 70:
+    elif thresholds['humidity']['yellow'][0] <= humidity <= thresholds['humidity']['yellow'][1]:
         return "Y"
     else:
         return "R"
 
 
-def classify_co2(co2, ventilation="nat"):
+def classify_co2(co2, ventilation, thresholds):
     if co2 == -999:
         return "Unknown"
 
-    if ventilation == "mech":
-        if co2 <= 600:
-            return "Too Good"
-        elif 600 < co2 <= 1200:
-            return "Good"
-        elif 1200 < co2 <= 1700:
-            return "Acceptable"
-        elif 1700 < co2 <= 2500:
-            return "Critical"
-        else:
-            return "Extreme"
+    co2_limits = thresholds['co2']['mechanical'] if ventilation == "mech" else thresholds['co2']['natural']
 
-    # Natural ventilation default thresholds
-    if co2 <= 1200:
-        return "G"
-    elif 1200 < co2 <= 1500:
-        return "Y"
-    else:
-        return "R"
+    for level, limit in co2_limits.items():
+        if co2 <= limit:
+            return level
+    return "Extreme"
 
 
-# Adaptive Comfort (EN 16798-1) with running mean temperature
-def adaptive_thermal_comfort(temps):
-    t_rm = running_mean_temperature(temps)
-    if t_rm is None:
-        return None
-    t_comf = 0.33 * t_rm + 18.8
-    return {
-        "Running Mean Temperature": t_rm,
-        "Comfort Temperature": t_comf,
-        "Acceptable Range": {
-            "Cat I": (t_comf - 3, t_comf + 2),
-            "Cat II": (t_comf - 4, t_comf + 3),
-            "Cat III": (t_comf - 5, t_comf + 4)
-        }
-    }
-
-# Running Mean Outdoor Temperature Calculation
-def running_mean_temperature(temps):
-    # temps: list of last 7 daily mean outdoor temperatures [t-1, t-2, ..., t-7]
-    if len(temps) == 7:
-        weighted_sum = temps[0] + 0.8 * temps[1] + 0.6 * temps[2] + 0.5 * temps[3] + 0.4 * temps[4] + 0.3 * temps[5] + 0.2 * temps[6]
-        return weighted_sum / 3.8
-    return None
-
-# PMV / PPD Calculation (ISO 7730) with hardcoded met and clo
-def calculate_pmv(season, ta, tr, vel, rh):
-    met = 1.2
-    clo = 0.5 if season == "warm" else 1.0
-
+def calculate_pmv(season, ta, tr, vel, rh, met, clo):
     pa = rh * 10 * np.exp(16.6536 - 4030.183 / (ta + 235))
     icl = 0.155 * clo
     m = met * 58.15
@@ -117,129 +80,14 @@ def calculate_pmv(season, ta, tr, vel, rh):
     return pmv
 
 
-def calculate_ppd(pmv):
-    return 100 - 95 * np.exp(-0.03353 * (pmv ** 4) - 0.2179 * (pmv ** 2))
+def compute_environment_score(classes, thresholds):
+    scores = thresholds['environment_score']
+    total_score = sum(scores.get(cls, 50) for cls in classes)
+    return total_score / len(classes)
 
 
-# Revised ICONE without temperature and humidity
-def calculate_icone(co2, pm10, tvoc):
-    ref_values = {"co2": 1000, "pm10": 50, "tvoc": 0.3}
-    co2_norm = co2 / ref_values["co2"]
-    pm10_norm = pm10 / ref_values["pm10"]
-    tvoc_norm = tvoc / ref_values["tvoc"]
-    return 0.4 * co2_norm + 0.3 * pm10_norm + 0.3 * tvoc_norm
-
-
-# IEQI remains temperature and humidity dependent
-def calculate_ieqi(icone, temperature, humidity):
-    temp_opt = 22
-    hum_opt = 50
-    temp_index = abs(temperature - temp_opt) / (26 - 18)
-    hum_index = abs(humidity - hum_opt) / (60 - 40)
-    return 0.5 * icone + 0.3 * temp_index + 0.2 * hum_index
-
-
-# Advanced KPIs Classifications
-def classify_pmv(pmv):
-    if pmv < -2.5:
-        return "Very Cold"
-    elif -2.5 <= pmv < -1.5:
-        return "Cold"
-    elif -1.5 <= pmv < -0.5:
-        return "Slightly Cold"
-    elif -0.5 <= pmv <= 0.5:
-        return "Neutral"
-    elif 0.5 < pmv <= 1.5:
-        return "Slightly Warm"
-    elif 1.5 < pmv <= 2.5:
-        return "Warm"
-    else:
-        return "Very Warm"
-
-
-def classify_ppd(ppd):
-    if ppd < 5:
-        return "Excellent"
-    elif 5 <= ppd < 10:
-        return "Good"
-    elif 10 <= ppd < 25:
-        return "Medium"
-    elif 25 <= ppd < 75:
-        return "Poor"
-    else:
-        return "Very Poor"
-
-
-def classify_ieqi(ieqi):
-    if ieqi <= 1.0:
-        return "Excellent"
-    elif 1.0 < ieqi <= 2.0:
-        return "Good"
-    elif 2.0 < ieqi <= 3.0:
-        return "Moderate"
-    elif 3.0 < ieqi <= 4.0:
-        return "Poor"
-    else:
-        return "Very Poor"
-
-
-def classify_icone(icone):
-    if icone <= 1.0:
-        return "Excellent"
-    elif 1.0 < icone <= 2.0:
-        return "Good"
-    elif 2.0 < icone <= 3.0:
-        return "Moderate"
-    elif 3.0 < icone <= 4.0:
-        return "Poor"
-    else:
-        return "Very Poor"
-
-#Total score
-
-def compute_environment_score(temp_class, hum_class, co2_class, pmv_class, ppd_class, ieqi_class, icone_class):
-    """
-    Compute an overall environment score (0-100) based on individual KPI classifications.
-    """
-    # Scoring system: each classification is mapped to a numerical score
-    scores = {
-        "Excellent": 100,
-        "Too Good": 100,
-        "G": 100,
-        "Good": 80,
-        "Neutral": 80,
-        "Y": 60,
-        "Acceptable": 60,
-        "Medium": 60,
-        "Moderate": 60,
-        "Poor": 40,
-        "Critical": 20,
-        "R": 20,
-        "Very Poor": 0,
-        "Very Warm": 0,
-        "Very Cold": 0
-    }
-
-    components = [temp_class, hum_class, co2_class, pmv_class, ppd_class, ieqi_class, icone_class]
-    total_score = 0
-    for score in components:
-        total_score += scores.get(score, 50)  # Default to 50 if classification is unknown
-
-    percentage_score = total_score / len(components)
-    return percentage_score
-
-
-def classify_environment_score(score):
-    """
-    Classify the overall environment score into qualitative categories.
-    """
-    if score >= 90:
-        return "Excellent"
-    elif score >= 75:
-        return "Good"
-    elif score >= 60:
-        return "Moderate"
-    elif score >= 40:
-        return "Poor"
-    else:
-        return "Critical"
+def classify_environment_score(score, thresholds):
+    for label, value in thresholds['env_classification'].items():
+        if score >= value:
+            return label
+    return "Critical"
