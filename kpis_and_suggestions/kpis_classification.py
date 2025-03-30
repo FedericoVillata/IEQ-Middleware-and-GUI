@@ -66,6 +66,7 @@ def classify_co2(co2, ventilation, settings):
         else:
             return "R"
 
+#Advanced KPIs computation
 def adaptive_thermal_comfort(temps):
     t_rm = running_mean_temperature(temps)
     if t_rm is None:
@@ -131,7 +132,7 @@ def calculate_ieqi(icone, temperature, humidity, settings):
     hum_index = abs(humidity - hum_opt) / (60 - 40)
     return 0.5 * icone + 0.3 * temp_index + 0.2 * hum_index
 
-
+#Advanced KPIs classification
 def classify_generic(metric, thresholds):
     if metric <= thresholds["G"]:
         return "G"
@@ -176,6 +177,7 @@ def classify_icone(icone, settings):
     thresholds = settings["base_settings"]["thresholds"]["icone_classification"]
     return classify_generic(icone, thresholds)
 
+#Overall enviromental score computation and classification
 def overall_score(classifications, settings):
     """
     Calculates the weighted overall environment score as a whole number percentage (0 to 100).

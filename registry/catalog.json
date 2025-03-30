@@ -135,17 +135,103 @@
       ]
     }
   ],
-  "thresholds": [
-    { "name": "temperature", "value": 22 },
-    { "name": "humidity", "value": 50 },
-    { "name": "co2", "value": 1000 },
-    { "name": "pmv", "value": 0 },
-    { "name": "ppd", "value": 10 },
-    { "name": "icone", "value": 1.5 },
-    { "name": "ieqi", "value": 1.5 },
-    { "name": "adaptive_comfort", "value": 23 },
-    { "name": "environment_score", "value": 75}
-  ],
+  "base_settings": {
+    "thresholds": {
+      "adaptive_temp": {
+        "G": 3.0,
+        "Y": 4.0,
+        "R": 100.0
+      },
+      "mechanical_temp_warm": {
+        "G": 26.0,
+        "Y": 27.0,
+        "R": 100.0
+      },
+      "mechanical_temp_cold": {
+        "G": 23.0,
+        "Y": 26.0,
+        "R": 100.0
+      },
+      "humidity": {
+        "G": 60,
+        "Y": 70,
+        "R": 100
+      },
+      "co2_natural": {
+        "G": 1200,
+        "Y": 1500,
+        "R": 10000
+      },
+      "co2_mechanical": {
+        "Too Good": 600,
+        "G": 1200,
+        "Y": 1700,
+        "R": 2500,
+        "Extreme": 10000
+      },
+      "overall_score_classification": {
+        "G": 100,
+        "Y": 70,
+        "R": 40
+      },
+      "ieqi_classification": {
+        "G": 1.0,
+        "Y": 2.0,
+        "R": 4.0
+      },
+      "icone_classification": {
+        "G": 1.0,
+        "Y": 2.0,
+        "R": 4.0
+      },
+      "ppd_classification": {
+        "G": 10,
+        "Y": 25,
+        "R": 75
+      },
+      "pmv_classification": {
+        "Very Cold": -2.5,
+        "Cold": -1.5,
+        "Slightly Cold": -0.5,
+        "Neutral": 0.5,
+        "Slightly Warm": 1.5,
+        "Warm": 2.5,
+        "Very Warm": 3.0
+      }
+    },
+    "values": [
+      { "name": "met", "value": 1.2 },
+      { "name": "clo_warm", "value": 0.5 },
+      { "name": "clo_cold", "value": 1.0 },
+      { "name": "ventilation", "value": "nat" },
+      { "name": "temp_opt", "value": 22 },
+      { "name": "hum_opt", "value": 50 }
+    ],
+    "label_to_score": {
+      "Too Good": 3,
+      "G": 3,
+      "Y": 2,
+      "R": 1,
+      "Extreme": 0,
+      "Unknown": 0,
+      "Very Cold": 0,
+      "Cold": 1,
+      "Slightly Cold": 2,
+      "Neutral": 3,
+      "Slightly Warm": 2,
+      "Warm": 1,
+      "Very Warm": 0
+    },
+    "weights": {
+      "temperature": 15.0,
+      "humidity": 10.0,
+      "co2": 20.0,
+      "pmv": 15.0,
+      "ppd": 10.0,
+      "icone": 15.0,
+      "ieqi": 15.0
+    }
+  },
   "devices": [],
   "services": []
 }
