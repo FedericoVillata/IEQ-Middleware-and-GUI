@@ -137,11 +137,7 @@
   ],
   "base_settings": {
     "thresholds": {
-      "adaptive_temp": {
-        "G": 3.0,
-        "Y": 4.0,
-        "R": 100.0
-      },
+      "adaptive_temp_category": 2,
       "mechanical_temp_warm": {
         "G": 26.0,
         "Y": 27.0,

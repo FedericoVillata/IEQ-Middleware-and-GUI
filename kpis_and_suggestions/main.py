@@ -27,8 +27,8 @@ def get_season_from_timestamp(timestamp):
 
 def process_apartment(apartment, publisher, adaptor):
     apartment_id = apartment['apartmentId']
-    ventilation = apartment.get('ventilation', 'nat')
-    print(f"\nProcessing Apartment: {apartment_id} with ventilation: {ventilation}")
+    settings = apartment.get('settings')  # Apartment-specific settings
+    print(f"\nProcessing Apartment: {apartment_id}")
 
     for room in apartment['rooms']:
         room_id = room['roomId']
@@ -56,30 +56,47 @@ def process_apartment(apartment, publisher, adaptor):
             adaptive_comfort = adaptive_thermal_comfort(outdoor_temps)
 
             t_ext = adaptive_comfort['Running Mean Temperature'] if adaptive_comfort else avg_temp
-            temp_class = classify_temperature(avg_temp, season, ventilation, t_ext)
+
+            # Get adaptive temperature category from settings (default to 2 = Cat II)
+            cat_num = settings["base_settings"]["thresholds"].get("adaptive_temp_category", 2)
+            cat_label = f"Cat {'I' if cat_num == 1 else 'II' if cat_num == 2 else 'III'}"
+
+            adaptive_range = None
+            if adaptive_comfort:
+                adaptive_range = adaptive_comfort["Acceptable Range"].get(cat_label)
+
+            temp_class = classify_temperature(avg_temp, season, t_ext, settings, adaptive_range)
 
             # Base classifications
-            hum_class = classify_humidity(avg_humidity)
-            co2_class = classify_co2(avg_co2, ventilation)
+            hum_class = classify_humidity(avg_humidity, settings)
+            co2_class = classify_co2(avg_co2, settings)
 
             # Advanced KPIs
-            pmv = calculate_pmv(season, avg_temp, avg_temp, 0.1, avg_humidity)
-            pmv_class = classify_pmv(pmv)
+            pmv = calculate_pmv(season, avg_temp, avg_temp, 0.1, avg_humidity, settings)
+            pmv_class = classify_pmv(pmv, settings)
 
             ppd = calculate_ppd(pmv)
-            ppd_class = classify_ppd(ppd)
+            ppd_class = classify_ppd(ppd, settings)
 
             icone = calculate_icone(avg_co2, avg_pm10, avg_tvoc)
-            icone_class = classify_icone(icone)
+            icone_class = classify_icone(icone, settings)
 
-            ieqi = calculate_ieqi(icone, avg_temp, avg_humidity)
-            ieqi_class = classify_ieqi(ieqi)
+            ieqi = calculate_ieqi(icone, avg_temp, avg_humidity, settings)
+            ieqi_class = classify_ieqi(ieqi, settings)
 
-            # Compute the overall environment score
-            env_score = compute_environment_score(
-                temp_class, hum_class, co2_class, pmv_class, ppd_class, ieqi_class, icone_class
-            )
-            env_classification = classify_environment_score(env_score)
+            # Overall environment score
+            classifications = {
+                "temperature": temp_class,
+                "humidity": hum_class,
+                "co2": co2_class,
+                "pmv": pmv_class,
+                "ppd": ppd_class,
+                "icone": icone_class,
+                "ieqi": ieqi_class
+            }
+
+            env_score = overall_score(classifications, settings)
+            env_classification = classify_overall_score(env_score, settings)
 
             # Prepare final payload
             metrics_payload = {

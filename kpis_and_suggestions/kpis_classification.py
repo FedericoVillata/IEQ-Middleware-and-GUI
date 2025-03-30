@@ -1,32 +1,41 @@
 import numpy as np
 
 # Basic Classifications (Temperature, Humidity, CO2)
-def classify_temperature(temp, season, ventilation, settings):
+def classify_temperature(temp, season, t_ext, settings, adaptive_range=None):
     thresholds = settings["base_settings"]["thresholds"]
+    ventilation = settings["base_settings"]["values"].get("ventilation")
+    
     if temp == -999:
         return "Unknown"
 
     if ventilation == "nat":
-        t_ext = settings.get("t_ext")
-        if t_ext is not None:
-            t_comf = 0.33 * t_ext + 18.8
-            diff = abs(temp - t_comf)
-            t_thresh = thresholds["adaptive_temp"]
-            if diff <= t_thresh["G"]:
-                return "G"
-            elif diff <= t_thresh["Y"]:
-                return "Y"
-            else:
-                return "R"
+        t_comf = 0.33 * t_ext + 18.8
 
+        if adaptive_range is None:
+            raise ValueError("adaptive_range must be provided for natural ventilation classification")
+
+        cat_min, cat_max = adaptive_range
+        cat3_min = t_comf - 5
+        cat3_max = t_comf + 4
+
+        if cat_min <= temp <= cat_max:
+            return "G"
+        elif cat3_min <= temp <= cat3_max:
+            return "Y"
+        else:
+            return "R"
+
+    # Ventilazione meccanica
     key = f"mechanical_temp_{season}"
     t_thresh = thresholds.get(key)
+    
     if temp <= t_thresh["G"]:
         return "G"
     elif temp <= t_thresh["Y"]:
         return "Y"
     else:
         return "R"
+
 
 def classify_humidity(humidity, settings):
     thresholds = settings["base_settings"]["thresholds"]["humidity"]
@@ -41,6 +50,7 @@ def classify_humidity(humidity, settings):
 
 def classify_co2(co2, ventilation, settings):
     thresholds = settings["base_settings"]["thresholds"]
+    ventilation = settings["base_settings"]["values"].get("ventilation")
     if co2 == -999:
         return "Unknown"
 
