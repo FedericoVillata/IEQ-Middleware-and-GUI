@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-
+import time
 import json
 import requests
 from adaptor.adaptor import *
@@ -98,30 +98,67 @@ def process_apartment(apartment, publisher, adaptor):
             env_score = overall_score(classifications, settings)
             env_classification = classify_overall_score(env_score, settings)
 
-            # Prepare final payload
-            metrics_payload = {
-                "temperature": {"value": avg_temp, "classification": temp_class},
-                "humidity": {"value": avg_humidity, "classification": hum_class},
-                "co2": {"value": avg_co2, "classification": co2_class},
-                "pmv": {"value": pmv, "classification": pmv_class},
-                "ppd": {"value": ppd, "classification": ppd_class},
-                "icone": {"value": icone, "classification": icone_class},
-                "ieqi": {"value": ieqi, "classification": ieqi_class},
-                "adaptive_comfort": adaptive_comfort,
-                "environment_score": {
-                    "score_percent": env_score,
-                    "classification": env_classification
-                }
-            }
+            publish_room_metrics(
+                                    publisher, apartment_id, room_id,
+                                    avg_temp, avg_humidity, avg_co2,
+                                    pmv, ppd, icone, ieqi,
+                                    temp_class, hum_class, co2_class,
+                                    pmv_class, ppd_class, icone_class, ieqi_class,
+                                    adaptive_comfort, env_score, env_classification
+                                )
 
-            print(f"      Final Metrics for {room_id}: {json.dumps(metrics_payload, indent=2)}")
+def publish_room_metrics(publisher, apartment_id, room_id, avg_temp, avg_humidity, avg_co2,
+                         pmv, ppd, icone, ieqi, temp_class, hum_class, co2_class,
+                         pmv_class, ppd_class, icone_class, ieqi_class,
+                         adaptive_comfort, env_score, env_classification):
 
-            topic = f"{MQTT_BASE_TOPIC}/{apartment_id}/{room_id}/metrics"
-            print(f"Publishing on topic: {topic}")
-            publisher.myPublish(json.dumps(metrics_payload), topic)
+    topic = f"{MQTT_BASE_TOPIC}/{apartment_id}/{room_id}/metrics"
+    base_name = topic
+    timestamp = time.time()  # Current Unix timestamp for all entries
 
-        else:
-            print(f"      No valid data to compute metrics for {room_id}")
+    # Build SenML event list
+    events = [
+        {"n": "temperature", "v": avg_temp, "t": timestamp},
+        {"n": "temperature_class", "vs": temp_class, "t": timestamp},
+
+        {"n": "humidity", "v": avg_humidity, "t": timestamp},
+        {"n": "humidity_class", "vs": hum_class, "t": timestamp},
+
+        {"n": "co2", "v": avg_co2, "t": timestamp},
+        {"n": "co2_class", "vs": co2_class, "t": timestamp},
+
+        {"n": "pmv", "v": pmv, "t": timestamp},
+        {"n": "pmv_class", "vs": pmv_class, "t": timestamp},
+
+        {"n": "ppd", "v": ppd, "t": timestamp},
+        {"n": "ppd_class", "vs": ppd_class, "t": timestamp},
+
+        {"n": "icone", "v": icone, "t": timestamp},
+        {"n": "icone_class", "vs": icone_class, "t": timestamp},
+
+        {"n": "ieqi", "v": ieqi, "t": timestamp},
+        {"n": "ieqi_class", "vs": ieqi_class, "t": timestamp},
+
+        {"n": "environment_score", "v": env_score, "t": timestamp},
+        {"n": "environment_score_class", "vs": env_classification, "t": timestamp}
+    ]
+
+    # Add adaptive comfort metrics, if available
+    if adaptive_comfort:
+        events.append({"n": "adaptive_comfort_running_mean", "v": adaptive_comfort.get("Running Mean Temperature", -999), "t": timestamp})
+        events.append({"n": "adaptive_comfort_t_comf", "v": adaptive_comfort.get("Comfort Temperature", -999), "t": timestamp})
+
+    # Build full SenML payload
+    senml_payload = {
+        "bn": base_name,
+        "e": events
+    }
+
+    print(f"      Final SenML Metrics for {room_id}: {json.dumps(senml_payload, indent=2)}")
+    print(f"Publishing on topic: {topic}")
+
+    # Publish the message
+    publisher.myPublish(json.dumps(senml_payload), topic)
 
 def main():
     catalog = get_catalog()
