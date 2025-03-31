@@ -56,7 +56,7 @@ class CapettiAPI:
             print(f"Error retrieving user token: {response.status_code}")
             print("Response Content:", response.content)
 
-    def get_sensor_list(self, first_request):
+    def get_sensor_list(self, first_request,user_id):
         if not self.token:
             print("Error: User token not available.")
             return
@@ -86,10 +86,38 @@ class CapettiAPI:
             print(f"Error parsing response: {e}")
             print(response.content)
             return
-
+        
         if first_request:
+        # Effettua la richiesta all'endpoint per ottenere l'ultimo dato
+            last_data_url = f"http://adaptor:8080/getLastData/{user_id}/{self.apartment_id}/"
+            print(f"Username: {user_id}, Apartment ID: {self.apartment_id}")
+            print(f"Fetching last data from: {last_data_url}")  # Debug
+            try:
+                last_data_response = requests.get(last_data_url)
+                if last_data_response.status_code == 200:
+                    last_data = last_data_response.json()
+                    # Trova il timestamp più recente tra i dati restituiti
+                    last_timestamps = [
+                        int(datetime.strptime(item["t"], "%m/%d/%Y, %H:%M:%S").timestamp())
+                        for item in last_data
+                    ]
+                    date_from = max(last_timestamps)  # Timestamp più recente
+                    print(f"Last data timestamp: {datetime.fromtimestamp(date_from)}")
+                elif last_data_response.status_code == 400:
+                    print("Bad Request: Please check the parameters sent to the server.")
+                    print(f"URL: {last_data_url}")
+                    print(f"Response: {last_data_response.text}")
+                    return
+                else:
+                    print(f"Failed to fetch last data: {last_data_response.status_code}")
+                    return
+            except Exception as e:
+                print(f"Error fetching last data: {e}")
+                return
+
+            # Imposta `date_to` come il timestamp corrente
             date_to = int(time.time())
-            date_from = date_to - 24 * 3600  # last 24 hours
+            print(f"Fetching history values from {datetime.fromtimestamp(date_from)} to {datetime.fromtimestamp(date_to)}")
             self.get_history_values(date_from=date_from, date_to=date_to)
         else:
             self.get_current_values()
@@ -112,7 +140,7 @@ class CapettiAPI:
 
         response = requests.get(url=url, params=params, headers=headers, verify=False)
 
-        if response.status_code == 401:  # Token scaduto
+        if response.status_code == 401:  
             print("UserToken expired. Renewing token...")
             self.get_user_token()
             return self.get_history_values(date_from, date_to, start_index)  # Riprova con il nuovo token
@@ -399,17 +427,25 @@ if __name__ == '__main__':
             continue
 
         apartment_id = apartment['apartmentId']
-        capetti = CapettiAPI(
-            username=config['username'],
-            rest_license=config['rest_license'],
-            mac=mac_address,
-            apartment_id=apartment_id,
-            sensor_room_mapping=sensor_room_mapping
-        )
+        apartment_users = [
+            user for user in users if apartment_id in user.get('apartments', [])
+        ]
 
-        capetti.get_user_token()
+        for user in apartment_users:  # Itera sugli utenti associati all'appartamento
+            user_id = user['userId']
+            print(f"Processing user: {user_id} for apartment: {apartment_id}")
 
-        while True:
-            capetti.get_sensor_list(capetti.first_request)
-            capetti.first_request = False
-            time.sleep(40)  # 10 minutes
+            capetti = CapettiAPI(
+                username=config["username"],  # Usa l'userId corretto
+                rest_license=config['rest_license'],
+                mac=mac_address,
+                apartment_id=apartment_id,
+                sensor_room_mapping=sensor_room_mapping
+            )
+
+            capetti.get_user_token()
+
+            while True:
+                capetti.get_sensor_list(capetti.first_request, user_id)
+                capetti.first_request = False
+                time.sleep(40)  # 10 minutes
