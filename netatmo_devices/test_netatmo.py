@@ -70,14 +70,43 @@ class NetatmoAPI:
         self._accessToken = resp['access_token']
         self.expiration = int(resp['expire_in'] + time.time())
 
-    def get_measurements(self, apartment_id):
+    def get_measurements(self, apartment_id, user_id):
         if self.first_request:
-            date_start = datetime.now() - timedelta(days=1)
+            last_data_url = f"http://adaptor:8080/getLastData/{user_id}/{apartment_id}/"
+            print(f"Username: {user_id}, Apartment ID: {apartment_id}")
+            print(f"Fetching last data from: {last_data_url}")  # Debug
+            try:
+                last_data_response = requests.get(last_data_url)
+                if last_data_response.status_code == 200:
+                    last_data = last_data_response.json()
+                    last_timestamps = [
+                        int(datetime.strptime(item["t"], "%m/%d/%Y, %H:%M:%S").timestamp())
+                        for item in last_data
+                    ]
+                    if last_timestamps:
+                        date_start = datetime.fromtimestamp(max(last_timestamps))  # Convert to datetime
+                        print(f"Last data timestamp: {date_start}")
+                    else:
+                        print("No previous data found. Defaulting to the last 24 hours.")
+                        date_start = datetime.now() - timedelta(days=1)
+                elif last_data_response.status_code == 400:
+                    print("Bad Request: Please check the parameters sent to the server.")
+                    print(f"URL: {last_data_url}")
+                    print(f"Response: {last_data_response.text}")
+                    return
+                else:
+                    print(f"Failed to fetch last data: {last_data_response.status_code}")
+                    return
+            except Exception as e:
+                print(f"Error fetching last data: {e}")
+                return
+
             self.first_request = False
         else:
             date_start = datetime.now() - timedelta(minutes=30)
         
-        date_start = int(date_start.replace(tzinfo=None).timestamp())
+        # Convert `date_start` to a timestamp
+        date_start = int(date_start.timestamp())
         date_end = int(datetime.now().timestamp())
 
         myPub = MyPublisher("54234")
@@ -132,7 +161,6 @@ class NetatmoAPI:
             print(f"Data for {module_name}:")
             print(self.data[module_name].head())
 
-            
             for data_type in ['Temperature', 'Humidity', 'CO2', 'Pressure', 'Noise']:
                 Event = []
                 for i, val in enumerate(values[data_type]):
@@ -186,19 +214,25 @@ if __name__ == '__main__':
         try:
             mac_address, access_token, refresh_token, sensors = process_netatmo_data(apartment)
             apartment_id = apartment['apartmentId']
-            netatmo = NetatmoAPI(
-                clientId=config['client_id'],
-                clientSecret=config['client_secret'],
-                username=config['email'],
-                password=config['password'],
-                accessToken=access_token,
-                mac=mac_address,
-                modules=sensors,
-                scope='read_station'
-            )
-            while True:
-                netatmo.get_measurements(apartment_id)
-                time.sleep(1800)  # Attendi 30 minuti prima della prossima richiesta
+            apartment_users = [
+            user for user in users if apartment_id in user.get('apartments', [])
+            ]
+
+            for user in apartment_users:  # Itera sugli utenti associati all'appartamento
+                user_id = user['userId']
+                netatmo = NetatmoAPI(
+                    clientId=config['client_id'],
+                    clientSecret=config['client_secret'],
+                    username=config['email'],
+                    password=config['password'],
+                    accessToken=access_token,
+                    mac=mac_address,
+                    modules=sensors,
+                    scope='read_station'
+                )
+                while True:
+                    netatmo.get_measurements(apartment_id,user_id)
+                    time.sleep(1800)  # Attendi 30 minuti prima della prossima richiesta
         except Exception as e:
             print(f"Error processing apartment {apartment.get('apartmentId', 'unknown')}: {e}")
             continue
