@@ -7,7 +7,7 @@ import json
 import requests
 from adaptor.adaptor import *
 from kpis_classification import *
-#from pubsimulator.pubSimulator import MyPublisher
+from pubsimulator.publisher import MyPublisher
 
 REGISTRY_URL = 'http://localhost:8080/catalog'
 MQTT_BASE_TOPIC = 'home'

@@ -195,14 +195,14 @@
         "Very Warm": 3.0
       }
     },
-    "values": [
-      { "name": "met", "value": 1.2 },
-      { "name": "clo_warm", "value": 0.5 },
-      { "name": "clo_cold", "value": 1.0 },
-      { "name": "ventilation", "value": "nat" },
-      { "name": "temp_opt", "value": 22 },
-      { "name": "hum_opt", "value": 50 }
-    ],
+    "values": {
+      "met": 1.2,
+      "clo_warm": 0.5,
+      "clo_cold": 1.0,
+      "ventilation": "nat",
+      "temp_opt": 22,
+      "hum_opt": 50
+    },
     "label_to_score": {
       "Too Good": 3,
       "G": 3,
