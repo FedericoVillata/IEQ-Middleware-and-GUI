@@ -121,7 +121,7 @@ class Catalog(object):
             "apartmentName": apt_json["apartmentName"],
             "MAC": apt_json["MAC"],
             "rooms": apt_json["rooms"],
-            "thresholds": self.catalog["thresholds"]
+            "settings": self.catalog["base_settings"]
         }
         headers = {'content-type': 'application/json; charset=UTF-8'}
         response = requests.post(adaptor_url + "/addApartment", data=json.dumps(apt_res), headers=headers)
@@ -231,18 +231,23 @@ class Catalog(object):
             }
             self.catalog["services"].append(service_json)
         self.write_catalog()
-    def modify_thresholds(self, apt, body):
+    def modify_settings(self, apt, body):
         """Modify the thresholds of an apartment."""
-        for th in body["thresholds"]:
-            for apt_th in apt["thresholds"]:
-                if apt_th["name"] == th["name"]:
-                    apt_th["value"] = th["value"]
+        
+        for key, value in body["settings"].items():
+            if key in apt["settings"]:
+                if isinstance(apt["settings"][key], dict) and isinstance(value, dict):
+                    for sub_key, sub_value in value.items():
+                        if sub_key in apt["settings"][key]:
+                            apt["settings"][key][sub_key] = sub_value  
+                elif isinstance(value, (int, float, str, bool)):
+                    apt["settings"][key] = value  
         return apt
-    def reset_thresholds(self, apt):
+        
+    def reset_settings(self, apt):
         """Reset the thresholds of an apartment."""
         self.load_file()
-        base_thresholds = self.catalog["thresholds"]
-        apt["thresholds"] = base_thresholds
+        apt["settings"] = self.catalog["base_settings"]
         self.write_catalog()
             
     def update_tokens(self, body):
@@ -351,8 +356,8 @@ class Webserver(object):
             #GET Apartments from catalog    
             if uri[0] == 'apartments':
                 return json.dumps(self.cat.catalog["apartments"])
-            if uri[0] == "thresholds":
-                return json.dumps(self.cat.catalog["thresholds"])
+            if uri[0] == "base_settings":
+                return json.dumps(self.cat.catalog["base_settings"])
         
 
     def POST(self, *uri, **params):
@@ -490,28 +495,28 @@ class Webserver(object):
             else:
                 response = {"status": "OK", "code": 200, "message": "Data updated successfully"}
             return json.dumps(response)
-        elif uri[0] == 'modify_thresholds':
+        elif uri[0] == 'modify_settings':
             body = json.loads(cherrypy.request.body.read())  # Read body data
             apartmentId = body["apartmentId"]
             found = False
             for apt in self.cat.catalog["apartments"]:
                 if apt["apartmentId"] == apartmentId:
                     found = True
-                    apt = self.cat.modify_thresholds(apt, body)
+                    apt = self.cat.modify_settings(apt, body)
                     self.cat.write_catalog()
             if not found:   
                 response = {"status": "NOT_OK", "code": 400, "message": "Invalid apartment ID"}
             else:
                 response = {"status": "OK", "code": 200, "message": "Data updated successfully"}
             return json.dumps(response)
-        elif uri[0] == 'reset_thresholds':
+        elif uri[0] == 'reset_settings':
             body = json.loads(cherrypy.request.body.read())
             apartmentId = body["apartmentId"]
             found = False
             for apt in self.cat.catalog["apartments"]:
                 if apt["apartmentId"] == apartmentId:
                     found = True
-                    self.cat.reset_thresholds(apt)
+                    self.cat.reset_settings(apt)
             if not found:   
                 response = {"status": "NOT_OK", "code": 400, "message": "Invalid apartment ID"}
             else:
