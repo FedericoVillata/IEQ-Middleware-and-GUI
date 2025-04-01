@@ -13,12 +13,22 @@ from pubsimulator.publisher import MyPublisher
 
 
 class KPIEngine:
-    # Constants for registry and MQTT
-    ADAPTOR_BASE = "http://adaptor:8080"
-    REGISTRY_URL = "http://registry:8081/catalog"
-    MQTT_BASE_TOPIC = 'home'
 
     def __init__(self):
+        # Load config
+        with open(os.path.join(os.path.dirname(__file__), 'config.json')) as f:
+            self.config = json.load(f)
+
+        # Set URLs and base topic
+        try:
+            self.ADAPTOR_BASE = self.config["adaptor_url"]
+            self.REGISTRY_URL = self.config["registry_url"]
+            self.MQTT_BASE_TOPIC = self.config["base_topic"]
+
+        except KeyError as e:
+            raise ValueError(f"Missing configuration key: {e}")
+
+
         # Load catalog, initialize publisher and adaptor
         self.catalog = self.get_catalog()
         self.publisher = MyPublisher("KPIModule", "test_topic")
@@ -36,7 +46,6 @@ class KPIEngine:
                 time.sleep(delay)
         print("Failed to fetch catalog after several retries. Exiting.")
         exit(1)
-
 
     def get_season_from_timestamp(self, timestamp):
         # Extract season from timestamp (cold or warm)
