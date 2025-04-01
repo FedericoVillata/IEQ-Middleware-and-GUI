@@ -1,233 +1,301 @@
+#!/usr/bin/env python3
+# plot_service.py
+
 import cherrypy
 import json
+import requests
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-from datetime import datetime, timedelta
-from io import BytesIO
+from datetime import datetime
+from io import BytesIO, StringIO
+import csv
+from collections import defaultdict
 
-class ChartService(object):
-    exposed = True
+class PlotService:
 
-    def GET(self, *uri, **params):
+    # --------------------------------------------------------------------------------
+    # Adjust this base URL to your actual Adaptor's address:
+    # If you're running in Docker with a service name "adaptor", you can do:
+    #   ADAPTOR_BASE = "http://adaptor:8080"
+    # or if you prefer using the direct IP from docker-compose:
+    #   ADAPTOR_BASE = "http://192.68.0.25:8080"
+    # Adjust as needed:
+    # --------------------------------------------------------------------------------
+    ADAPTOR_BASE = "http://adaptor:8080"
+
+    @cherrypy.expose
+    def generateCarpetPlot(self, userId="user0", apartmentId="apartment0",
+                           measure="Temperature", download=None, room=None,
+                           start=None, end=None, duration=None, **kwargs):
         """
-        /generateCarpetPlot  => restituisce il carpet plot
-        /generateLineChart   => restituisce la line chart
+        GET /generateCarpetPlot?userId=USER&apartmentId=APT&measure=MEAS&room=ROOM&start=YYYY-MM-DD&end=YYYY-MM-DD&duration=HOURS&download=png
+        If 'start' and 'end' are provided, calls /getDatainPeriod on the adaptor.
+        Else if 'duration' is provided, calls /getApartmentData with that duration.
+        Then filters by 'room' if provided.
+        Finally creates a 'carpet plot' of the result with a fixed color scale for temperature.
         """
-        if len(uri) == 1:
-            if uri[0] == "generateCarpetPlot":
-                return self._generate_carpet()
-            elif uri[0] == "generateLineChart":
-                return self._generate_line_chart(params)
-            elif uri[0] == "getLastWeekRange":
-                return self._get_last_week_range()
-        raise cherrypy.HTTPError(404, "Endpoint not found.")
-    
-    def _get_last_week_range(self):
-        """
-        Legge output.json, calcola la data massima, e restituisce
-        start=(max_dt - 7gg) e end=max_dt in formato JSON.
-        Esempio di risposta:
-        {
-          "start": "2025-03-20T00:00:00",
-          "end":   "2025-03-27T23:59:59"
-        }
-        """
-        with open("output.json", "r") as f:
-            data = json.load(f)
+        print("DEBUG: generateCarpetPlot =>", userId, apartmentId, measure, room, start, end, duration, download)
+
+        data = self._fetch_data(userId, apartmentId, measure, start, end, duration)
+
+        # Filter by room if requested
+        if room:
+            before_len = len(data)
+            data = [d for d in data if d.get("room") == room]
+            print(f"DEBUG: after room filter => {len(data)}/{before_len}")
 
         if not data:
-            # Se non ci sono dati, restituiamo un JSON con campi vuoti o simile
-            cherrypy.response.status = 200
-            return json.dumps({"start": None, "end": None})
+            return self._no_data_image(download=download)
 
-        # Converte i timestamp
-        dt_objects = []
+        # Convert times and values
+        times, values = [], []
         for item in data:
-            ts = item["timestamp"]
-            dt = datetime.fromisoformat(ts.replace("Z", ""))
-            dt_objects.append(dt)
+            dt = self._parse_time(item["t"])
+            val = item["v"]
+            times.append(dt)
+            values.append(val)
 
-        max_dt = max(dt_objects)
+        if not times:
+            return self._no_data_image(download=download)
 
-        # L'ultima settimana: [start, end]
-        start_dt = max_dt - timedelta(days=7)
-        # se vuoi includere i dati di quell'ultimo giorno fino a 23:59:59,
-        # potresti farlo, ma in genere basta la data di max_dt
-        end_dt = max_dt
-
-        # Formattiamo i due datetime in iso con "Z"
-        # Esempio: "2025-03-20T00:00:00Z"
-        start_str = start_dt.isoformat() + "Z"
-        end_str   = end_dt.isoformat() + "Z"
-
-        cherrypy.response.headers['Content-Type'] = "application/json"
-        return json.dumps({"start": start_str, "end": end_str})
-
-    def _generate_carpet(self):
-        # 1) Leggi i dati da output.json 
-        with open("output.json", "r") as f:
-            data = json.load(f)
-
-        # Estrai timestamp e temperature
-        timestamps = [item["timestamp"] for item in data]
-        temps = [item["temperature"] for item in data]
-
-        dt_objects = [
-            datetime.fromisoformat(ts.replace("Z", "")) 
-            for ts in timestamps
-        ]
-
-        # 2) Riorganizza i dati in un dizionario: dict[Giorno] = array di 48 fasce orarie (una ogni 30 min)
-        #    Dove l'indice 0..47 corrisponde a (ora * 2 + 0/1 in base ai minuti).
-        from collections import defaultdict
-        # Avremo day_dict[ 'YYYY-MM-DD' ] = [ nan, nan, ..., 48 volte ... ]
-        day_dict = defaultdict(lambda: [np.nan]*48)
-
+        # Build a day x half-hour matrix for the carpet plot
         def halfhour_index(dtobj):
-            return dtobj.hour*2 + (1 if dtobj.minute>=30 else 0)
+            return dtobj.hour * 2 + (1 if dtobj.minute >= 30 else 0)
 
-        for dt, temp in zip(dt_objects, temps):
+        day_dict = defaultdict(lambda: [np.nan] * 48)
+        for dt, val in zip(times, values):
             day_str = dt.strftime("%Y-%m-%d")
-            hh_idx = halfhour_index(dt)
-            day_dict[day_str][hh_idx] = temp
+            idx = halfhour_index(dt)
+            day_dict[day_str][idx] = val
 
-        # 3) Ordina i giorni in ordine cronologico
         all_days = sorted(day_dict.keys())
+        if not all_days:
+            return self._no_data_image(download=download)
+
         n_days = len(all_days)
+        matrix = np.zeros((48, n_days), dtype=float)
+        for col, day_str in enumerate(all_days):
+            matrix[:, col] = day_dict[day_str]
 
-        # Crea matrice shape = (48, n_days)
-        # riga = fascia oraria (0..47)
-        # colonna = day index
-        matrix = np.zeros((48, n_days))
-        for col, day in enumerate(all_days):
-            row_values = day_dict[day]  # array di lunghezza 48
-            matrix[:, col] = row_values
-
-        # 4) Genera la figura. 
-        #    - X => colonna => giorni
-        #    - Y => riga => 48 fasce orarie
+        # Plot
         fig, ax = plt.subplots(figsize=(12, 6))
 
+        # For temperature example: 10 => 40 so 20C is greenish in 'jet' colormap
+        vmin_val = 10
+        vmax_val = 40
         cax = ax.imshow(
             matrix,
             origin='lower',
             aspect='auto',
             cmap='jet',
-            vmin=9.5, 
-            vmax=31.4
+            vmin=vmin_val,
+            vmax=vmax_val
         )
+        plt.colorbar(cax, ax=ax, label=f"{measure}")
 
-        plt.colorbar(cax, ax=ax, label="Temperature (°C)")
-
-        # Impostiamo i tick dell’asse Y = fasce orarie
-        # 0..47 => label ogni ora
-        y_ticks = np.arange(0,48,2)  # label ogni ora (2 half-hour = 1h)
-        y_labels = [f"{hour:02d}:00" for hour in range(24)]
+        # Y-axis => half-hours
+        y_ticks = np.arange(0, 48, 2)
+        y_labels = [f"{h:02d}:00" for h in range(24)]
         ax.set_yticks(y_ticks)
         ax.set_yticklabels(y_labels)
 
-        # Asse X = giorni
+        # X-axis => days
         x_ticks = np.arange(n_days)
-        # Metti un tick ogni X giorni, altrimenti se ci sono 300 giorni i tick si sovrappongono
-        # Ad esempio uno ogni 10 giorni
-        step_x = max(1, n_days//10)
+        step_x = max(1, n_days // 10)
         ax.set_xticks(x_ticks[::step_x])
         ax.set_xticklabels([all_days[i] for i in x_ticks[::step_x]], rotation=45)
 
         ax.set_xlabel("Date")
         ax.set_ylabel("Time of Day")
-        ax.set_title("Temperature Carpet Plot (Days=Columns, Hours=Rows)")
+        ax.set_title(f"{measure} Carpet Plot")
 
         plt.tight_layout()
-
-        # Salvo in memoria e restituisco
-        buffer = BytesIO()
-        plt.savefig(buffer, format='png', dpi=100)
+        buf = BytesIO()
+        plt.savefig(buf, format='png', dpi=100)
         plt.close(fig)
-
-        buffer.seek(0)
-        cherrypy.response.headers['Content-Type'] = "image/png"
-        return buffer.getvalue()
-        pass
-
-    def _generate_line_chart(self, params):
-        # 1) Recupera i parametri "start" e "end" se presenti
-        start_str = params.get("start", None)
-        end_str   = params.get("end", None)
-
-        # 2) Carica i dati da output.json
-        with open("output.json", "r") as f:
-            data = json.load(f)
-
-        # 3) Estrai e converte i timestamp
-        timestamps = [d["timestamp"] for d in data]
-        temps = [d["temperature"] for d in data]
-        dt_objects = [datetime.fromisoformat(ts.replace("Z","")) for ts in timestamps]
-
-        # 4) Trova la data massima
-        if not dt_objects:
-            # Se output.json è vuoto, gestisci come vuoi:
-            # disegna un grafico vuoto o restituisci un messaggio
-            pass
-        max_dt = max(dt_objects)
-
-        # 5) Se non ho "start" o "end" => default ultima settimana
-        if start_str:
-            start_dt = datetime.fromisoformat(start_str.replace("Z",""))
-        else:
-            # start = max_dt - 7 giorni
-            start_dt = max_dt - timedelta(days=7)
-
-        if end_str:
-            end_dt = datetime.fromisoformat(end_str.replace("Z",""))
-        else:
-            # end = max_dt
-            end_dt = max_dt
-
-        # 6) Filtra i dati
-        filtered_times = []
-        filtered_temps = []
-        for dt, temp in zip(dt_objects, temps):
-            if start_dt <= dt <= end_dt:
-                filtered_times.append(dt)
-                filtered_temps.append(temp)
-
-        # 7) Crea il grafico a linee (come prima)
-        fig, ax = plt.subplots(figsize=(10, 5))
-        if filtered_times:
-            ax.plot(filtered_times, filtered_temps, marker='o', linewidth=2)
-        else:
-            ax.text(0.5, 0.5, 'No data in this range', ha='center', va='center', transform=ax.transAxes)
-
-        ax.set_title("Temperature (Line Chart)")
-        ax.set_xlabel("Time")
-        ax.set_ylabel("Temperature (°C)")
-        fig.autofmt_xdate()
-
-        buffer = BytesIO()
-        plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight')
-        plt.close(fig)
-        buffer.seek(0)
+        buf.seek(0)
 
         cherrypy.response.headers["Content-Type"] = "image/png"
-        return buffer.getvalue()
+        if download == "png":
+            cherrypy.response.headers["Content-Disposition"] = f'attachment; filename="carpet_{measure}.png"'
+        return buf.getvalue()
 
+    @cherrypy.expose
+    def generateLineChart(self, userId="user0", apartmentId="apartment0",
+                          measure="Temperature", download=None, room=None,
+                          start=None, end=None, duration=None, **kwargs):
+        """
+        GET /generateLineChart?userId=USER&apartmentId=APT&measure=MEAS&room=ROOM&start=YYYY-MM-DD&end=YYYY-MM-DD&duration=HOURS&download=png
+        Similar to generateCarpetPlot but produces a line chart.
+        """
+        print("DEBUG: generateLineChart =>", userId, apartmentId, measure, room, start, end, duration, download)
 
-def start_service():
+        data = self._fetch_data(userId, apartmentId, measure, start, end, duration)
+
+        # Filter by room if requested
+        if room:
+            before_len = len(data)
+            data = [d for d in data if d.get("room") == room]
+            print(f"DEBUG: after room filter => {len(data)}/{before_len}")
+
+        if not data:
+            return self._no_data_image(download=download)
+
+        # Convert times and values
+        times, values = [], []
+        for item in data:
+            dt = self._parse_time(item["t"])
+            val = item["v"]
+            times.append(dt)
+            values.append(val)
+
+        if not times:
+            return self._no_data_image(download=download)
+
+        # Sort by date
+        combined = sorted(zip(times, values), key=lambda x: x[0])
+        times = [pair[0] for pair in combined]
+        values = [pair[1] for pair in combined]
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.plot(times, values, marker='o', linewidth=2)
+        ax.set_title(f"{measure} (Line Chart)")
+        ax.set_xlabel("Time")
+        ax.set_ylabel(measure)
+        fig.autofmt_xdate()
+
+        plt.tight_layout()
+        buf = BytesIO()
+        plt.savefig(buf, format='png', dpi=100)
+        plt.close(fig)
+        buf.seek(0)
+
+        cherrypy.response.headers["Content-Type"] = "image/png"
+        if download == "png":
+            cherrypy.response.headers["Content-Disposition"] = f'attachment; filename="line_{measure}.png"'
+        return buf.getvalue()
+
+    @cherrypy.expose
+    def exportCsv(self, userId="user0", apartmentId="apartment0",
+                  measure="Temperature", room=None, start=None, end=None, duration=None, **kwargs):
+        """
+        GET /exportCsv?userId=USER&apartmentId=APT&measure=MEAS&room=ROOM&start=YYYY-MM-DD&end=YYYY-MM-DD&duration=HOURS
+        Exports the data in CSV format (timestamp, value).
+        """
+        print("DEBUG: exportCsv =>", userId, apartmentId, measure, room, start, end, duration)
+
+        data = self._fetch_data(userId, apartmentId, measure, start, end, duration)
+
+        # Filter by room if requested
+        if room:
+            before_len = len(data)
+            data = [d for d in data if d.get("room") == room]
+            print(f"DEBUG: after room filter => {len(data)}/{before_len}")
+
+        cherrypy.response.headers["Content-Type"] = "text/csv; charset=utf-8"
+        cherrypy.response.headers["Content-Disposition"] = f'attachment; filename="{measure}_data.csv"'
+
+        if not data:
+            return "timestamp,value\n"
+
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["timestamp", measure])
+        for item in data:
+            dt = self._parse_time(item["t"])
+            val = item["v"]
+            writer.writerow([dt.isoformat(), val])
+
+        return output.getvalue()
+
+    # ----------------------------- HELPER METHODS ------------------------------
+    def _fetch_data(self, userId, apartmentId, measure, start, end, duration):
+        """
+        If 'start' and 'end' are provided => calls /getDatainPeriod
+        else if 'duration' => calls /getApartmentData
+        else => defaults to 168 hours
+        """
+        if start and end:
+            # date range approach
+            adaptor_url = f"{self.ADAPTOR_BASE}/getDatainPeriod/{userId}/{apartmentId}"
+            params = {
+                "measurament": measure,
+                "start": f"{start}T00:00:00Z",
+                "stop":  f"{end}T23:59:59Z",
+            }
+            print("DEBUG: calling getDatainPeriod =>", adaptor_url, params)
+        else:
+            # fallback to duration approach
+            dur = duration if duration else "168"
+            adaptor_url = f"{self.ADAPTOR_BASE}/getApartmentData/{userId}/{apartmentId}"
+            params = {
+                "measurament": measure,
+                "duration": dur,
+            }
+            print("DEBUG: calling getApartmentData =>", adaptor_url, params)
+
+        results = []
+        try:
+            resp = requests.get(adaptor_url, params=params, timeout=10)
+            print("DEBUG: adaptor response =>", resp.status_code)
+            if resp.status_code == 200:
+                results = resp.json()
+                print("DEBUG: parsed JSON =>", len(results), "records")
+            else:
+                print("ERROR: adaptor returned status", resp.status_code)
+        except Exception as exc:
+            print("ERROR in _fetch_data:", exc)
+        return results
+
+    def _parse_time(self, timestr):
+        """
+        Attempt to parse time from the adaptor's JSON. 
+        The adaptor often returns "MM/DD/YYYY, HH:MM:SS" or ISO8601.
+        """
+        fmts = ["%m/%d/%Y, %H:%M:%S", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d %H:%M:%S"]
+        for f in fmts:
+            try:
+                return datetime.strptime(timestr, f)
+            except ValueError:
+                pass
+        # fallback
+        return datetime.now()
+
+    def _no_data_image(self, download=None):
+        """
+        Return a small placeholder image if no data is available.
+        """
+        fig, ax = plt.subplots(figsize=(2, 1))
+        ax.text(0.5, 0.5, "No Data", ha="center", va="center")
+        ax.axis("off")
+
+        buf = BytesIO()
+        plt.savefig(buf, format="png", dpi=50)
+        plt.close(fig)
+        buf.seek(0)
+
+        cherrypy.response.headers["Content-Type"] = "image/png"
+        if download == "png":
+            cherrypy.response.headers["Content-Disposition"] = 'attachment; filename="nodata.png"'
+        return buf.getvalue()
+
+def main():
+    cherrypy.config.update({
+        'server.socket_host': '0.0.0.0',
+        'server.socket_port': 9090
+    })
+
     conf = {
         '/': {
-            'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
+            'tools.sessions.on': True
         }
     }
-    cherrypy.tree.mount(ChartService(), '/', conf)
-    cherrypy.config.update({
-        'server.socket_port': 9092,
-        'server.socket_host': '0.0.0.0'
-    })
+
+    cherrypy.tree.mount(PlotService(), '/', conf)
     cherrypy.engine.start()
     cherrypy.engine.block()
 
-if __name__ == "__main__":
-    start_service()
+if __name__ == '__main__':
+    main()

@@ -1,10 +1,13 @@
 import numpy as np
 
-# Basic Classifications (Temperature, Humidity, CO2)
+# -----------------------------
+# Basic Classifications
+# -----------------------------
+
 def classify_temperature(temp, season, t_ext, settings, adaptive_range=None):
-    thresholds = settings["base_settings"]["thresholds"]
-    ventilation = settings["base_settings"]["values"].get("ventilation")
-    
+    thresholds = settings["thresholds"]
+    ventilation = settings["values"].get("ventilation")
+
     if temp == -999:
         return "Unknown"
 
@@ -25,10 +28,10 @@ def classify_temperature(temp, season, t_ext, settings, adaptive_range=None):
         else:
             return "R"
 
-    # Ventilazione meccanica
+    # Mechanical ventilation thresholds
     key = f"mechanical_temp_{season}"
     t_thresh = thresholds.get(key)
-    
+
     if temp <= t_thresh["G"]:
         return "G"
     elif temp <= t_thresh["Y"]:
@@ -36,9 +39,8 @@ def classify_temperature(temp, season, t_ext, settings, adaptive_range=None):
     else:
         return "R"
 
-
 def classify_humidity(humidity, settings):
-    thresholds = settings["base_settings"]["thresholds"]["humidity"]
+    thresholds = settings["thresholds"]["humidity"]
     if humidity == -999:
         return "Unknown"
     if humidity <= thresholds["G"]:
@@ -48,9 +50,10 @@ def classify_humidity(humidity, settings):
     else:
         return "R"
 
-def classify_co2(co2, ventilation, settings):
-    thresholds = settings["base_settings"]["thresholds"]
-    ventilation = settings["base_settings"]["values"].get("ventilation")
+def classify_co2(co2, settings):
+    thresholds = settings["thresholds"]
+    ventilation = settings["values"].get("ventilation")
+
     if co2 == -999:
         return "Unknown"
 
@@ -76,7 +79,10 @@ def classify_co2(co2, ventilation, settings):
         else:
             return "R"
 
-#Advanced KPIs computation
+# -----------------------------
+# Adaptive Thermal Comfort
+# -----------------------------
+
 def adaptive_thermal_comfort(temps):
     t_rm = running_mean_temperature(temps)
     if t_rm is None:
@@ -99,11 +105,15 @@ def running_mean_temperature(temps):
         return weighted_sum / 3.8
     return None
 
+# -----------------------------
+# PMV and PPD Calculations
+# -----------------------------
+
 def calculate_pmv(season, ta, tr, vel, rh, settings):
-    values = settings["base_settings"]["values"]
-    met = next((v["value"] for v in values if v["name"] == "met"), 1.2)
+    values = settings["values"]
+    met = values.get("met", 1.2)
     clo_key = "clo_warm" if season == "warm" else "clo_cold"
-    clo = next((v["value"] for v in values if v["name"] == clo_key), 1.0)
+    clo = values.get(clo_key, 1.0)
 
     pa = rh * 10 * np.exp(16.6536 - 4030.183 / (ta + 235))
     icl = 0.155 * clo
@@ -126,6 +136,10 @@ def calculate_pmv(season, ta, tr, vel, rh, settings):
 def calculate_ppd(pmv):
     return 100 - 95 * np.exp(-0.03353 * (pmv ** 4) - 0.2179 * (pmv ** 2))
 
+# -----------------------------
+# IAQ Indices
+# -----------------------------
+
 def calculate_icone(co2, pm10, tvoc):
     ref_values = {"co2": 1000, "pm10": 50, "tvoc": 0.3}
     co2_norm = co2 / ref_values["co2"]
@@ -134,15 +148,17 @@ def calculate_icone(co2, pm10, tvoc):
     return 0.4 * co2_norm + 0.3 * pm10_norm + 0.3 * tvoc_norm
 
 def calculate_ieqi(icone, temperature, humidity, settings):
-    values = settings["base_settings"]["values"]
-    temp_opt = next((v["value"] for v in values if v["name"] == "temp_opt"), 22)
-    hum_opt = next((v["value"] for v in values if v["name"] == "hum_opt"), 50)
+    temp_opt = settings["values"].get("temp_opt", 22)
+    hum_opt = settings["values"].get("hum_opt", 50)
 
     temp_index = abs(temperature - temp_opt) / (26 - 18)
     hum_index = abs(humidity - hum_opt) / (60 - 40)
     return 0.5 * icone + 0.3 * temp_index + 0.2 * hum_index
 
-#Advanced KPIs classification
+# -----------------------------
+# Classification Functions
+# -----------------------------
+
 def classify_generic(metric, thresholds):
     if metric <= thresholds["G"]:
         return "G"
@@ -156,7 +172,7 @@ def classify_generic(metric, thresholds):
         return "Unknown"
 
 def classify_pmv(pmv, settings):
-    thresholds = settings["base_settings"]["thresholds"]["pmv_classification"]
+    thresholds = settings["thresholds"]["pmv_classification"]
     for label, bound in thresholds.items():
         if label == "Very Cold" and pmv < bound:
             return label
@@ -176,45 +192,28 @@ def classify_pmv(pmv, settings):
     return "Unknown"
 
 def classify_ppd(ppd, settings):
-    thresholds = settings["base_settings"]["thresholds"]["ppd_classification"]
+    thresholds = settings["thresholds"]["ppd_classification"]
     return classify_generic(ppd, thresholds)
 
 def classify_ieqi(ieqi, settings):
-    thresholds = settings["base_settings"]["thresholds"]["ieqi_classification"]
+    thresholds = settings["thresholds"]["ieqi_classification"]
     return classify_generic(ieqi, thresholds)
 
 def classify_icone(icone, settings):
-    thresholds = settings["base_settings"]["thresholds"]["icone_classification"]
+    thresholds = settings["thresholds"]["icone_classification"]
     return classify_generic(icone, thresholds)
 
-#Overall enviromental score computation and classification
+# -----------------------------
+# Overall Score and Classification
+# -----------------------------
+
 def overall_score(classifications, settings):
     """
     Calculates the weighted overall environment score as a whole number percentage (0 to 100).
-
-    classifications: dict with labels like:
-        {
-            "temperature": "G",
-            "humidity": "Y",
-            "co2": "Too Good",
-            "pmv": "Neutral",
-            "ppd": "G",
-            "icone": "Y",
-            "ieqi": "G"
-        }
-
-    settings: full settings dictionary containing:
-        - base_settings["overall_environment"]["label_to_score"]: maps qualitative labels to numeric scores (0–3)
-        - base_settings["overall_environment"]["weights"]: maps each metric to a weight (total should sum to 100)
-
-    Assumes:
-    - Maximum score for any metric is 3
-    - Weights are already normalized to sum up to 100
     """
 
-    config = settings["base_settings"]
-    label_to_score = config["label_to_score"]
-    weights = config["weights"]
+    label_to_score = settings["label_to_score"]
+    weights = settings["weights"]
 
     total_score = 0.0
 
@@ -224,11 +223,10 @@ def overall_score(classifications, settings):
         normalized_score = (score / 3) * weight  # scale to weighted percentage
         total_score += normalized_score
 
-    return round(total_score)  # final score as an integer percentage (0–100)
-
+    return round(total_score)
 
 def classify_overall_score(score, settings):
-    thresholds = settings["base_settings"]["thresholds"]["overall_score_classification"]
+    thresholds = settings["thresholds"]["overall_score_classification"]
 
     if score >= thresholds["G"]:
         return "G"
@@ -238,4 +236,5 @@ def classify_overall_score(score, settings):
         return "R"
     else:
         return "Unknown"
+
 

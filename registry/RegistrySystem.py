@@ -356,8 +356,13 @@ class Webserver(object):
             #GET Apartments from catalog    
             if uri[0] == 'apartments':
                 return json.dumps(self.cat.catalog["apartments"])
+            #GET Default settings from catalog 
             if uri[0] == "base_settings":
                 return json.dumps(self.cat.catalog["base_settings"])
+            #GET whole catalog 
+            if uri[0] == "catalog":
+                return json.dumps(self.cat.catalog)
+            
         
 
     def POST(self, *uri, **params):
@@ -513,10 +518,12 @@ class Webserver(object):
             body = json.loads(cherrypy.request.body.read())
             apartmentId = body["apartmentId"]
             found = False
+            self.cat.load_file()
             for apt in self.cat.catalog["apartments"]:
                 if apt["apartmentId"] == apartmentId:
                     found = True
-                    self.cat.reset_settings(apt)
+                    apt["settings"] = self.cat.catalog["base_settings"]
+                    self.cat.write_catalog()
             if not found:   
                 response = {"status": "NOT_OK", "code": 400, "message": "Invalid apartment ID"}
             else:

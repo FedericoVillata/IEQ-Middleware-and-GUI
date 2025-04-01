@@ -1,0 +1,234 @@
+{
+    "users": [
+      {
+        "userId": "Luca",
+        "password": "asd",
+        "permissions": "Base",
+        "apartments": [
+          "apartment1",
+          "apartment3"
+        ]
+      },
+      {
+        "userId": "user1",
+        "password": "asd",
+        "permissions": "Technical",
+        "apartments": [
+          "apartment1",
+          "apartment3"
+        ]
+      }
+    ],
+    "apartments": [
+      {
+        "users": [
+          "user0"
+        ],
+        "apartmentId": "apartment0",
+        "rooms": [
+          {
+            "roomId": "room0",
+            "sensors": [
+              "sensor0"
+            ]
+          },
+          {
+            "roomId": "room1",
+            "sensors": [
+              "sensor1"
+            ]
+          }
+        ]
+      },
+      {
+        "users": [
+          "Luca",
+          "user1"
+        ],
+        "apartmentId": "apartment1",
+        "MAC": [
+          {
+            "name": "netatmo",
+            "MAC": "70:ee:50:af:8a:ea",
+            "accessToken": "67251bc704bee2bc3e05de23|57256725644cfa1f0258aac94e900442",
+            "refreshToken": "67251bc704bee2bc3e05de23|072e434207f4cd95ec22dfaa20ed7336"
+          }
+        ],
+        "rooms": [
+          {
+            "roomId": "livingroom",
+            "sensors": [
+              "03:00:00:0c:e0:98"
+            ]
+          },
+          {
+            "roomId": "bathroom",
+            "sensors": [
+              "03:00:00:0d:34:20"
+            ]
+          },
+          {
+            "roomId": "exterior",
+            "sensors": [
+              "02:00:00:af:60:ee"
+            ]
+          },
+          {
+            "roomId": "bedroom",
+            "sensors": [
+              "03:00:00:0c:e0:b2"
+            ]
+          }
+        ]
+      },
+      {
+        "users": [
+          "Luca",
+          "user1"
+        ],
+        "apartmentId": "apartment3",
+        "MAC": [
+          {
+            "name": "capetti",
+            "MAC": "0000B2E6"
+          }
+        ],
+        "rooms": [
+          {
+            "roomId": "1C",
+            "sensors": [
+              "0000F269"
+            ]
+          },
+          {
+            "roomId": "1D",
+            "sensors": [
+              "0000B323",
+              "0000F258"
+            ]
+          },
+          {
+            "roomId": "3C",
+            "sensors": [
+              "0000F26B"
+            ]
+          },
+          {
+            "roomId": "3D",
+            "sensors": [
+              "0000F26C"
+            ]
+          },
+          {
+            "roomId": "2C",
+            "sensors": [
+              "0000F26A",
+              "0000F264"
+            ]
+          },
+          {
+            "roomId": "exterior",
+            "sensors": [
+              "0000F257"
+            ]
+          }
+        ]
+      }
+    ],
+    "base_settings": {
+      "thresholds": {
+        "adaptive_temp_category": 2,
+        "mechanical_temp_warm": {
+          "G": 26.0,
+          "Y": 27.0,
+          "R": 100.0
+        },
+        "mechanical_temp_cold": {
+          "G": 23.0,
+          "Y": 26.0,
+          "R": 100.0
+        },
+        "humidity": {
+          "G": 60,
+          "Y": 70,
+          "R": 100
+        },
+        "co2_natural": {
+          "G": 1200,
+          "Y": 1500,
+          "R": 10000
+        },
+        "co2_mechanical": {
+          "Too Good": 600,
+          "G": 1200,
+          "Y": 1700,
+          "R": 2500,
+          "Extreme": 10000
+        },
+        "overall_score_classification": {
+          "G": 100,
+          "Y": 70,
+          "R": 40
+        },
+        "ieqi_classification": {
+          "G": 1.0,
+          "Y": 2.0,
+          "R": 4.0
+        },
+        "icone_classification": {
+          "G": 1.0,
+          "Y": 2.0,
+          "R": 4.0
+        },
+        "ppd_classification": {
+          "G": 10,
+          "Y": 25,
+          "R": 75
+        },
+        "pmv_classification": {
+          "Very Cold": -2.5,
+          "Cold": -1.5,
+          "Slightly Cold": -0.5,
+          "Neutral": 0.5,
+          "Slightly Warm": 1.5,
+          "Warm": 2.5,
+          "Very Warm": 3.0
+        }
+      },
+      "values": {
+        "met": 1.2,
+        "clo_warm": 0.5,
+        "clo_cold": 1.0,
+        "ventilation": "nat",
+        "temp_opt": 22,
+        "hum_opt": 50
+      },
+      "label_to_score": {
+        "Too Good": 3,
+        "G": 3,
+        "Y": 2,
+        "R": 1,
+        "Extreme": 0,
+        "Unknown": 0,
+        "Very Cold": 0,
+        "Cold": 1,
+        "Slightly Cold": 2,
+        "Neutral": 3,
+        "Slightly Warm": 2,
+        "Warm": 1,
+        "Very Warm": 0
+      },
+      "weights": {
+        "temperature": 15.0,
+        "humidity": 10.0,
+        "co2": 20.0,
+        "pmv": 15.0,
+        "ppd": 10.0,
+        "icone": 15.0,
+        "ieqi": 15.0
+      }
+    },
+    "devices": [],
+    "services": []
+  }
+  
