@@ -332,7 +332,7 @@ from pubsimulator.publisher import MyPublisher
 class KPIEngine:
     # Constants for registry and MQTT
     ADAPTOR_BASE = "http://adaptor:8080"
-    REGISTRY_URL = 'http://localhost:8080/catalog'
+    REGISTRY_URL = "http://registry:8081/catalog"
     MQTT_BASE_TOPIC = 'home'
 
     def __init__(self):
@@ -342,9 +342,13 @@ class KPIEngine:
         self.adaptor = Adaptor()
 
     def get_catalog(self):
-        # Load catalog from local file
-        with open("catalog.json") as f:
-            return json.load(f)
+        try:
+            response = requests.get(self.REGISTRY_URL)
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            print(f"Error fetching catalog: {e}")
+            exit(1)
 
     def get_season_from_timestamp(self, timestamp):
         # Extract season from timestamp (cold or warm)
