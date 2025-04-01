@@ -171,9 +171,9 @@ class NetatmoAPI:
                         "v": float(val) if val is not None else 0
                     }
                     Event.append(event)
-                pubTopic = f"IEQmidAndGUI/{apartment_id}/{data_type}"
-                out = {"bn": pubTopic, "e": Event}
-                print(out)
+                    pubTopic = f"IEQmidAndGUI/{apartment_id}/{data_type}"
+                    out = {"bn": pubTopic, "e": Event}
+                    print(out)
                 myPub.myPublish(json.dumps(out), pubTopic)
                 time.sleep(1)
 
