@@ -1,5 +1,7 @@
+// tenant_home_page.dart
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import '../login_page.dart';
 
@@ -9,7 +11,6 @@ class HomePage extends StatefulWidget {
   final Map<String, List<String>> rooms;
   final String selectedApartment;
   final Map<String, int> overallScores;
-  final Map<String, String> externalTemperatures;
   final Function(String) onRoomChanged;
   final Function(String) onApartmentChanged;
 
@@ -20,7 +21,6 @@ class HomePage extends StatefulWidget {
     required this.rooms,
     required this.selectedApartment,
     required this.overallScores,
-    required this.externalTemperatures,
     required this.onRoomChanged,
     required this.onApartmentChanged,
   });
@@ -33,6 +33,7 @@ class HomePageState extends State<HomePage> {
   late String selectedApartment;
   late String selectedRoom;
   bool showDropdown = false;
+  Timer? _refreshTimer;
 
   String indoorTemp = "Loading...";
   String humidity = "Loading...";
@@ -41,6 +42,9 @@ class HomePageState extends State<HomePage> {
   String humidityStatus = "";
   String co2Status = "";
 
+  // Meteo
+  String externalTemp = "20°C"; // Valore predefinito
+  int weatherCode = 0;
   final String adaptorUrl = "http://10.0.2.2:8080";
 
   @override
@@ -49,6 +53,48 @@ class HomePageState extends State<HomePage> {
     selectedApartment = widget.selectedApartment;
     selectedRoom = widget.rooms[selectedApartment]?.first ?? "Unknown";
     _fetchRoomData();
+    _fetchExternalWeatherData(); // Chiamata immediata per il meteo
+    _startExternalWeatherRefresh(); // Start the weather update here
+  }
+
+  // Chiamata immediata per recuperare il meteo
+  void _fetchExternalWeatherData() async {
+    final meteoUrl = Uri.parse(
+      "https://api.open-meteo.com/v1/forecast?latitude=45.0705&longitude=7.6868&hourly=temperature_2m,weather_code&timezone=auto&forecast_days=1",
+    );
+
+    try {
+      final meteoResponse = await http.get(meteoUrl);
+      if (meteoResponse.statusCode == 200) {
+        final meteoData = jsonDecode(meteoResponse.body);
+        final List<dynamic> temperatures = meteoData['hourly']['temperature_2m'];
+        final List<dynamic> weatherCodes = meteoData['hourly']['weather_code'];
+        final now = DateTime.now().hour;
+
+        final String updatedTemp = "${(temperatures[now] as num).toStringAsFixed(1)}°C";
+        final int updatedCode = weatherCodes[now];
+
+        setState(() {
+          externalTemp = updatedTemp; // Aggiorna la temperatura esterna
+          weatherCode = updatedCode;  // Aggiorna il codice meteo
+        });
+      }
+    } catch (e) {
+      print("Errore aggiornamento meteo: $e");
+    }
+  }
+
+  // Periodicamente recupera i dati del meteo
+  void _startExternalWeatherRefresh() {
+    _refreshTimer = Timer.periodic(const Duration(minutes: 10), (timer) async {
+      _fetchExternalWeatherData(); // Chiamata ripetuta ogni 10 minuti
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchRoomData() async {
@@ -85,47 +131,25 @@ class HomePageState extends State<HomePage> {
     if (mounted) setState(() {});
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[200],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 2,
-        title: null,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.black87),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginPage()),
-              );
-            },
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 20),
-            if (showDropdown) _buildDropdownSelection(),
-            const SizedBox(height: 20),
-            _buildInfoCard("External Temperature", widget.externalTemperatures[selectedApartment] ?? "N/A", Icons.wb_sunny, Colors.orange),
-            const SizedBox(height: 12),
-            _buildInfoCard("Indoor Temperature", indoorTemp, Icons.thermostat, Colors.red, status: tempStatus),
-            const SizedBox(height: 12),
-            _buildInfoCard("Humidity Level", humidity, Icons.water_drop, Colors.blue, status: humidityStatus),
-            const SizedBox(height: 12),
-            _buildInfoCard("Air Quality", co2, Icons.air, Colors.green, status: co2Status),
-            const SizedBox(height: 30),
-            _buildOverallScoreCard(widget.overallScores[selectedApartment] ?? 0),
-          ],
-        ),
-      ),
-    );
+  IconData _getWeatherIcon(int code) {
+    if (code == 0) return Icons.wb_sunny;
+    if (code == 1 || code == 2) return Icons.cloud;
+    if (code == 3) return Icons.cloud_queue;
+    if (code >= 45 && code <= 48) return Icons.foggy;
+    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return Icons.grain;
+    if (code >= 71 && code <= 77) return Icons.ac_unit;
+    if (code >= 95) return Icons.bolt;
+    return Icons.wb_cloudy;
+  }
+
+  Color _getWeatherColor(int code) {
+    if (code == 0) return Colors.orange;
+    if (code == 1 || code == 2 || code == 3) return Colors.blueGrey;
+    if (code >= 45 && code <= 48) return Colors.grey;
+    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return Colors.blue;
+    if (code >= 71 && code <= 77) return Colors.lightBlueAccent;
+    if (code >= 95) return Colors.purple;
+    return Colors.blueGrey;
   }
 
   Widget _buildHeader() {
@@ -307,6 +331,54 @@ class HomePageState extends State<HomePage> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[200],
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 2,
+        title: null,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.black87),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 20),
+            if (showDropdown) _buildDropdownSelection(),
+            const SizedBox(height: 20),
+            _buildInfoCard(
+              "External Temperature",
+              externalTemp,
+              _getWeatherIcon(weatherCode),
+              _getWeatherColor(weatherCode),
+            ),
+            const SizedBox(height: 12),
+            _buildInfoCard("Indoor Temperature", indoorTemp, Icons.thermostat, Colors.red, status: tempStatus),
+            const SizedBox(height: 12),
+            _buildInfoCard("Humidity Level", humidity, Icons.water_drop, Colors.blue, status: humidityStatus),
+            const SizedBox(height: 12),
+            _buildInfoCard("Air Quality", co2, Icons.air, Colors.green, status: co2Status),
+            const SizedBox(height: 30),
+            _buildOverallScoreCard(widget.overallScores[selectedApartment] ?? 0),
+          ],
         ),
       ),
     );
