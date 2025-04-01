@@ -358,6 +358,8 @@ class Webserver(object):
                 return json.dumps(self.cat.catalog["apartments"])
             if uri[0] == "base_settings":
                 return json.dumps(self.cat.catalog["base_settings"])
+            if uri[0] == "catalog":
+                return json.dumps(self.cat.catalog)
         
 
     def POST(self, *uri, **params):

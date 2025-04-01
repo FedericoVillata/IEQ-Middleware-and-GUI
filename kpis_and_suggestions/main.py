@@ -22,7 +22,7 @@ class KPIEngine:
         # Set URLs and base topic
         try:
             self.ADAPTOR_BASE = self.config["adaptor_url"]
-            self.REGISTRY_URL = self.config["registry_url"]
+            self.REGISTRY_URL = self.config["registry_url"]+"/catalog"
             self.MQTT_BASE_TOPIC = self.config["base_topic"]
 
         except KeyError as e:
