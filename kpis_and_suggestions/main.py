@@ -14,15 +14,6 @@ MQTT_BASE_TOPIC = 'home'
 
 ADAPTOR_BASE = "http://adaptor:8080"
 
-#def get_catalog():
- #   try:
-  #      response = requests.get(REGISTRY_URL)
-   #     response.raise_for_status()
-    #    return response.json()
-    #except requests.RequestException as e:
-    #    print(f"Error fetching catalog: {e}")
-     #   exit(1)
-
 def fetch_data(self, userId, apartmentId, measure, start, end, duration):
     """
     If 'start' and 'end' are provided => calls /getDatainPeriod
@@ -60,6 +51,15 @@ def fetch_data(self, userId, apartmentId, measure, start, end, duration):
     except Exception as exc:
         print("ERROR in _fetch_data:", exc)
     return results
+
+#def get_catalog():
+ #   try:
+  #      response = requests.get(REGISTRY_URL)
+   #     response.raise_for_status()
+    #    return response.json()
+    #except requests.RequestException as e:
+    #    print(f"Error fetching catalog: {e}")
+     #   exit(1)
 
 def get_catalog():
     with open("catalog.json") as f:
@@ -155,8 +155,13 @@ def get_season_from_timestamp(timestamp):
 
 def process_apartment(apartment, publisher, adaptor):
     apartment_id = apartment['apartmentId']
-    settings = apartment.get('settings')  # Apartment-specific settings
     print(f"\nProcessing Apartment: {apartment_id}")
+
+    # Load full catalog to fall back on default settings
+    catalog = get_catalog()
+
+    # Use apartment-specific settings if present, otherwise default to catalog's base_settings
+    settings = apartment.get("settings", catalog["base_settings"])
 
     for room in apartment['rooms']:
         room_id = room['roomId']
@@ -189,13 +194,13 @@ def process_apartment(apartment, publisher, adaptor):
             # Determine the season based on the first timestamp available
             season = get_season_from_timestamp(measure_data["Temperature"][0]["timestamp"])
 
-            # Compute adaptive comfort metrics if 7+ days of outdoor temperatures are available
+            # Compute adaptive comfort metrics if available
             outdoor_temps = [d.get("outdoor_temp", avg_temp) for d in measure_data["Temperature"]][-7:]
             adaptive_comfort = adaptive_thermal_comfort(outdoor_temps)
             t_ext = adaptive_comfort['Running Mean Temperature'] if adaptive_comfort else avg_temp
 
             # Determine the adaptive temperature category range
-            cat_num = settings["base_settings"]["thresholds"].get("adaptive_temp_category", 2)
+            cat_num = settings["thresholds"].get("adaptive_temp_category", 2)
             cat_label = f"Cat {'I' if cat_num == 1 else 'II' if cat_num == 2 else 'III'}"
             adaptive_range = adaptive_comfort["Acceptable Range"].get(cat_label) if adaptive_comfort else None
 
@@ -217,7 +222,7 @@ def process_apartment(apartment, publisher, adaptor):
             ieqi = calculate_ieqi(icone, avg_temp, avg_humidity, settings)
             ieqi_class = classify_ieqi(ieqi, settings)
 
-            # Calculate weighted environmental score and classification
+            # Calculate overall environmental score
             classifications = {
                 "temperature": temp_class,
                 "humidity": hum_class,
@@ -231,7 +236,7 @@ def process_apartment(apartment, publisher, adaptor):
             env_score = overall_score(classifications, settings)
             env_classification = classify_overall_score(env_score, settings)
 
-            # Publish results as SenML to MQTT
+            # Publish the metrics via MQTT
             publish_room_metrics(
                 publisher, apartment_id, room_id,
                 avg_temp, avg_humidity, avg_co2,
@@ -240,6 +245,7 @@ def process_apartment(apartment, publisher, adaptor):
                 pmv_class, ppd_class, icone_class, ieqi_class,
                 adaptive_comfort, env_score, env_classification
             )
+
 
 
 def publish_room_metrics(publisher, apartment_id, room_id, avg_temp, avg_humidity, avg_co2,
