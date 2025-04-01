@@ -22,7 +22,7 @@ class KPIEngine:
         # Set URLs and base topic
         try:
             self.ADAPTOR_BASE = self.config["adaptor_url"]
-            self.REGISTRY_URL = self.config["registry_url"]+"/catalog"
+            self.REGISTRY_URL = self.config["registry_url"]
             self.MQTT_BASE_TOPIC = self.config["base_topic"]
 
         except KeyError as e:
@@ -37,7 +37,7 @@ class KPIEngine:
     def get_catalog(self, retries=10, delay=3):
         for attempt in range(retries):
             try:
-                response = requests.get(self.REGISTRY_URL)
+                response = requests.get(self.REGISTRY_URL+"/catalog")
                 response.raise_for_status()
                 print("Catalog fetched successfully.")
                 return response.json()
