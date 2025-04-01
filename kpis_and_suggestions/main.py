@@ -12,18 +12,146 @@ from pubsimulator.publisher import MyPublisher
 REGISTRY_URL = 'http://localhost:8080/catalog'
 MQTT_BASE_TOPIC = 'home'
 
-def get_catalog():
+ADAPTOR_BASE = "http://adaptor:8080"
+
+#def get_catalog():
+ #   try:
+  #      response = requests.get(REGISTRY_URL)
+   #     response.raise_for_status()
+    #    return response.json()
+    #except requests.RequestException as e:
+    #    print(f"Error fetching catalog: {e}")
+     #   exit(1)
+
+def fetch_data(self, userId, apartmentId, measure, start, end, duration):
+    """
+    If 'start' and 'end' are provided => calls /getDatainPeriod
+    else if 'duration' => calls /getApartmentData
+    else => defaults to 168 hours
+    """
+    if start and end:
+        # date range approach
+        adaptor_url = f"{self.ADAPTOR_BASE}/getDatainPeriod/{userId}/{apartmentId}"
+        params = {
+            "measurament": measure,
+            "start": f"{start}T00:00:00Z",
+            "stop":  f"{end}T23:59:59Z",
+        }
+        print("DEBUG: calling getDatainPeriod =>", adaptor_url, params)
+    else:
+        # fallback to duration approach
+        dur = duration if duration else "168"
+        adaptor_url = f"{self.ADAPTOR_BASE}/getApartmentData/{userId}/{apartmentId}"
+        params = {
+            "measurament": measure,
+            "duration": dur,
+        }
+        print("DEBUG: calling getApartmentData =>", adaptor_url, params)
+
+    results = []
     try:
-        response = requests.get(REGISTRY_URL)
-        response.raise_for_status()
-        return response.json()
-    except requests.RequestException as e:
-        print(f"Error fetching catalog: {e}")
-        exit(1)
+        resp = requests.get(adaptor_url, params=params, timeout=10)
+        print("DEBUG: adaptor response =>", resp.status_code)
+        if resp.status_code == 200:
+            results = resp.json()
+            print("DEBUG: parsed JSON =>", len(results), "records")
+        else:
+            print("ERROR: adaptor returned status", resp.status_code)
+    except Exception as exc:
+        print("ERROR in _fetch_data:", exc)
+    return results
+
+def get_catalog():
+    with open("catalog.json") as f:
+        return json.load(f)
+    
 
 def get_season_from_timestamp(timestamp):
     month = int(timestamp.split('-')[1])
     return "warm" if 4 <= month <= 9 else "cold"
+
+# def process_apartment(apartment, publisher, adaptor):
+#     apartment_id = apartment['apartmentId']
+#     settings = apartment.get('settings')  # Apartment-specific settings
+#     print(f"\nProcessing Apartment: {apartment_id}")
+
+#     for room in apartment['rooms']:
+#         room_id = room['roomId']
+#         print(f"  -> Processing Room: {room_id}")
+#         room_data = []
+
+#         for sensor_id in room['sensors']:
+#             sensor_data = adaptor.get_sensor_data(sensor_id)
+#             if sensor_data:
+#                 room_data.append(sensor_data)
+
+#         if room_data:
+#             # Compute average values per room
+#             avg_temp = sum(d['temperature'] for d in room_data) / len(room_data)
+#             avg_humidity = sum(d['humidity'] for d in room_data) / len(room_data)
+#             avg_co2 = sum(d['co2'] for d in room_data) / len(room_data)
+#             avg_pm10 = sum(d.get('pm10', 0) for d in room_data) / len(room_data)
+#             avg_tvoc = sum(d.get('tvoc', 0) for d in room_data) / len(room_data)
+
+#             # Determine the season based on the first timestamp
+#             season = get_season_from_timestamp(room_data[0]['timestamp'])
+
+#             # Adaptive Thermal Comfort calculation
+#             outdoor_temps = [d.get('outdoor_temp', avg_temp) for d in room_data][-7:]
+#             adaptive_comfort = adaptive_thermal_comfort(outdoor_temps)
+
+#             t_ext = adaptive_comfort['Running Mean Temperature'] if adaptive_comfort else avg_temp
+
+#             # Get adaptive temperature category from settings (default to 2 = Cat II)
+#             cat_num = settings["base_settings"]["thresholds"].get("adaptive_temp_category", 2)
+#             cat_label = f"Cat {'I' if cat_num == 1 else 'II' if cat_num == 2 else 'III'}"
+
+#             adaptive_range = None
+#             if adaptive_comfort:
+#                 adaptive_range = adaptive_comfort["Acceptable Range"].get(cat_label)
+
+#             temp_class = classify_temperature(avg_temp, season, t_ext, settings, adaptive_range)
+
+#             # Base classifications
+#             hum_class = classify_humidity(avg_humidity, settings)
+#             co2_class = classify_co2(avg_co2, settings)
+
+#             # Advanced KPIs
+#             pmv = calculate_pmv(season, avg_temp, avg_temp, 0.1, avg_humidity, settings)
+#             pmv_class = classify_pmv(pmv, settings)
+
+#             ppd = calculate_ppd(pmv)
+#             ppd_class = classify_ppd(ppd, settings)
+
+#             icone = calculate_icone(avg_co2, avg_pm10, avg_tvoc)
+#             icone_class = classify_icone(icone, settings)
+
+#             ieqi = calculate_ieqi(icone, avg_temp, avg_humidity, settings)
+#             ieqi_class = classify_ieqi(ieqi, settings)
+
+#             # Overall environment score
+#             classifications = {
+#                 "temperature": temp_class,
+#                 "humidity": hum_class,
+#                 "co2": co2_class,
+#                 "pmv": pmv_class,
+#                 "ppd": ppd_class,
+#                 "icone": icone_class,
+#                 "ieqi": ieqi_class
+#             }
+
+#             env_score = overall_score(classifications, settings)
+#             env_classification = classify_overall_score(env_score, settings)
+
+#             publish_room_metrics(
+#                                     publisher, apartment_id, room_id,
+#                                     avg_temp, avg_humidity, avg_co2,
+#                                     pmv, ppd, icone, ieqi,
+#                                     temp_class, hum_class, co2_class,
+#                                     pmv_class, ppd_class, icone_class, ieqi_class,
+#                                     adaptive_comfort, env_score, env_classification
+#                                 )
+
 
 def process_apartment(apartment, publisher, adaptor):
     apartment_id = apartment['apartmentId']
@@ -33,41 +161,46 @@ def process_apartment(apartment, publisher, adaptor):
     for room in apartment['rooms']:
         room_id = room['roomId']
         print(f"  -> Processing Room: {room_id}")
-        room_data = []
 
-        for sensor_id in room['sensors']:
-            sensor_data = adaptor.get_sensor_data(sensor_id)
-            if sensor_data:
-                room_data.append(sensor_data)
+        # Use the first user assigned to the apartment for data access
+        userId = apartment["users"][0]
 
-        if room_data:
-            # Compute average values per room
-            avg_temp = sum(d['temperature'] for d in room_data) / len(room_data)
-            avg_humidity = sum(d['humidity'] for d in room_data) / len(room_data)
-            avg_co2 = sum(d['co2'] for d in room_data) / len(room_data)
-            avg_pm10 = sum(d.get('pm10', 0) for d in room_data) / len(room_data)
-            avg_tvoc = sum(d.get('tvoc', 0) for d in room_data) / len(room_data)
+        # Define the required environmental measures
+        measures = ["Temperature", "Humidity", "CO2", "PM10", "TVOC"]
+        measure_data = {}
 
-            # Determine the season based on the first timestamp
-            season = get_season_from_timestamp(room_data[0]['timestamp'])
+        # Fetch each measure via the REST adaptor using fetch_data()
+        for measure in measures:
+            fetched = fetch_data(userId, apartment_id, measure, duration="168")
+            if not fetched:
+                continue
+            # Filter only values that belong to the current room
+            room_filtered = [entry for entry in fetched if entry.get("room") == room_id]
+            measure_data[measure] = room_filtered
 
-            # Adaptive Thermal Comfort calculation
-            outdoor_temps = [d.get('outdoor_temp', avg_temp) for d in room_data][-7:]
+        # Proceed only if the essential metrics are present
+        if all(measure_data.get(m) for m in ["Temperature", "Humidity", "CO2"]):
+            avg_temp = np.mean([d["value"] for d in measure_data["Temperature"]])
+            avg_humidity = np.mean([d["value"] for d in measure_data["Humidity"]])
+            avg_co2 = np.mean([d["value"] for d in measure_data["CO2"]])
+            avg_pm10 = np.mean([d["value"] for d in measure_data.get("PM10", [])]) if measure_data.get("PM10") else 0
+            avg_tvoc = np.mean([d["value"] for d in measure_data.get("TVOC", [])]) if measure_data.get("TVOC") else 0
+
+            # Determine the season based on the first timestamp available
+            season = get_season_from_timestamp(measure_data["Temperature"][0]["timestamp"])
+
+            # Compute adaptive comfort metrics if 7+ days of outdoor temperatures are available
+            outdoor_temps = [d.get("outdoor_temp", avg_temp) for d in measure_data["Temperature"]][-7:]
             adaptive_comfort = adaptive_thermal_comfort(outdoor_temps)
-
             t_ext = adaptive_comfort['Running Mean Temperature'] if adaptive_comfort else avg_temp
 
-            # Get adaptive temperature category from settings (default to 2 = Cat II)
+            # Determine the adaptive temperature category range
             cat_num = settings["base_settings"]["thresholds"].get("adaptive_temp_category", 2)
             cat_label = f"Cat {'I' if cat_num == 1 else 'II' if cat_num == 2 else 'III'}"
+            adaptive_range = adaptive_comfort["Acceptable Range"].get(cat_label) if adaptive_comfort else None
 
-            adaptive_range = None
-            if adaptive_comfort:
-                adaptive_range = adaptive_comfort["Acceptable Range"].get(cat_label)
-
+            # Basic KPI classification
             temp_class = classify_temperature(avg_temp, season, t_ext, settings, adaptive_range)
-
-            # Base classifications
             hum_class = classify_humidity(avg_humidity, settings)
             co2_class = classify_co2(avg_co2, settings)
 
@@ -84,7 +217,7 @@ def process_apartment(apartment, publisher, adaptor):
             ieqi = calculate_ieqi(icone, avg_temp, avg_humidity, settings)
             ieqi_class = classify_ieqi(ieqi, settings)
 
-            # Overall environment score
+            # Calculate weighted environmental score and classification
             classifications = {
                 "temperature": temp_class,
                 "humidity": hum_class,
@@ -98,14 +231,16 @@ def process_apartment(apartment, publisher, adaptor):
             env_score = overall_score(classifications, settings)
             env_classification = classify_overall_score(env_score, settings)
 
+            # Publish results as SenML to MQTT
             publish_room_metrics(
-                                    publisher, apartment_id, room_id,
-                                    avg_temp, avg_humidity, avg_co2,
-                                    pmv, ppd, icone, ieqi,
-                                    temp_class, hum_class, co2_class,
-                                    pmv_class, ppd_class, icone_class, ieqi_class,
-                                    adaptive_comfort, env_score, env_classification
-                                )
+                publisher, apartment_id, room_id,
+                avg_temp, avg_humidity, avg_co2,
+                pmv, ppd, icone, ieqi,
+                temp_class, hum_class, co2_class,
+                pmv_class, ppd_class, icone_class, ieqi_class,
+                adaptive_comfort, env_score, env_classification
+            )
+
 
 def publish_room_metrics(publisher, apartment_id, room_id, avg_temp, avg_humidity, avg_co2,
                          pmv, ppd, icone, ieqi, temp_class, hum_class, co2_class,
