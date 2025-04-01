@@ -1,8 +1,22 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'package:mqtt_client/mqtt_server_client.dart';
 
 class FeedbackPage extends StatefulWidget {
+  final String username;
+  final String apartmentId;
+  final String roomId;
+
+  const FeedbackPage({
+    super.key,
+    required this.username,
+    required this.apartmentId,
+    required this.roomId,
+  });
+
   @override
-  _FeedbackPageState createState() => _FeedbackPageState();
+  State<FeedbackPage> createState() => _FeedbackPageState();
 }
 
 class _FeedbackPageState extends State<FeedbackPage> {
@@ -11,14 +25,73 @@ class _FeedbackPageState extends State<FeedbackPage> {
   int envRating = 0;
   int serviceRating = 0;
 
-  // Definisci una mappa/array di 5 colori, uno per ogni “livello”
   final List<Color> ratingColors = [
-    Colors.red,           // rating 1
-    Colors.orange,        // rating 2
-    Colors.amber,         // rating 3
-    Colors.lightGreen,    // rating 4
-    Colors.green,         // rating 5
+    Colors.red,
+    Colors.orange,
+    Colors.amber,
+    Colors.lightGreen,
+    Colors.green,
   ];
+
+  Future<void> _submitFeedback(String category, int rating) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Feedback'),
+        content: Text('Do you confirm a "$rating" rating for "$category"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirm')),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final topic = 'IEQmidAndGUI/${widget.apartmentId}';
+    final timestamp = DateTime.now().millisecondsSinceEpoch / 1000.0;
+
+    final parts = category.split(' ');
+    final nPart = parts.isNotEmpty ? parts[0] : 'Unknown';
+    final uPart = parts.length > 1 ? parts.sublist(1).join(' ') : 'Feedback';
+
+    // ✅ Structured payload with "bn" and "e"
+    final payload = jsonEncode({
+      'bn': topic,
+      'e': [
+        {
+          'n': '$nPart/Feedback/${widget.username}',
+          'u': uPart,
+          't': timestamp.toString(),
+          'v': rating,
+        }
+      ]
+    });
+
+    final clientId = 'flutter_client_${DateTime.now().millisecondsSinceEpoch}';
+    final client = MqttServerClient('mqtt.eclipseprojects.io', clientId);
+    client.logging(on: false);
+    client.port = 1883;
+    client.keepAlivePeriod = 20;
+    client.onDisconnected = () => debugPrint('MQTT Disconnected');
+
+    try {
+      await client.connect();
+      final builder = MqttClientPayloadBuilder();
+      builder.addString(payload);
+      client.publishMessage(topic, MqttQos.atLeastOnce, builder.payload!);
+      await Future.delayed(const Duration(seconds: 1));
+      client.disconnect();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Feedback sent!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ MQTT error: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,42 +110,34 @@ class _FeedbackPageState extends State<FeedbackPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Temperature
             _buildRatingSection(
               "Temperature Perception",
               tempRating,
-              (rating) => setState(() => tempRating = rating),
-              icons: [
-                Icons.device_thermostat,
-                Icons.device_thermostat,
-                Icons.device_thermostat,
-                Icons.device_thermostat,
-                Icons.device_thermostat,
-              ],
+              (rating) => setState(() {
+                tempRating = rating;
+                _submitFeedback("Temperature Perception", rating);
+              }),
+              icons: List.filled(5, Icons.device_thermostat),
             ),
             const SizedBox(height: 16),
-
-            // Humidity
             _buildRatingSection(
               "Humidity Perception",
               humRating,
-              (rating) => setState(() => humRating = rating),
-              icons: [
-                Icons.water_drop,
-                Icons.water_drop,
-                Icons.water_drop,
-                Icons.water_drop,
-                Icons.water_drop,
-              ],
+              (rating) => setState(() {
+                humRating = rating;
+                _submitFeedback("Humidity Perception", rating);
+              }),
+              icons: List.filled(5, Icons.water_drop),
             ),
             const SizedBox(height: 16),
-
-            // Environment Satisfaction
             _buildRatingSection(
               "Environment Satisfaction",
               envRating,
-              (rating) => setState(() => envRating = rating),
-              icons: [
+              (rating) => setState(() {
+                envRating = rating;
+                _submitFeedback("Environment Satisfaction", rating);
+              }),
+              icons: const [
                 Icons.sentiment_very_dissatisfied,
                 Icons.sentiment_dissatisfied,
                 Icons.sentiment_neutral,
@@ -81,13 +146,14 @@ class _FeedbackPageState extends State<FeedbackPage> {
               ],
             ),
             const SizedBox(height: 16),
-
-            // Service Rating
             _buildRatingSection(
               "Service Rating",
               serviceRating,
-              (rating) => setState(() => serviceRating = rating),
-              icons: [
+              (rating) => setState(() {
+                serviceRating = rating;
+                _submitFeedback("Service Rating", rating);
+              }),
+              icons: const [
                 Icons.thumb_down,
                 Icons.thumb_down_alt,
                 Icons.thumbs_up_down,
@@ -122,10 +188,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(icons.length, (index) {
-                final iconColor = index < rating
-                    ? ratingColors[rating - 1] // Colore in base al rating selezionato
-                    : Colors.grey;
-
+                final iconColor =
+                    index < rating ? ratingColors[rating - 1] : Colors.grey;
                 return IconButton(
                   iconSize: 30,
                   icon: Icon(icons[index], color: iconColor),
