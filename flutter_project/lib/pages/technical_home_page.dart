@@ -1,97 +1,117 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
-// If you plan to do file downloads on web, you might import 'dart:html' for an anchor, etc.
+import 'dart:convert';
 
-/// This page displays detailed metrics for a selected location,
-/// with sub-modes for Temperature (Carpet or Line).
-/// Now it also includes date pickers for Carpet, plus
-/// "Download Chart" & "Export CSV" for the selected metric and date range.
 class TechnicalHomePage extends StatefulWidget {
-  final String? location;
-  const TechnicalHomePage({Key? key, required this.location}) : super(key: key);
+  final String? location; // The selected apartment ID
+
+  const TechnicalHomePage({
+    Key? key,
+    required this.location,
+  }) : super(key: key);
 
   @override
   State<TechnicalHomePage> createState() => _TechnicalHomePageState();
 }
 
 class _TechnicalHomePageState extends State<TechnicalHomePage> {
-  // List of metrics available
-  final metrics = ["Temperature", "Humidity", "CO2", "PM10", "TVOC"];
+  static const String PLOT_SERVICE_URL = "http://localhost:9090";
 
-  // Current metric selection
+  // Hard-coded user for demonstration
+  static const String HARDCODED_USER_ID = "user0";
+
+  final List<String> metrics = ["Temperature", "Humidity", "CO2", "PM10", "VOC"];
   String selectedMetric = "Temperature";
 
-  // For Temperature, we manage two view modes: "carpet" or "line"
-  // (The other metrics just show a single chart mode for now.)
+  // For temperature, we can pick "carpet" or "line"
   String temperatureViewMode = "carpet";
 
-  // We have a global start/end date for the chart, used for both line & carpet
-  // if the metric is "Temperature."
-  // If the user picks "Humidity" etc., we'll also pass them in case the backend
-  // eventually supports it.
-  DateTime? startDate;
-  DateTime? endDate;
+  // The rooms from registry
+  List<String> availableRooms = [];
+  String? selectedRoom;
+
+  // Instead of date pickers, we provide a duration dropdown
+  final Map<String, String> durationOptions = {
+    "1 day": "24",
+    "3 days": "72",
+    "1 week": "168",
+    "1 month": "720",
+    "3 months": "2160",
+    "6 months": "4320",
+    "1 year": "8760",
+    "all": "999999" // "all" => artificially large number
+  };
+  String selectedDuration = "24"; // default to 1 day
 
   @override
   void initState() {
     super.initState();
-    // Request the default time range (last week) from the backend
-    _loadDefaultRange();
+
+    selectedMetric = "Temperature";
+    temperatureViewMode = "carpet";
+
+    _fetchRoomsForApartment(widget.location ?? "apartment0");
   }
 
-  /// Calls the backend endpoint '/getLastWeekRange' to retrieve
-  /// the last-week time window from the dataset (output.json).
-  Future<void> _loadDefaultRange() async {
+  Future<void> _fetchRoomsForApartment(String apartmentId) async {
     try {
-      final url = Uri.parse("http://localhost:9090/getLastWeekRange");
+      final url = Uri.parse("http://localhost:8081/apartments");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final jsonResp = jsonDecode(response.body);
-        final String? startStr = jsonResp["start"];
-        final String? endStr = jsonResp["end"];
+        final List<dynamic> data = json.decode(response.body);
+        final List<String> foundRooms = [];
 
-        if (startStr != null && endStr != null) {
-          final dtStart = DateTime.parse(startStr.replaceAll("Z", ""));
-          final dtEnd = DateTime.parse(endStr.replaceAll("Z", ""));
-          setState(() {
-            startDate = dtStart;
-            endDate = dtEnd;
-          });
-        } else {
-          print("No 'start'/'end' in backend response.");
+        for (final apt in data) {
+          if (apt["apartmentId"] == apartmentId) {
+            final List<dynamic> rooms = apt["rooms"];
+            for (final r in rooms) {
+              foundRooms.add(r["roomId"]);
+            }
+            break;
+          }
         }
+
+        setState(() {
+          if (foundRooms.isEmpty) {
+            availableRooms = ["(No rooms)"];
+            selectedRoom = null;
+          } else {
+            availableRooms = foundRooms;
+            selectedRoom = foundRooms[0]; // default
+          }
+        });
       } else {
-        print("Server returned an error code: ${response.statusCode}");
+        setState(() {
+          availableRooms = ["(FallbackRoom1)", "(FallbackRoom2)"];
+          selectedRoom = "(FallbackRoom1)";
+        });
       }
     } catch (e) {
-      print("Exception in _loadDefaultRange: $e");
+      setState(() {
+        availableRooms = ["(Error fetching rooms)"];
+        selectedRoom = null;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // We keep your same column structure
       body: Column(
         children: [
-          // -----------------------------------------------------
-          // 1) Row of metric buttons (Temperature, Humidity, etc.)
-          // -----------------------------------------------------
+          // 1) Metric selection
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: metrics.map((metricName) {
                 final bool isSelected = (selectedMetric == metricName);
                 return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          isSelected ? Colors.indigo : Colors.blueGrey,
+                      backgroundColor: isSelected ? Colors.indigo : Colors.blueGrey,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -105,18 +125,14 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 14,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                     onPressed: () {
                       setState(() {
                         selectedMetric = metricName;
-                        // If user clicks Temperature, revert to 'carpet' by default
-                        // or keep whatever last mode we had?
-                        if (metricName == "Temperature") {
-                          // possibly reset:
-                          // temperatureViewMode = "carpet";
+                        if (metricName != "Temperature") {
+                          temperatureViewMode = "line";
                         }
                       });
                     },
@@ -126,10 +142,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
             ),
           ),
 
-          // --------------------------------------------------------------------
-          // 2) If the current metric is "Temperature", show the sub-menu
-          //    to switch between "Carpet Plot" and "Line Chart".
-          // --------------------------------------------------------------------
+          // 2) If "Temperature", pick carpet or line
           if (selectedMetric == "Temperature")
             Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -142,7 +155,6 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Carpet Plot button
                     _buildPlotButton(
                       label: "Carpet Plot",
                       selected: (temperatureViewMode == "carpet"),
@@ -153,7 +165,6 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
                       },
                     ),
                     const SizedBox(width: 16),
-                    // Line Chart button
                     _buildPlotButton(
                       label: "Line Chart",
                       selected: (temperatureViewMode == "line"),
@@ -168,13 +179,40 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
               ),
             ),
 
-          // --------------------------------------------------------------------
-          // 3) Show date pickers for all metrics
-          //    (So we can pass start/end to the server for any metric we choose.)
-          // --------------------------------------------------------------------
-          // (You originally only had date pickers in "line" mode for Temperature,
-          // but now you want them for both line & carpet (and possibly for any metric).
-          // We'll unify them for convenience.)
+          // 3) Room selection
+          if (availableRooms.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ListTile(
+                  title: const Text("Select Room"),
+                  trailing: SizedBox(
+                    width: 150,
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: selectedRoom,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedRoom = value;
+                        });
+                      },
+                      items: availableRooms.map((roomId) {
+                        return DropdownMenuItem<String>(
+                          value: roomId,
+                          child: Text(roomId),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // 4) Duration selection (instead of start/end dates)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Card(
@@ -182,42 +220,35 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    // Start date picker
-                    _buildDateButton(
-                      context,
-                      label: "Start: ",
-                      date: startDate,
-                      onDateSelected: (picked) {
+              child: ListTile(
+                title: const Text("Select Duration"),
+                trailing: SizedBox(
+                  width: 150,
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    value: selectedDuration,
+                    onChanged: (val) {
+                      if (val != null) {
                         setState(() {
-                          startDate = picked;
+                          selectedDuration = val;
                         });
-                      },
-                    ),
-                    // End date picker
-                    _buildDateButton(
-                      context,
-                      label: "End: ",
-                      date: endDate,
-                      onDateSelected: (picked) {
-                        setState(() {
-                          endDate = picked;
-                        });
-                      },
-                    ),
-                  ],
+                      }
+                    },
+                    items: durationOptions.entries.map((entry) {
+                      final label = entry.key;
+                      final hours = entry.value;
+                      return DropdownMenuItem<String>(
+                        value: hours,
+                        child: Text(label),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
             ),
           ),
 
-          // --------------------------------------------------------------------
-          // 4) Add row with "Download Chart" and "Export CSV" buttons
-          // --------------------------------------------------------------------
+          // 5) Buttons: "Download Chart" and "Export CSV"
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -235,12 +266,10 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
             ],
           ),
 
-          // --------------------------------------------------------------------
-          // 5) Expanded area: show the actual chart (carpet or line, or a placeholder).
-          // --------------------------------------------------------------------
+          // 6) Chart display
           Expanded(
             child: Center(
-              child: _buildMainContent(),
+              child: _buildChartImage(),
             ),
           ),
         ],
@@ -248,7 +277,6 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     );
   }
 
-  /// Builds the two "Carpet Plot" / "Line Chart" buttons with a custom style
   Widget _buildPlotButton({
     required String label,
     required bool selected,
@@ -276,147 +304,76 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     );
   }
 
-  /// Builds a button that opens a DatePicker dialog to update the selected date
-  Widget _buildDateButton(
-    BuildContext context, {
-    required String label,
-    required DateTime? date,
-    required Function(DateTime) onDateSelected,
-  }) {
-    final String text = (date == null)
-        ? "Not set"
-        : DateFormat('yyyy-MM-dd').format(date);
+  Widget _buildChartImage() {
+    final userId = HARDCODED_USER_ID;
+    final aptId = widget.location ?? "apartment0";
+    final isTemp = (selectedMetric == "Temperature");
+    final isCarpet = (temperatureViewMode == "carpet");
 
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blueGrey,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      ),
-      onPressed: () async {
-        final now = DateTime.now();
-        final firstDate = DateTime(now.year - 5); // or 2020
-        final lastDate = DateTime(now.year + 2);
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: date ?? now,
-          firstDate: firstDate,
-          lastDate: lastDate,
-        );
-        if (picked != null) {
-          onDateSelected(picked);
-        }
-      },
-      child: Text(
-        label + text,
-        style: const TextStyle(color: Colors.white),
-      ),
-    );
-  }
+    final endpoint = (isTemp && isCarpet) ? "/generateCarpetPlot" : "/generateLineChart";
 
-  /// Depending on the current metric and (if Temperature) the mode,
-  /// returns an Image.network that loads from the server.
-  Widget _buildMainContent() {
-    // If the user picks a metric other than "Temperature," let's show a single chart
-    // or a placeholder. For demonstration, let's just show a line chart for them, or
-    // you can do separate endpoints if your backend supports multiple metrics for carpet, etc.
-    // But to keep it consistent, we'll pass "metric=" param to the server, so it can handle it.
+    String chartUrl = "$PLOT_SERVICE_URL$endpoint"
+        "?userId=$userId"
+        "&apartmentId=$aptId"
+        "&measure=$selectedMetric"
+        // pass 'duration' param
+        "&duration=$selectedDuration";
 
-    // Build the base chart URL
-    String chartUrl = "";
-    final startParam = (startDate != null)
-        ? "${DateFormat('yyyy-MM-dd').format(startDate!)}T00:00:00"
-        : "";
-    final endParam = (endDate != null)
-        ? "${DateFormat('yyyy-MM-dd').format(endDate!)}T23:59:59"
-        : "";
-
-    // We'll add a &metric=whatever
-    final metricParam = "&metric=$selectedMetric";
-
-    if (selectedMetric == "Temperature") {
-      if (temperatureViewMode == "carpet") {
-        // Carpet Plot
-        chartUrl =
-            "http://localhost:9090/generateCarpetPlot?nocache=${DateTime.now().millisecondsSinceEpoch}";
-      } else {
-        // "line" => line chart
-        chartUrl =
-            "http://localhost:9090/generateLineChart?nocache=${DateTime.now().millisecondsSinceEpoch}";
-      }
-    } else {
-      // For other metrics, let's just show line chart as an example
-      chartUrl =
-          "http://localhost:9090/generateLineChart?nocache=${DateTime.now().millisecondsSinceEpoch}";
+    if (selectedRoom != null) {
+      chartUrl += "&room=$selectedRoom";
     }
 
-    // Add start, end, metric if present
-    if (startParam.isNotEmpty) {
-      chartUrl += "&start=$startParam";
-    }
-    if (endParam.isNotEmpty) {
-      chartUrl += "&end=$endParam";
-    }
-    chartUrl += metricParam;
+    // Force a unique param each time so the chart is regenerated
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    chartUrl += "&ts=$ts";
 
-    // Now load from that URL
     return Image.network(
       chartUrl,
-      errorBuilder: (ctx, error, stack) {
-        return Text("Error loading chart for $selectedMetric");
-      },
-      loadingBuilder: (context, child, progress) {
-        if (progress == null) return child;
-        return const CircularProgressIndicator();
+      errorBuilder: (context, error, stackTrace) {
+        return const Text("Error loading chart (404?)");
       },
     );
   }
 
-  /// Downloads the currently displayed chart image
-  /// Simplest approach for Web: open the same chart URL in a new tab with content-disposition
-  /// For Mobile: you'd need actual file writing logic or a share plugin
   Future<void> _downloadChart() async {
-    // We'll just open the same chart URL in a new tab (if on web).
-    // For demonstration, we'll print the URL or do nothing.
-    // If you're on Flutter web, you could do:
-    /*
-    final chartUrl = _buildChartUrlForDownload();
-    html.window.open(chartUrl, "_blank");
-    */
-    print("Download Chart not fully implemented (platform-specific).");
+    final userId = HARDCODED_USER_ID;
+    final aptId = widget.location ?? "apartment0";
+    final isTemp = (selectedMetric == "Temperature");
+    final isCarpet = (temperatureViewMode == "carpet");
+    final endpoint = (isTemp && isCarpet) ? "/generateCarpetPlot" : "/generateLineChart";
+
+    String url = "$PLOT_SERVICE_URL$endpoint"
+        "?userId=$userId"
+        "&apartmentId=$aptId"
+        "&measure=$selectedMetric"
+        "&download=png"
+        "&duration=$selectedDuration";
+
+    if (selectedRoom != null) {
+      url += "&room=$selectedRoom";
+    }
+
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url));
+    }
   }
 
-  /// Exports CSV for the selected metric & date range
-  /// We'll call `/exportCsv?start=...&end=...&metric=...` from the backend
   Future<void> _exportCsv() async {
-    final baseUrl = "http://localhost:9090/exportCsv";
-    final startParam = (startDate != null)
-        ? "${DateFormat('yyyy-MM-dd').format(startDate!)}T00:00:00"
-        : "";
-    final endParam = (endDate != null)
-        ? "${DateFormat('yyyy-MM-dd').format(endDate!)}T23:59:59"
-        : "";
-    String reqUrl = "$baseUrl?metric=$selectedMetric";
+    final userId = HARDCODED_USER_ID;
+    final aptId = widget.location ?? "apartment0";
 
-    if (startParam.isNotEmpty) {
-      reqUrl += "&start=$startParam";
+    String url = "$PLOT_SERVICE_URL/exportCsv"
+        "?userId=$userId"
+        "&apartmentId=$aptId"
+        "&measure=$selectedMetric"
+        "&duration=$selectedDuration";
+
+    if (selectedRoom != null) {
+      url += "&room=$selectedRoom";
     }
-    if (endParam.isNotEmpty) {
-      reqUrl += "&end=$endParam";
-    }
-    // We can do a simple GET and then handle the CSV text
-    try {
-      final uri = Uri.parse(reqUrl);
-      final response = await http.get(uri);
-      if (response.statusCode == 200) {
-        final csvText = response.body;
-        // For web, you might create a Blob and trigger a download, etc.
-        print("Exported CSV with length = ${csvText.length}");
-      } else {
-        print("Error exporting CSV: ${response.statusCode}");
-      }
-    } catch (e) {
-      print("Exception in _exportCsv: $e");
+
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url));
     }
   }
 }

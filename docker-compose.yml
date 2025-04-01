@@ -69,6 +69,17 @@ services:
     networks:
       net:
         ipv4_address: 192.68.0.28
+  
+  plot_service:
+    build: ./technical_graphs  
+    depends_on:
+      - adaptor
+    ports:
+      - 9090:9090
+    networks:
+      net:
+        ipv4_address: 192.68.0.29
+
 
 volumes:
   influxdb-storage:
