@@ -38,6 +38,7 @@ class KPIEngine:
         for attempt in range(retries):
             try:
                 response = requests.get(self.REGISTRY_URL+"/catalog")
+                print(f"Raw response: {response.text}")
                 response.raise_for_status()
                 print("Catalog fetched successfully.")
                 return response.json()
