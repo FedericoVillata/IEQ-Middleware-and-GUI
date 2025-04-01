@@ -80,6 +80,15 @@ services:
       net:
         ipv4_address: 192.68.0.29
 
+  kpi-system:
+    build: ./kpis_and_suggestions
+    depends_on:
+      - adaptor
+    networks:
+      net:
+        ipv4_address: 192.68.0.30
+    restart: on-failure
+
 
 volumes:
   influxdb-storage:
