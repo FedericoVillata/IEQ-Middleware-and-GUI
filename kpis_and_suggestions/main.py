@@ -14,7 +14,7 @@ MQTT_BASE_TOPIC = 'home'
 
 ADAPTOR_BASE = "http://adaptor:8080"
 
-def fetch_data(self, userId, apartmentId, measure, start, end, duration):
+def fetch_data(userId, apartmentId, measure, start=None, end=None, duration=None):
     """
     If 'start' and 'end' are provided => calls /getDatainPeriod
     else if 'duration' => calls /getApartmentData
