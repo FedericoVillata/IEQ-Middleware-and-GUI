@@ -99,12 +99,12 @@ class Adaptor(object):
         
     def GET(self,*uri,**params):
         """Get data from InfluxDB"""
-        #http://localhost:8080/getApartmentData/userId/aptId/?measurament=humidity&duration=1 
+        #http://localhost:8080/getApartmentData/userId/aptId/?measurement=humidity&duration=1 
         if len(uri)!=0:
             if uri[0] == "getApartmentData":
                 if self.checkUserPresent(uri[1]):
                     if self.checkApartmentPresent(uri[1],uri[2]): 
-                        if params["measurament"] in self.possMeasures:
+                        if params["measurement"] in self.possMeasures:
                             try:
                                 duration = int(params["duration"])
                             except:
@@ -116,7 +116,7 @@ class Adaptor(object):
                             bucket = uri[2]
                             query = f'from(bucket: "{bucket}") \
                                 |> range(start: -{duration}{timeInterval}) \
-                                        |> filter(fn: (r) => r["_field"] == "{params["measurament"]}")'
+                                        |> filter(fn: (r) => r["_field"] == "{params["measurement"]}")'
                             tables = self.client.query_api().query(org=self.org, query=query)
                             out = []
                             for table in tables:
@@ -129,10 +129,10 @@ class Adaptor(object):
                 else:
                     raise cherrypy.HTTPError("400", "Invalid User")
             elif uri[0] == "getRoomData":
-                #http://localhost:8080/getRoomData/userId/aptId/roomCode?measurament=humidity&duration=1 
+                #http://localhost:8080/getRoomData/userId/aptId/roomCode?measurement=humidity&duration=1 
                 if self.checkUserPresent(uri[1]):
                     if self.checkApartmentPresent(uri[1],uri[2]): 
-                        if params["measurament"] in self.possMeasures:
+                        if params["measurement"] in self.possMeasures:
                             try:
                                 duration = int(params["duration"])
                             except:
@@ -145,7 +145,7 @@ class Adaptor(object):
                             query = f'from(bucket: "{bucket}") \
                                 |> range(start: -{duration}{timeInterval}) \
                                     |> filter(fn: (r) => r["_measurement"] == "{uri[3]}") \
-                                        |> filter(fn: (r) => r["_field"] == "{params["measurament"]}")'
+                                        |> filter(fn: (r) => r["_field"] == "{params["measurement"]}")'
                             tables = self.client.query_api().query(org=self.org, query=query)
                             out = []
                             for table in tables:
@@ -170,7 +170,7 @@ class Adaptor(object):
                         out = []
                         for table in tables:
                             for row in table.records:
-                                line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "measurament": row["_field"]}
+                                line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "measurement": row["_field"]}
                                 out.append(line)
                         return json.dumps(out)
                     else:
@@ -189,7 +189,7 @@ class Adaptor(object):
                         out = []
                         for table in tables:
                             for row in table.records:
-                                line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"], "measurament": row["_field"]}
+                                line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"], "measurement": row["_field"]}
                                 out.append(line)
                         return json.dumps(out)
                     else:
@@ -197,11 +197,11 @@ class Adaptor(object):
                 else:
                     raise cherrypy.HTTPError("400", "Invalid User")
             elif uri[0] == "getDataInPeriod":
-                #http://localhost:8080/getDatainPeriod/userId/aptId/?measurament=Temperature&start=2025-03-20T08:00:00Z&stop=2025-03-21T08:00:00Z
+                #http://localhost:8080/getDatainPeriod/userId/aptId/?measurement=Temperature&start=2025-03-20T08:00:00Z&stop=2025-03-21T08:00:00Z
                 #time in RFC3339 format
                 if self.checkUserPresent(uri[1]):
                     if self.checkApartmentPresent(uri[1],uri[2]): 
-                        if params["measurament"] in self.possMeasures:
+                        if params["measurement"] in self.possMeasures:
                             try:
                                 start = params["start"]  # Get start date
                                 stop = params["stop"]    # Get stop date
@@ -214,7 +214,7 @@ class Adaptor(object):
                             bucket = uri[2]
                             query = f'from(bucket: "{bucket}") \
                                 |> range(start: {start}, stop: {stop}) \
-                                        |> filter(fn: (r) => r["_field"] == "{params["measurament"]}")'
+                                        |> filter(fn: (r) => r["_field"] == "{params["measurement"]}")'
                             tables = self.client.query_api().query(org=self.org, query=query)
                             out = []
                             for table in tables:

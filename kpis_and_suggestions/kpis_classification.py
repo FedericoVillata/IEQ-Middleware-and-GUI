@@ -236,5 +236,3 @@ def classify_overall_score(score, settings):
         return "R"
     else:
         return "Unknown"
-
-

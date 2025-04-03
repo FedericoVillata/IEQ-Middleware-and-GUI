@@ -38,7 +38,7 @@ class KPIEngine:
         for attempt in range(retries):
             try:
                 response = requests.get(self.REGISTRY_URL+"/catalog")
-                print(f"Raw response: {response.text}")
+               # print(f"Raw response: {response.text}")
                 response.raise_for_status()
                 print("Catalog fetched successfully.")
                 return response.json()
@@ -58,7 +58,7 @@ class KPIEngine:
         if start and end:
             url = f"{self.ADAPTOR_BASE}/getDatainPeriod/{userId}/{apartmentId}"
             params = {
-                "measurament": measure,
+                "measurement": measure,
                 "start": f"{start}T00:00:00Z",
                 "stop": f"{end}T23:59:59Z",
             }
@@ -66,7 +66,7 @@ class KPIEngine:
             dur = duration if duration else "168"
             url = f"{self.ADAPTOR_BASE}/getApartmentData/{userId}/{apartmentId}"
             params = {
-                "measurament": measure,
+                "measurement": measure,
                 "duration": dur,
             }
 
@@ -93,7 +93,7 @@ class KPIEngine:
             print(f"  -> Processing Room: {room_id}")
 
             userId = apartment["users"][0]
-            measures = ["Temperature", "Humidity", "CO2", "PM10", "TVOC"]
+            measures = ["Temperature", "Humidity", "CO2", "PM10", "VOC"]
             measure_data = {}
 
             # Fetch and filter measurements by room
@@ -199,10 +199,29 @@ class KPIEngine:
         # Start publisher and process all apartments
         self.publisher.start()
         for apartment in self.catalog['apartments']:
-            self.process_apartment(apartment)
+            #if apartment['apartmentId'] == "apartment0": # uncomment if you don't want to iterate
+                self.process_apartment(apartment)
         self.publisher.stop()
 
+def wait_for_data():
+    url = "http://adaptor:8080/getApartmentData/user0/apartment0?measurement=Temperature&duration=1"
+    while True:
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                if len(data) > 0:
+                    print("✔️ Data received from adaptor.")
+                    return
+                else:
+                    print("⏳ No data yet, retrying...")
+            else:
+                print(f"Unexpected status code: {response.status_code}")
+        except Exception as e:
+            print("Error contacting adaptor:", e)
+        time.sleep(3)
 
 if __name__ == "__main__":
+    wait_for_data()  # <--- aspetta i dati reali
     engine = KPIEngine()
     engine.run()
