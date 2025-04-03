@@ -72,52 +72,52 @@ if __name__ == '__main__':
         event = {"n": "Temperature/room1/sensor1", "u": "Celsius", "t": str(time.time()), "v": 34}#VolumetricWaterContent
         out = {"bn": pubTopic2,"e":[event]}
         myPub.myPublish(json.dumps(out), pubTopic2)
-        
-        timestamp= str(time.time())
 
-        avg_temp = 23.5  # °C
-        temp_class = "Comfortable"
+        # timestamp= str(time.time())
 
-        avg_humidity = 45.0  # %
-        hum_class = "Optimal"
+        # avg_temp = 23.5  # °C
+        # temp_class = "Comfortable"
 
-        avg_co2 = 650  # ppm
-        co2_class = "Normal"
+        # avg_humidity = 45.0  # %
+        # hum_class = "Optimal"
 
-        pmv = 0.2  # Predicted Mean Vote, range: [-3, 3]
-        pmv_class = "Neutral"
+        # avg_co2 = 650  # ppm
+        # co2_class = "Normal"
 
-        ppd = 10  # Predicted Percentage Dissatisfied, in %
-        ppd_class = "Low dissatisfaction"
+        # pmv = 0.2  # Predicted Mean Vote, range: [-3, 3]
+        # pmv_class = "Neutral"
 
-        icone = 75  # Indoor Comfort Index, valore inventato
-        icone_class = "Good"
+        # ppd = 10  # Predicted Percentage Dissatisfied, in %
+        # ppd_class = "Low dissatisfaction"
 
-        ieqi = 85  # Indoor Environmental Quality Index
-        ieqi_class = "Excellent"
+        # icone = 75  # Indoor Comfort Index, valore inventato
+        # icone_class = "Good"
 
-        env_score = 88  # Punteggio complessivo dell’ambiente
-        env_classification = "Very Good"
+        # ieqi = 85  # Indoor Environmental Quality Index
+        # ieqi_class = "Excellent"
 
-        events = [
-            {"n": "temperature/kpis/value", "v": avg_temp, "t": timestamp},
-            {"n": "temperature_class/kpis/class", "v": temp_class, "t": timestamp},
-            {"n": "humidity/kpis/value", "v": avg_humidity, "t": timestamp},
-            {"n": "humidity_class/kpis/class", "v": hum_class, "t": timestamp},
-            {"n": "co2/kpis/value", "v": avg_co2, "t": timestamp},
-            {"n": "co2_class/kpis/class", "v": co2_class, "t": timestamp},
-            {"n": "pmv/kpis/value", "v": pmv, "t": timestamp},
-            {"n": "pmv_class/kpis/class", "v": pmv_class, "t": timestamp},
-            {"n": "ppd/kpis/value", "v": ppd, "t": timestamp},
-            {"n": "ppd_class/kpis/class", "v": ppd_class, "t": timestamp},
-            {"n": "icone/kpis/value", "v": icone, "t": timestamp},
-            {"n": "icone_class/kpis/class", "v": icone_class, "t": timestamp},
-            {"n": "ieqi/kpis/value", "v": ieqi, "t": timestamp},
-            {"n": "ieqi_class/kpis/class", "v": ieqi_class, "t": timestamp},
-            {"n": "environment_score/kpis/value", "v": env_score, "t": timestamp},
-            {"n": "environment_score_class/kpis/class", "v": env_classification, "t": timestamp}
-        ]
-        out = {"bn": pubTopic2,"e":events}
-        myPub.myPublish(json.dumps(out), pubTopic2)
+        # env_score = 88  # Punteggio complessivo dell’ambiente
+        # env_classification = "Very Good"
+
+        # events = [
+        #     {"n": "temperature/kpis/value", "v": avg_temp, "t": timestamp},
+        #     {"n": "temperature_class/kpis/class", "v": temp_class, "t": timestamp},
+        #     {"n": "humidity/kpis/value", "v": avg_humidity, "t": timestamp},
+        #     {"n": "humidity_class/kpis/class", "v": hum_class, "t": timestamp},
+        #     {"n": "co2/kpis/value", "v": avg_co2, "t": timestamp},
+        #     {"n": "co2_class/kpis/class", "v": co2_class, "t": timestamp},
+        #     {"n": "pmv/kpis/value", "v": pmv, "t": timestamp},
+        #     {"n": "pmv_class/kpis/class", "v": pmv_class, "t": timestamp},
+        #     {"n": "ppd/kpis/value", "v": ppd, "t": timestamp},
+        #     {"n": "ppd_class/kpis/class", "v": ppd_class, "t": timestamp},
+        #     {"n": "icone/kpis/value", "v": icone, "t": timestamp},
+        #     {"n": "icone_class/kpis/class", "v": icone_class, "t": timestamp},
+        #     {"n": "ieqi/kpis/value", "v": ieqi, "t": timestamp},
+        #     {"n": "ieqi_class/kpis/class", "v": ieqi_class, "t": timestamp},
+        #     {"n": "environment_score/kpis/value", "v": env_score, "t": timestamp},
+        #     {"n": "environment_score_class/kpis/class", "v": env_classification, "t": timestamp}
+        # ]
+        # out = {"bn": pubTopic2,"e":events}
+        # myPub.myPublish(json.dumps(out), pubTopic2)
 
         time.sleep(10)
