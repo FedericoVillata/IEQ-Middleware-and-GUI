@@ -356,8 +356,13 @@ class Webserver(object):
             #GET Apartments from catalog    
             if uri[0] == 'apartments':
                 return json.dumps(self.cat.catalog["apartments"])
+            #GET Default settings from catalog 
             if uri[0] == "base_settings":
                 return json.dumps(self.cat.catalog["base_settings"])
+            #GET whole catalog 
+            if uri[0] == "catalog":
+                return json.dumps(self.cat.catalog)
+            
         
 
     def POST(self, *uri, **params):

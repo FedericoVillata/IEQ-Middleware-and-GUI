@@ -53,7 +53,6 @@ class _TenantMainPageState extends State<TenantMainPage> {
   late String selectedRoom;
   Map<String, List<String>> apartmentRooms = {};
   Map<String, int> overallScores = {};
-  Map<String, String> externalTemperatures = {};
   bool loading = true;
 
   @override
@@ -70,6 +69,7 @@ class _TenantMainPageState extends State<TenantMainPage> {
       final response = await http.get(Uri.parse("http://localhost:8081/apartments"));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
+
         for (var apt in data) {
           if (widget.apartments.contains(apt['apartmentId'])) {
             final aptId = apt['apartmentId'];
@@ -83,9 +83,9 @@ class _TenantMainPageState extends State<TenantMainPage> {
             }
 
             overallScores[aptId] = 85;
-            externalTemperatures[aptId] = "20°C";
           }
         }
+
         _updatePages();
         setState(() {
           loading = false;
@@ -119,7 +119,6 @@ class _TenantMainPageState extends State<TenantMainPage> {
         rooms: apartmentRooms,
         selectedApartment: selectedApartment,
         overallScores: overallScores,
-        externalTemperatures: externalTemperatures,
         onRoomChanged: updateSelectedRoom,
         onApartmentChanged: updateSelectedApartment,
       ),
@@ -127,7 +126,8 @@ class _TenantMainPageState extends State<TenantMainPage> {
       feedback.FeedbackPage(
         username: widget.username,
         apartmentId: selectedApartment,
-        roomId: selectedRoom,),
+        roomId: selectedRoom,
+      ),
     ];
   }
 
