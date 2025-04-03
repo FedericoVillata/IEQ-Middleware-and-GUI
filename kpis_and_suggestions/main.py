@@ -7,10 +7,9 @@ import json
 import requests
 import numpy as np
 
-from adaptor.adaptor import Adaptor
 from kpis_classification import *
-from pubsimulator.publisher import MyPublisher
-
+from publisher import MyPublisher
+from datetime import datetime
 
 class KPIEngine:
 
@@ -23,7 +22,10 @@ class KPIEngine:
         try:
             self.ADAPTOR_BASE = self.config["adaptor_url"]
             self.REGISTRY_URL = self.config["registry_url"]
-            self.MQTT_BASE_TOPIC = self.config["base_topic"]
+            self.MQTT_BASE_TOPIC = self.config["base_topic"].replace("#", "").rstrip("/")
+            self.MQTT_BROKER = self.config.get("messageBroker")
+            self.MQTT_PORT = self.config.get("brokerPort")
+
 
         except KeyError as e:
             raise ValueError(f"Missing configuration key: {e}")
@@ -31,8 +33,8 @@ class KPIEngine:
 
         # Load catalog, initialize publisher and adaptor
         self.catalog = self.get_catalog()
-        self.publisher = MyPublisher("KPIModule", "test_topic")
-        self.adaptor = Adaptor()
+        self.publisher = MyPublisher("KPIModule", self.MQTT_BASE_TOPIC, self.MQTT_BROKER, self.MQTT_PORT)
+
 
     def get_catalog(self, retries=10, delay=3):
         for attempt in range(retries):
@@ -48,10 +50,17 @@ class KPIEngine:
         print("Failed to fetch catalog after several retries. Exiting.")
         exit(1)
 
+
     def get_season_from_timestamp(self, timestamp):
-        # Extract season from timestamp (cold or warm)
-        month = int(timestamp.split('-')[1])
-        return "warm" if 4 <= month <= 9 else "cold"
+        try:
+            # Try parsing the format "DD/MM/YYYY, HH:MM:SS"
+            dt = datetime.strptime("03/31/2025, 17:27:15", "%m/%d/%Y, %H:%M:%S")
+            month = dt.month
+            return "warm" if 4 <= month <= 9 else "cold"
+        except Exception as e:
+            print(f"⚠️ Error parsing timestamp: '{timestamp}' -> {e}")
+            return "unknown"
+
 
     def fetch_data(self, userId, apartmentId, measure, start=None, end=None, duration=None):
         # Call the appropriate adaptor endpoint based on time range or duration
@@ -106,13 +115,13 @@ class KPIEngine:
 
             # Proceed if essential metrics are available
             if all(measure_data.get(m) for m in ["Temperature", "Humidity", "CO2"]):
-                avg_temp = np.mean([d["value"] for d in measure_data["Temperature"]])
-                avg_humidity = np.mean([d["value"] for d in measure_data["Humidity"]])
-                avg_co2 = np.mean([d["value"] for d in measure_data["CO2"]])
-                avg_pm10 = np.mean([d["value"] for d in measure_data.get("PM10", [])]) if measure_data.get("PM10") else 0
-                avg_tvoc = np.mean([d["value"] for d in measure_data.get("TVOC", [])]) if measure_data.get("TVOC") else 0
+                avg_temp = np.mean([d["v"] for d in measure_data["Temperature"]])
+                avg_humidity = np.mean([d["v"] for d in measure_data["Humidity"]])
+                avg_co2 = np.mean([d["v"] for d in measure_data["CO2"]])
+                avg_pm10 = np.mean([d["v"] for d in measure_data.get("PM10", [])]) if measure_data.get("PM10") else 0
+                avg_tvoc = np.mean([d["v"] for d in measure_data.get("TVOC", [])]) if measure_data.get("TVOC") else 0
 
-                season = self.get_season_from_timestamp(measure_data["Temperature"][0]["timestamp"])
+                season = self.get_season_from_timestamp(measure_data["Temperature"][0]["t"])
                 outdoor_temps = [d.get("outdoor_temp", avg_temp) for d in measure_data["Temperature"]][-7:]
                 adaptive_comfort = adaptive_thermal_comfort(outdoor_temps)
                 t_ext = adaptive_comfort['Running Mean Temperature'] if adaptive_comfort else avg_temp
@@ -120,6 +129,11 @@ class KPIEngine:
                 cat_num = settings["thresholds"].get("adaptive_temp_category", 2)
                 cat_label = f"Cat {'I' if cat_num == 1 else 'II' if cat_num == 2 else 'III'}"
                 adaptive_range = adaptive_comfort["Acceptable Range"].get(cat_label) if adaptive_comfort else None
+
+                if adaptive_range is None:
+                    print(f"⚠️ Missing adaptive range for {cat_label}, skipping room.")
+                    continue
+
 
                 # Classify metrics
                 temp_class = classify_temperature(avg_temp, season, t_ext, settings, adaptive_range)
@@ -161,7 +175,7 @@ class KPIEngine:
                              pmv_class, ppd_class, icone_class, ieqi_class,
                              adaptive_comfort, env_score, env_classification):
 
-        topic = f"{self.MQTT_BASE_TOPIC}/{apartment_id}" # {room_id}/metrics"
+        topic = f"{self.MQTT_BASE_TOPIC}/{apartment_id}"
         base_name = topic
         timestamp = time.time()
 
@@ -222,6 +236,17 @@ def wait_for_data():
         time.sleep(3)
 
 if __name__ == "__main__":
-    wait_for_data()  # <--- aspetta i dati reali
-    engine = KPIEngine()
-    engine.run()
+    wait_for_data()  # Wait until the adaptor returns valid data
+
+    INTERVAL_SECONDS = 30 * 60  # 30 minutes
+
+    while True:
+        print("🚀 Starting new KPI cycle...")
+        try:
+            engine = KPIEngine()
+            engine.run()
+        except Exception as e:
+            print(f"❌ Error during KPI cycle: {e}")
+        
+        print(f"⏳ Waiting {INTERVAL_SECONDS / 60} minutes before next cycle...\n")
+        time.sleep(INTERVAL_SECONDS)
