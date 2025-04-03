@@ -161,28 +161,28 @@ class KPIEngine:
                              pmv_class, ppd_class, icone_class, ieqi_class,
                              adaptive_comfort, env_score, env_classification):
 
-        topic = f"{self.MQTT_BASE_TOPIC}/{apartment_id}/{room_id}/metrics"
+        topic = f"{self.MQTT_BASE_TOPIC}/{apartment_id}" # {room_id}/metrics"
         base_name = topic
         timestamp = time.time()
 
         # Build list of SenML entries
         events = [
-            {"n": "temperature", "v": avg_temp, "t": timestamp},
-            {"n": "temperature_class", "vs": temp_class, "t": timestamp},
-            {"n": "humidity", "v": avg_humidity, "t": timestamp},
-            {"n": "humidity_class", "vs": hum_class, "t": timestamp},
-            {"n": "co2", "v": avg_co2, "t": timestamp},
-            {"n": "co2_class", "vs": co2_class, "t": timestamp},
-            {"n": "pmv", "v": pmv, "t": timestamp},
-            {"n": "pmv_class", "vs": pmv_class, "t": timestamp},
-            {"n": "ppd", "v": ppd, "t": timestamp},
-            {"n": "ppd_class", "vs": ppd_class, "t": timestamp},
-            {"n": "icone", "v": icone, "t": timestamp},
-            {"n": "icone_class", "vs": icone_class, "t": timestamp},
-            {"n": "ieqi", "v": ieqi, "t": timestamp},
-            {"n": "ieqi_class", "vs": ieqi_class, "t": timestamp},
-            {"n": "environment_score", "v": env_score, "t": timestamp},
-            {"n": "environment_score_class", "vs": env_classification, "t": timestamp}
+            {"n": "temperature/kpis/value", "v": avg_temp, "t": timestamp},
+            {"n": "temperature_class/kpis/class", "v": temp_class, "t": timestamp},
+            {"n": "humidity/kpis/value", "v": avg_humidity, "t": timestamp},
+            {"n": "humidity_class/kpis/class", "v": hum_class, "t": timestamp},
+            {"n": "co2/kpis/value", "v": avg_co2, "t": timestamp},
+            {"n": "co2_class/kpis/class", "v": co2_class, "t": timestamp},
+            {"n": "pmv/kpis/value", "v": pmv, "t": timestamp},
+            {"n": "pmv_class/kpis/class", "v": pmv_class, "t": timestamp},
+            {"n": "ppd/kpis/value", "v": ppd, "t": timestamp},
+            {"n": "ppd_class/kpis/class", "v": ppd_class, "t": timestamp},
+            {"n": "icone/kpis/value", "v": icone, "t": timestamp},
+            {"n": "icone_class/kpis/class", "v": icone_class, "t": timestamp},
+            {"n": "ieqi/kpis/value", "v": ieqi, "t": timestamp},
+            {"n": "ieqi_class/kpis/class", "v": ieqi_class, "t": timestamp},
+            {"n": "environment_score/kpis/value", "v": env_score, "t": timestamp},
+            {"n": "environment_score_class/kpis/class", "v": env_classification, "t": timestamp}
         ]
 
         if adaptive_comfort:
