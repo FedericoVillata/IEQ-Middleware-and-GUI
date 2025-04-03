@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# plot_service.py
-
 import cherrypy
 import json
 import requests
@@ -14,37 +11,43 @@ import csv
 from collections import defaultdict
 
 class PlotService:
+    """
+    Plot service that can generate a carpet or a line chart for any measure:
+      /generateCarpetPlot?userId=U&apartmentId=A&measure=M...
+      /generateLineChart?userId=U&apartmentId=A&measure=M...
+      /exportCsv?userId=U&apartmentId=A&measure=M...
+    We've shortened the figure size and lowered the DPI
+    to produce images faster while retaining decent quality.
+    """
 
-    # --------------------------------------------------------------------------------
-    # Adjust this base URL to your actual Adaptor's address:
-    # If you're running in Docker with a service name "adaptor", you can do:
-    #   ADAPTOR_BASE = "http://adaptor:8080"
-    # or if you prefer using the direct IP from docker-compose:
-    #   ADAPTOR_BASE = "http://192.68.0.25:8080"
-    # Adjust as needed:
-    # --------------------------------------------------------------------------------
+    # Base URL to the adaptor service
     ADAPTOR_BASE = "http://adaptor:8080"
 
     @cherrypy.expose
-    def generateCarpetPlot(self, userId="user0", apartmentId="apartment0",
-                           measure="Temperature", download=None, room=None,
-                           start=None, end=None, duration=None, **kwargs):
+    def generateCarpetPlot(self, **kwargs):
         """
-        GET /generateCarpetPlot?userId=USER&apartmentId=APT&measure=MEAS&room=ROOM&start=YYYY-MM-DD&end=YYYY-MM-DD&duration=HOURS&download=png
-        If 'start' and 'end' are provided, calls /getDatainPeriod on the adaptor.
-        Else if 'duration' is provided, calls /getApartmentData with that duration.
-        Then filters by 'room' if provided.
-        Finally creates a 'carpet plot' of the result with a fixed color scale for temperature.
+        Example:
+          GET /generateCarpetPlot?userId=user0&apartmentId=apartment0&measure=Temperature
+              &room=room0&duration=8760&download=png
         """
-        print("DEBUG: generateCarpetPlot =>", userId, apartmentId, measure, room, start, end, duration, download)
+        try:
+            userId = kwargs["userId"]
+            apartmentId = kwargs["apartmentId"]
+        except KeyError:
+            raise cherrypy.HTTPError(400, "Missing userId or apartmentId")
+
+        measure = kwargs.get("measure", "Temperature")
+        room = kwargs.get("room", None)
+        duration = kwargs.get("duration", None)
+        start = kwargs.get("start", None)
+        end = kwargs.get("end", None)
+        download = kwargs.get("download", None)
 
         data = self._fetch_data(userId, apartmentId, measure, start, end, duration)
 
-        # Filter by room if requested
+        # Filter by room
         if room:
-            before_len = len(data)
             data = [d for d in data if d.get("room") == room]
-            print(f"DEBUG: after room filter => {len(data)}/{before_len}")
 
         if not data:
             return self._no_data_image(download=download)
@@ -56,19 +59,17 @@ class PlotService:
             val = item["v"]
             times.append(dt)
             values.append(val)
-
         if not times:
             return self._no_data_image(download=download)
 
-        # Build a day x half-hour matrix for the carpet plot
+        # Build day x half-hour matrix
         def halfhour_index(dtobj):
             return dtobj.hour * 2 + (1 if dtobj.minute >= 30 else 0)
 
         day_dict = defaultdict(lambda: [np.nan] * 48)
         for dt, val in zip(times, values):
             day_str = dt.strftime("%Y-%m-%d")
-            idx = halfhour_index(dt)
-            day_dict[day_str][idx] = val
+            day_dict[day_str][halfhour_index(dt)] = val
 
         all_days = sorted(day_dict.keys())
         if not all_days:
@@ -80,9 +81,8 @@ class PlotService:
             matrix[:, col] = day_dict[day_str]
 
         # Plot
-        fig, ax = plt.subplots(figsize=(12, 6))
-
-        # For temperature example: 10 => 40 so 20C is greenish in 'jet' colormap
+        fig, ax = plt.subplots(figsize=(12, 8), dpi=100)
+        # For an example color scale from 10°C to 40°C
         vmin_val = 10
         vmax_val = 40
         cax = ax.imshow(
@@ -93,7 +93,7 @@ class PlotService:
             vmin=vmin_val,
             vmax=vmax_val
         )
-        plt.colorbar(cax, ax=ax, label=f"{measure}")
+        plt.colorbar(cax, ax=ax, label=measure)
 
         # Y-axis => half-hours
         y_ticks = np.arange(0, 48, 2)
@@ -102,18 +102,18 @@ class PlotService:
         ax.set_yticklabels(y_labels)
 
         # X-axis => days
-        x_ticks = np.arange(n_days)
-        step_x = max(1, n_days // 10)
-        ax.set_xticks(x_ticks[::step_x])
-        ax.set_xticklabels([all_days[i] for i in x_ticks[::step_x]], rotation=45)
+        x_vals = np.arange(n_days)
+        step_x = max(1, n_days // 8)
+        ax.set_xticks(x_vals[::step_x])
+        ax.set_xticklabels([all_days[i] for i in x_vals[::step_x]], rotation=45)
 
+        ax.set_title(f"{measure} Carpet Plot")
         ax.set_xlabel("Date")
         ax.set_ylabel("Time of Day")
-        ax.set_title(f"{measure} Carpet Plot")
 
         plt.tight_layout()
         buf = BytesIO()
-        plt.savefig(buf, format='png', dpi=100)
+        plt.savefig(buf, format='png')
         plt.close(fig)
         buf.seek(0)
 
@@ -123,22 +123,30 @@ class PlotService:
         return buf.getvalue()
 
     @cherrypy.expose
-    def generateLineChart(self, userId="user0", apartmentId="apartment0",
-                          measure="Temperature", download=None, room=None,
-                          start=None, end=None, duration=None, **kwargs):
+    def generateLineChart(self, **kwargs):
         """
-        GET /generateLineChart?userId=USER&apartmentId=APT&measure=MEAS&room=ROOM&start=YYYY-MM-DD&end=YYYY-MM-DD&duration=HOURS&download=png
-        Similar to generateCarpetPlot but produces a line chart.
+        Example:
+          GET /generateLineChart?userId=user0&apartmentId=apartment0&measure=Temperature
+              &room=room0&duration=8760&download=png
         """
-        print("DEBUG: generateLineChart =>", userId, apartmentId, measure, room, start, end, duration, download)
+        try:
+            userId = kwargs["userId"]
+            apartmentId = kwargs["apartmentId"]
+        except KeyError:
+            raise cherrypy.HTTPError(400, "Missing userId or apartmentId")
+
+        measure = kwargs.get("measure", "Temperature")
+        room = kwargs.get("room", None)
+        duration = kwargs.get("duration", None)
+        start = kwargs.get("start", None)
+        end = kwargs.get("end", None)
+        download = kwargs.get("download", None)
 
         data = self._fetch_data(userId, apartmentId, measure, start, end, duration)
 
-        # Filter by room if requested
+        # Filter room
         if room:
-            before_len = len(data)
             data = [d for d in data if d.get("room") == room]
-            print(f"DEBUG: after room filter => {len(data)}/{before_len}")
 
         if not data:
             return self._no_data_image(download=download)
@@ -150,16 +158,17 @@ class PlotService:
             val = item["v"]
             times.append(dt)
             values.append(val)
-
         if not times:
             return self._no_data_image(download=download)
 
-        # Sort by date
+        # Sort by ascending time
         combined = sorted(zip(times, values), key=lambda x: x[0])
-        times = [pair[0] for pair in combined]
-        values = [pair[1] for pair in combined]
+        times = [t for (t, _) in combined]
+        values = [v for (_, v) in combined]
 
-        fig, ax = plt.subplots(figsize=(10, 5))
+        # Plot
+        fig, ax = plt.subplots(figsize=(12, 8), dpi=100)
+        plt.grid()
         ax.plot(times, values, marker='o', linewidth=2)
         ax.set_title(f"{measure} (Line Chart)")
         ax.set_xlabel("Time")
@@ -168,7 +177,7 @@ class PlotService:
 
         plt.tight_layout()
         buf = BytesIO()
-        plt.savefig(buf, format='png', dpi=100)
+        plt.savefig(buf, format='png')
         plt.close(fig)
         buf.seek(0)
 
@@ -178,21 +187,28 @@ class PlotService:
         return buf.getvalue()
 
     @cherrypy.expose
-    def exportCsv(self, userId="user0", apartmentId="apartment0",
-                  measure="Temperature", room=None, start=None, end=None, duration=None, **kwargs):
+    def exportCsv(self, **kwargs):
         """
-        GET /exportCsv?userId=USER&apartmentId=APT&measure=MEAS&room=ROOM&start=YYYY-MM-DD&end=YYYY-MM-DD&duration=HOURS
-        Exports the data in CSV format (timestamp, value).
+        Example:
+          GET /exportCsv?userId=user0&apartmentId=apartment0&measure=Temperature
+              &room=room0&duration=8760
         """
-        print("DEBUG: exportCsv =>", userId, apartmentId, measure, room, start, end, duration)
+        try:
+            userId = kwargs["userId"]
+            apartmentId = kwargs["apartmentId"]
+        except KeyError:
+            raise cherrypy.HTTPError(400, "Missing userId or apartmentId")
+
+        measure = kwargs.get("measure", "Temperature")
+        room = kwargs.get("room", None)
+        duration = kwargs.get("duration", None)
+        start = kwargs.get("start", None)
+        end = kwargs.get("end", None)
 
         data = self._fetch_data(userId, apartmentId, measure, start, end, duration)
 
-        # Filter by room if requested
         if room:
-            before_len = len(data)
             data = [d for d in data if d.get("room") == room]
-            print(f"DEBUG: after room filter => {len(data)}/{before_len}")
 
         cherrypy.response.headers["Content-Type"] = "text/csv; charset=utf-8"
         cherrypy.response.headers["Content-Disposition"] = f'attachment; filename="{measure}_data.csv"'
@@ -210,69 +226,56 @@ class PlotService:
 
         return output.getvalue()
 
-    # ----------------------------- HELPER METHODS ------------------------------
+    # -----------------------------------------------------
+    #               Helper Methods
+    # -----------------------------------------------------
     def _fetch_data(self, userId, apartmentId, measure, start, end, duration):
         """
-        If 'start' and 'end' are provided => calls /getDatainPeriod
-        else if 'duration' => calls /getApartmentData
-        else => defaults to 168 hours
+        If start/end are specified => /getDatainPeriod
+        else => /getApartmentData
         """
         if start and end:
-            # date range approach
-            adaptor_url = f"{self.ADAPTOR_BASE}/getDatainPeriod/{userId}/{apartmentId}"
+            url = f"{self.ADAPTOR_BASE}/getDatainPeriod/{userId}/{apartmentId}"
             params = {
                 "measurament": measure,
                 "start": f"{start}T00:00:00Z",
                 "stop":  f"{end}T23:59:59Z",
             }
-            print("DEBUG: calling getDatainPeriod =>", adaptor_url, params)
         else:
-            # fallback to duration approach
-            dur = duration if duration else "168"
-            adaptor_url = f"{self.ADAPTOR_BASE}/getApartmentData/{userId}/{apartmentId}"
-            params = {
-                "measurament": measure,
-                "duration": dur,
-            }
-            print("DEBUG: calling getApartmentData =>", adaptor_url, params)
+            url = f"{self.ADAPTOR_BASE}/getApartmentData/{userId}/{apartmentId}"
+            dur = duration if duration else "168"  # default ~1 week
+            params = {"measurament": measure, "duration": dur}
 
         results = []
         try:
-            resp = requests.get(adaptor_url, params=params, timeout=10)
-            print("DEBUG: adaptor response =>", resp.status_code)
+            resp = requests.get(url, params=params, timeout=10)
             if resp.status_code == 200:
                 results = resp.json()
-                print("DEBUG: parsed JSON =>", len(results), "records")
             else:
                 print("ERROR: adaptor returned status", resp.status_code)
         except Exception as exc:
             print("ERROR in _fetch_data:", exc)
         return results
 
-    def _parse_time(self, timestr):
-        """
-        Attempt to parse time from the adaptor's JSON. 
-        The adaptor often returns "MM/DD/YYYY, HH:MM:SS" or ISO8601.
-        """
+    def _parse_time(self, tstring):
+        # Common formats from the adaptor
         fmts = ["%m/%d/%Y, %H:%M:%S", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d %H:%M:%S"]
         for f in fmts:
             try:
-                return datetime.strptime(timestr, f)
+                return datetime.strptime(tstring, f)
             except ValueError:
                 pass
-        # fallback
         return datetime.now()
 
     def _no_data_image(self, download=None):
         """
-        Return a small placeholder image if no data is available.
+        Return a small placeholder image.
         """
-        fig, ax = plt.subplots(figsize=(2, 1))
-        ax.text(0.5, 0.5, "No Data", ha="center", va="center")
+        fig, ax = plt.subplots(figsize=(2, 1), dpi=80)
+        ax.text(0.5, 0.5, "No Data", ha="center", va="center", fontsize=12)
         ax.axis("off")
-
         buf = BytesIO()
-        plt.savefig(buf, format="png", dpi=50)
+        plt.savefig(buf, format='png')
         plt.close(fig)
         buf.seek(0)
 
@@ -283,19 +286,19 @@ class PlotService:
 
 def main():
     cherrypy.config.update({
-        'server.socket_host': '0.0.0.0',
-        'server.socket_port': 9090
+        "server.socket_host": "0.0.0.0",
+        "server.socket_port": 9090
     })
 
     conf = {
-        '/': {
-            'tools.sessions.on': True
+        "/": {
+            "tools.sessions.on": True
         }
     }
 
-    cherrypy.tree.mount(PlotService(), '/', conf)
+    cherrypy.tree.mount(PlotService(), "/", conf)
     cherrypy.engine.start()
     cherrypy.engine.block()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

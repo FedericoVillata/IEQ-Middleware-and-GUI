@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 
 class TechnicalSuggestionsPage extends StatelessWidget {
+  final String username;
   final String? location;
-  const TechnicalSuggestionsPage({Key? key, required this.location})
-      : super(key: key);
+
+  const TechnicalSuggestionsPage({
+    Key? key,
+    required this.username,
+    required this.location,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Mock: suggerimenti tecnici
     final technicalSuggestions = [
       "Weekly check on HVAC calibration",
       "Review threshold for advanced sensors",
@@ -20,7 +24,7 @@ class TechnicalSuggestionsPage extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              "Weekly Technical Suggestions for $location",
+              "Weekly Technical Suggestions for $location (user: $username)",
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -41,7 +45,6 @@ class TechnicalSuggestionsPage extends StatelessWidget {
     );
   }
 
-  /// Stesso stile di Card, ma con eventuale pulsante differente
   Widget _buildTechnicalSuggestionCard(String suggestion) {
     return Card(
       elevation: 2,
@@ -54,7 +57,7 @@ class TechnicalSuggestionsPage extends StatelessWidget {
         ),
         trailing: ElevatedButton.icon(
           onPressed: () {
-            // Azione al click: es. "acknowledge" o "mark as done"
+            // Acknowledge logic
           },
           icon: const Icon(Icons.check),
           label: const Text("Ack"),

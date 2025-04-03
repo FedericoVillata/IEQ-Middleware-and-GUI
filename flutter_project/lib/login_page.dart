@@ -16,7 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
-  final String baseUrl = "http://10.0.2.2:8081";
+  final String baseUrl = "http://localhost:8081";
 
   // Handles the login logic
   Future<void> _attemptLogin() async {
@@ -66,7 +66,9 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const TechnicalMainPage(),
+            builder: (context) => TechnicalMainPage(
+              username: username, // Pass the logged user here
+            ),
           ),
         );
       } else {

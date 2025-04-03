@@ -7,7 +7,12 @@ import 'pages/technical_deleted_suggestions.dart';
 import 'pages/technical_suggestions_page.dart';
 
 class TechnicalMainPage extends StatefulWidget {
-  const TechnicalMainPage({Key? key}) : super(key: key);
+  final String username;
+
+  const TechnicalMainPage({
+    Key? key,
+    required this.username,
+  }) : super(key: key);
 
   @override
   State<TechnicalMainPage> createState() => _TechnicalMainPageState();
@@ -22,7 +27,7 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
   @override
   void initState() {
     super.initState();
-    // Pagine di placeholder finché non viene selezionata la Location
+    // Placeholder pages if no location selected
     pages = [
       const Placeholder(),
       const Placeholder(),
@@ -36,23 +41,26 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
     setState(() {
       selectedLocation = loc;
       pages = [
-        TechnicalHomePage(location: selectedLocation),
-        TechnicalFeedbackPage(location: selectedLocation),
-        TechnicalThresholdPage(location: selectedLocation),
-        TechnicalDeletedSuggestionsPage(location: selectedLocation),
-        TechnicalSuggestionsPage(location: selectedLocation),
+        TechnicalHomePage(username: widget.username, location: selectedLocation),
+        TechnicalFeedbackPage(username: widget.username, location: selectedLocation),
+        TechnicalThresholdPage(username: widget.username, location: selectedLocation),
+        TechnicalDeletedSuggestionsPage(username: widget.username, location: selectedLocation),
+        TechnicalSuggestionsPage(username: widget.username, location: selectedLocation),
       ];
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Se non è stata selezionata la location, mostra la pagina di selezione
+    // If no location selected, show the location selection page
     if (selectedLocation == null) {
-      return LocationSelectionPage(onLocationSelected: onLocationSelected);
+      return LocationSelectionPage(
+        username: widget.username,
+        onLocationSelected: onLocationSelected,
+      );
     }
 
-    // Altrimenti, mostra la UI con la sidebar a sinistra
+    // Otherwise, show the main interface
     return Scaffold(
       appBar: AppBar(
         title: Text("Technical Interface - $selectedLocation"),
@@ -60,31 +68,29 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
-              // Eventuale logica per il profilo
+              // Potential user profile logic
             },
           )
         ],
       ),
       body: Row(
         children: [
-          // ------ SIDEBAR MODERNA ------
+          // Sidebar
           Container(
             width: 240,
             decoration: const BoxDecoration(
-              // Esempio di gradiente diagonale
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF1A73E8), // Blu più chiaro
-                  Color(0xFF1669C1), // Blu più scuro
+                  Color(0xFF1A73E8),
+                  Color(0xFF1669C1),
                 ],
               ),
             ),
             child: SafeArea(
               child: Column(
                 children: [
-                  // Header in alto con avatar e titolo
                   const SizedBox(height: 20),
                   CircleAvatar(
                     radius: 35,
@@ -105,7 +111,6 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Divider per separare header e voci di menu
                   const Divider(
                     color: Colors.white54,
                     thickness: 1,
@@ -114,7 +119,6 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
                   ),
                   const SizedBox(height: 4),
 
-                  // Voci di menu (Home, Feedback, ecc.)
                   _buildSidebarItem(
                     icon: Icons.home,
                     label: "Detailed Metrics",
@@ -141,10 +145,8 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
                     index: 4,
                   ),
 
-                  // Spazio per spingere in basso il resto
                   const Spacer(),
 
-                  // Bottone per cambiare location (logout)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12.0),
                     child: ElevatedButton.icon(
@@ -161,6 +163,7 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
                       onPressed: () {
                         setState(() {
                           selectedLocation = null;
+                          _currentIndex = 0;
                         });
                       },
                     ),
@@ -171,7 +174,7 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
             ),
           ),
 
-          // ------ CONTENUTO PRINCIPALE ------
+          // Main content
           Expanded(
             child: pages[_currentIndex],
           ),
@@ -180,7 +183,6 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
     );
   }
 
-  /// Widget di supporto per costruire le voci della sidebar
   Widget _buildSidebarItem({
     required IconData icon,
     required String label,

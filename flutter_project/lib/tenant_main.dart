@@ -66,7 +66,8 @@ class _TenantMainPageState extends State<TenantMainPage> {
 
   Future<void> fetchApartmentData() async {
     try {
-      final response = await http.get(Uri.parse("http://10.0.2.2:8081/apartments"));
+      // final response = await http.get(Uri.parse("http://10.0.2.2:8081/apartments"));
+      final response = await http.get(Uri.parse("http://localhost:8081/apartments"));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         for (var apt in data) {

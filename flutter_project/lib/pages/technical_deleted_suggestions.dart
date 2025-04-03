@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 
 class TechnicalDeletedSuggestionsPage extends StatelessWidget {
+  final String username;
   final String? location;
-  const TechnicalDeletedSuggestionsPage({Key? key, required this.location})
-      : super(key: key);
+
+  const TechnicalDeletedSuggestionsPage({
+    Key? key,
+    required this.username,
+    required this.location,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Mock: suggerimenti eliminati
+    // Example "deleted suggestions"
     final deletedSuggestions = [
       "Open windows near corridor",
       "Use fan to improve airflow",
@@ -20,7 +25,7 @@ class TechnicalDeletedSuggestionsPage extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              "Deleted Tenant Suggestions for $location",
+              "Deleted Tenant Suggestions for $location (user: $username)",
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -41,7 +46,6 @@ class TechnicalDeletedSuggestionsPage extends StatelessWidget {
     );
   }
 
-  /// Costruisce una Card moderna con titolo e bottone 'Restore'
   Widget _buildDeletedSuggestionCard(String suggestion) {
     return Card(
       elevation: 2,
@@ -54,7 +58,7 @@ class TechnicalDeletedSuggestionsPage extends StatelessWidget {
         ),
         trailing: ElevatedButton.icon(
           onPressed: () {
-            // Logica per "ripristinare" il suggerimento eliminato
+            // Logic to "restore" the deleted suggestion
           },
           icon: const Icon(Icons.refresh),
           label: const Text("Restore"),

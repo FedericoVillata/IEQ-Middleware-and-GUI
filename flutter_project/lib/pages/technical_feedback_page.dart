@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 
 class TechnicalFeedbackPage extends StatefulWidget {
+  final String username;
   final String? location;
-  const TechnicalFeedbackPage({Key? key, required this.location}) : super(key: key);
+
+  const TechnicalFeedbackPage({
+    Key? key,
+    required this.username,
+    required this.location,
+  }) : super(key: key);
 
   @override
   State<TechnicalFeedbackPage> createState() => _TechnicalFeedbackPageState();
@@ -22,7 +28,7 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
     return Scaffold(
       body: Column(
         children: [
-          // Barra per selezione feedback
+          // Feedback type selection
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -39,12 +45,12 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
               }).toList(),
             ),
           ),
-          // Bar chart placeholder
+          // A placeholder where a bar chart, etc., might appear
           Expanded(
             child: Center(
               child: Text(
-                "Bar chart for $selectedFeedback at ${widget.location}",
-                style: TextStyle(fontSize: 18),
+                "Bar chart for $selectedFeedback at ${widget.location} - user: ${widget.username}",
+                style: const TextStyle(fontSize: 18),
               ),
             ),
           ),
