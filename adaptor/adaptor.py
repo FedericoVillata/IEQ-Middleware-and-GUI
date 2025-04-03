@@ -128,6 +128,32 @@ class Adaptor(object):
                         raise cherrypy.HTTPError("400", "Invalid plantCode")                    
                 else:
                     raise cherrypy.HTTPError("400", "Invalid User")
+            elif uri[0] == "getAllApartmentData":
+                #http://localhost:8080/getAllApartmentData/userId/aptId/?duration=1 
+                if self.checkUserPresent(uri[1]):
+                    if self.checkApartmentPresent(uri[1],uri[2]): 
+                        try:
+                            duration = int(params["duration"])
+                        except:
+                            raise cherrypy.HTTPError("400", "invalid duration")
+                        if self.test == 1:
+                            timeInterval = "m"
+                        else:
+                            timeInterval = "h"
+                        bucket = uri[2]
+                        query = f'from(bucket: "{bucket}") \
+                            |> range(start: -{duration}{timeInterval})'
+                        tables = self.client.query_api().query(org=self.org, query=query)
+                        out = []
+                        for table in tables:
+                            for row in table.records:
+                                line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"], "measurement": row["_field"]}
+                                out.append(line)
+                        return json.dumps(out)
+                    else:
+                        raise cherrypy.HTTPError("400", "Invalid plantCode")                    
+                else:
+                    raise cherrypy.HTTPError("400", "Invalid User")
             elif uri[0] == "getRoomData":
                 #http://localhost:8080/getRoomData/userId/aptId/roomCode?measurement=humidity&duration=1 
                 if self.checkUserPresent(uri[1]):
@@ -157,6 +183,35 @@ class Adaptor(object):
                         raise cherrypy.HTTPError("400", "Invalid plantCode")                    
                 else:
                     raise cherrypy.HTTPError("400", "Invalid User")
+            elif uri[0] == "getAllRoomData":
+                #http://localhost:8080/getAllRoomData/userId/aptId/roomCode?duration=1 
+                if self.checkUserPresent(uri[1]):
+                    if self.checkApartmentPresent(uri[1],uri[2]): 
+                        
+                        try:
+                            duration = int(params["duration"])
+                        except:
+                            raise cherrypy.HTTPError("400", "invalid duration")
+                        if self.test == 1:
+                            timeInterval = "m"
+                        else:
+                            timeInterval = "h"
+                        bucket =  uri[2]
+                        query = f'from(bucket: "{bucket}") \
+                            |> range(start: -{duration}{timeInterval}) \
+                                |> filter(fn: (r) => r["_measurement"] == "{uri[3]}")'
+                        tables = self.client.query_api().query(org=self.org, query=query)
+                        out = []
+                        for table in tables:
+                            for row in table.records:
+                                line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "measurement": row["_field"]}
+                                out.append(line)
+                        return json.dumps(out)
+                    else:
+                        raise cherrypy.HTTPError("400", "Invalid plantCode")                    
+                else:
+                    raise cherrypy.HTTPError("400", "Invalid User")
+                    
             elif uri[0] == "getLastRoomData":
                 #http://localhost:8080/getLastRoomData/userId/aptId/roomCode
                 if self.checkUserPresent(uri[1]):
