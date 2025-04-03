@@ -167,22 +167,22 @@ class KPIEngine:
 
         # Build list of SenML entries
         events = [
-            {"n": "temperature/kpis/value", "v": avg_temp, "t": timestamp},
-            {"n": "temperature_class/kpis/class", "v": temp_class, "t": timestamp},
-            {"n": "humidity/kpis/value", "v": avg_humidity, "t": timestamp},
-            {"n": "humidity_class/kpis/class", "v": hum_class, "t": timestamp},
-            {"n": "co2/kpis/value", "v": avg_co2, "t": timestamp},
-            {"n": "co2_class/kpis/class", "v": co2_class, "t": timestamp},
-            {"n": "pmv/kpis/value", "v": pmv, "t": timestamp},
-            {"n": "pmv_class/kpis/class", "v": pmv_class, "t": timestamp},
-            {"n": "ppd/kpis/value", "v": ppd, "t": timestamp},
-            {"n": "ppd_class/kpis/class", "v": ppd_class, "t": timestamp},
-            {"n": "icone/kpis/value", "v": icone, "t": timestamp},
-            {"n": "icone_class/kpis/class", "v": icone_class, "t": timestamp},
-            {"n": "ieqi/kpis/value", "v": ieqi, "t": timestamp},
-            {"n": "ieqi_class/kpis/class", "v": ieqi_class, "t": timestamp},
-            {"n": "environment_score/kpis/value", "v": env_score, "t": timestamp},
-            {"n": "environment_score_class/kpis/class", "v": env_classification, "t": timestamp}
+            {"n": f"temperature_kpis/{room_id}/value", "v": avg_temp, "t": timestamp},
+            {"n": f"temperature_class/{room_id}/class", "v": temp_class, "t": timestamp},
+            {"n": f"humidity/{room_id}/value", "v": avg_humidity, "t": timestamp},
+            {"n": f"humidity_class/{room_id}/class", "v": hum_class, "t": timestamp},
+            {"n": f"co2/{room_id}/value", "v": avg_co2, "t": timestamp},
+            {"n": f"co2_class/{room_id}/class", "v": co2_class, "t": timestamp},
+            {"n": f"pmv/{room_id}/value", "v": pmv, "t": timestamp},
+            {"n": f"pmv_class/{room_id}/class", "v": pmv_class, "t": timestamp},
+            {"n": f"ppd/{room_id}/value", "v": ppd, "t": timestamp},
+            {"n": f"ppd_class/{room_id}/class", "v": ppd_class, "t": timestamp},
+            {"n": f"icone/{room_id}/value", "v": icone, "t": timestamp},
+            {"n": f"icone_class/{room_id}/class", "v": icone_class, "t": timestamp},
+            {"n": f"ieqi/{room_id}/value", "v": ieqi, "t": timestamp},
+            {"n": f"ieqi_class/{room_id}/class", "v": ieqi_class, "t": timestamp},
+            {"n": f"environment_score/{room_id}/value", "v": env_score, "t": timestamp},
+            {"n": f"environment_score_class/{room_id}/class", "v": env_classification, "t": timestamp}
         ]
 
         if adaptive_comfort:
