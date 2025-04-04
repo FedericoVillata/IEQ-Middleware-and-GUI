@@ -1,6 +1,6 @@
 services:
   influxdb:
-    image: influxdb:latest
+    image: influxdb:2.7.11
     volumes:
       - influxdb-storage:/var/lib/influxdb2:rw
     env_file:

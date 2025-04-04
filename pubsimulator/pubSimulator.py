@@ -73,52 +73,41 @@ if __name__ == '__main__':
         out = {"bn": pubTopic2,"e":[event]}
         myPub.myPublish(json.dumps(out), pubTopic2)
 
-        # timestamp= str(time.time())
+        timestamp= str(time.time())
 
-        # avg_temp = 23.5  # °C
-        # temp_class = "Comfortable"
+        avg_temp = 23.5  # °C
+        temp_class = "Comfortable"
 
-        # avg_humidity = 45.0  # %
-        # hum_class = "Optimal"
+        avg_humidity = 45.0  # %
+        hum_class = "Optimal"
 
-        # avg_co2 = 650  # ppm
-        # co2_class = "Normal"
+        avg_co2 = 650  # ppm
+        co2_class = "Normal"
 
-        # pmv = 0.2  # Predicted Mean Vote, range: [-3, 3]
-        # pmv_class = "Neutral"
+        pmv = 0.2  # Predicted Mean Vote, range: [-3, 3]
+        pmv_class = "Neutral"
 
-        # ppd = 10  # Predicted Percentage Dissatisfied, in %
-        # ppd_class = "Low dissatisfaction"
+        ppd = 10  # Predicted Percentage Dissatisfied, in %
+        ppd_class = "Low dissatisfaction"
 
-        # icone = 75  # Indoor Comfort Index, valore inventato
-        # icone_class = "Good"
+        icone = 75  # Indoor Comfort Index, valore inventato
+        icone_class = "Good"
 
-        # ieqi = 85  # Indoor Environmental Quality Index
-        # ieqi_class = "Excellent"
+        ieqi = 85  # Indoor Environmental Quality Index
+        ieqi_class = "Excellent"
 
-        # env_score = 88  # Punteggio complessivo dell’ambiente
-        # env_classification = "Very Good"
-
-        # events = [
-        #         {"n": f"temperature_kpis/{room_id}/value", "v": avg_temp, "t": timestamp},
-        #         {"n": f"temperature_class/{room_id}/class", "v": temp_class, "t": timestamp},
-        #         {"n": f"humidity/{room_id}/value", "v": avg_humidity, "t": timestamp},
-        #         {"n": f"humidity_class/{room_id}/class", "v": hum_class, "t": timestamp},
-        #         {"n": f"co2/{room_id}/value", "v": avg_co2, "t": timestamp},
-        #         {"n": f"co2_class/{room_id}/class", "v": co2_class, "t": timestamp},
-        #         {"n": f"pmv/{room_id}/value", "v": pmv, "t": timestamp},
-        #         {"n": f"pmv_class/{room_id}/class", "v": pmv_class, "t": timestamp},
-        #         {"n": f"ppd/{room_id}/value", "v": ppd, "t": timestamp},
-        #         {"n": f"ppd_class/{room_id}/class", "v": ppd_class, "t": timestamp},
-        #         {"n": f"icone/{room_id}/value", "v": icone, "t": timestamp},
-        #         {"n": f"icone_class/{room_id}/class", "v": icone_class, "t": timestamp},
-        #         {"n": f"ieqi/{room_id}/value", "v": ieqi, "t": timestamp},
-        #         {"n": f"ieqi_class/{room_id}/class", "v": ieqi_class, "t": timestamp},
-        #         {"n": f"environment_score/{room_id}/value", "v": env_score, "t": timestamp},
-        #         {"n": f"environment_score_class/{room_id}/class", "v": env_classification, "t": timestamp}
-        #     ]
+        env_score = 88  # Punteggio complessivo dell’ambiente
+        env_classification = "Very Good"
+        room_id = "room0"  # ID della stanza
+        events = [
+                {"n": f"temperature_kpis/{room_id}/value", "v": avg_temp, "t": timestamp, "u": "Value"},
+                {"n": f"temperature_class/{room_id}/class", "v": temp_class, "t": timestamp, "u": "Classification"},
+                {"n": f"humidity/{room_id}/value", "v": avg_humidity, "t": timestamp, "u": "Value"},
+                {"n": f"humidity_class/{room_id}/class", "v": hum_class, "t": timestamp, "u": "Classification"},
+                {"n": f"co2/{room_id}/value", "v": avg_co2, "t": timestamp, "u": "Value"}
+            ]
         
-        # out = {"bn": pubTopic2,"e":events}
-        # myPub.myPublish(json.dumps(out), pubTopic2)
+        out = {"bn": pubTopic2,"e":events}
+        myPub.myPublish(json.dumps(out), pubTopic2)
 
         time.sleep(10)
