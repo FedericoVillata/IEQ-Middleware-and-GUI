@@ -181,23 +181,32 @@ class KPIEngine:
 
         # Build list of SenML entries
         events = [
-            {"n": f"temperature_kpis/{room_id}/value", "v": avg_temp, "t": timestamp},
-            {"n": f"temperature_class/{room_id}/class", "v": temp_class, "t": timestamp},
-            {"n": f"humidity/{room_id}/value", "v": avg_humidity, "t": timestamp},
-            {"n": f"humidity_class/{room_id}/class", "v": hum_class, "t": timestamp},
-            {"n": f"co2/{room_id}/value", "v": avg_co2, "t": timestamp},
-            {"n": f"co2_class/{room_id}/class", "v": co2_class, "t": timestamp},
-            {"n": f"pmv/{room_id}/value", "v": pmv, "t": timestamp},
-            {"n": f"pmv_class/{room_id}/class", "v": pmv_class, "t": timestamp},
-            {"n": f"ppd/{room_id}/value", "v": ppd, "t": timestamp},
-            {"n": f"ppd_class/{room_id}/class", "v": ppd_class, "t": timestamp},
-            {"n": f"icone/{room_id}/value", "v": icone, "t": timestamp},
-            {"n": f"icone_class/{room_id}/class", "v": icone_class, "t": timestamp},
-            {"n": f"ieqi/{room_id}/value", "v": ieqi, "t": timestamp},
-            {"n": f"ieqi_class/{room_id}/class", "v": ieqi_class, "t": timestamp},
-            {"n": f"environment_score/{room_id}/value", "v": env_score, "t": timestamp},
-            {"n": f"environment_score_class/{room_id}/class", "v": env_classification, "t": timestamp}
+            {"n": f"temperature_kpis/{room_id}/value", "v": avg_temp, "u": "Cel", "t": timestamp},
+            {"n": f"temperature_class/{room_id}/class", "v": temp_class, "u": "class", "t": timestamp},
+
+            {"n": f"humidity/{room_id}/value", "v": avg_humidity, "u": "%RH", "t": timestamp},
+            {"n": f"humidity_class/{room_id}/class", "v": hum_class, "u": "class", "t": timestamp},
+
+            {"n": f"co2/{room_id}/value", "v": avg_co2, "u": "ppm", "t": timestamp},
+            {"n": f"co2_class/{room_id}/class", "v": co2_class, "u": "class", "t": timestamp},
+
+            {"n": f"pmv/{room_id}/value", "v": pmv, "u": "arb", "t": timestamp},
+            {"n": f"pmv_class/{room_id}/class", "v": pmv_class, "u": "class", "t": timestamp},
+
+            {"n": f"ppd/{room_id}/value", "v": ppd, "u": "%", "t": timestamp},
+            {"n": f"ppd_class/{room_id}/class", "v": ppd_class, "u": "class", "t": timestamp},
+
+            {"n": f"icone/{room_id}/value", "v": icone, "u": "arb", "t": timestamp},
+            {"n": f"icone_class/{room_id}/class", "v": icone_class, "u": "class", "t": timestamp},
+
+            {"n": f"ieqi/{room_id}/value", "v": ieqi, "u": "arb", "t": timestamp},
+            {"n": f"ieqi_class/{room_id}/class", "v": ieqi_class, "u": "class", "t": timestamp},
+
+            {"n": f"environment_score/{room_id}/value", "v": env_score, "u": "score", "t": timestamp},
+            {"n": f"environment_score_class/{room_id}/class", "v": env_classification, "u": "class", "t": timestamp}
         ]
+
+
 
         if adaptive_comfort:
             events.append({"n": "adaptive_comfort_running_mean", "v": adaptive_comfort.get("Running Mean Temperature", -999), "t": timestamp})
