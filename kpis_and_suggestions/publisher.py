@@ -24,26 +24,26 @@ class MyPublisher:
             self._paho_mqtt.loop_start()
             print(f"[{self.clientID}] 🚀 Connecting to MQTT broker at {self.messageBroker}:{self.port}")
         except Exception as e:
-            print(f"[{self.clientID}] ❌ Failed to connect to MQTT broker: {e}")
+            print(f"[{self.clientID}]  Failed to connect to MQTT broker: {e}")
 
     def stop(self):
         self._paho_mqtt.loop_stop()
         self._paho_mqtt.disconnect()
-        print(f"[{self.clientID}] 🔌 Disconnected from MQTT broker.")
+        print(f"[{self.clientID}] Disconnected from MQTT broker.")
 
     def myPublish(self, message, topic):
         try:
             result = self._paho_mqtt.publish(topic, message, self.qos)
             if result.rc != 0:
-                print(f"[{self.clientID}] ❌ Publish failed with result code {result.rc}")
+                print(f"[{self.clientID}] Publish failed with result code {result.rc}")
         except Exception as e:
-            print(f"[{self.clientID}] ❌ Exception during publish: {e}")
+            print(f"[{self.clientID}] Exception during publish: {e}")
 
     def myOnConnect(self, client, userdata, flags, rc):
         if rc == 0:
-            print(f"[{self.clientID}] ✅ Successfully connected to broker.")
+            print(f"[{self.clientID}] Successfully connected to broker.")
         else:
-            print(f"[{self.clientID}] ❌ Connection failed with code {rc}")
+            print(f"[{self.clientID}] Connection failed with code {rc}")
 
     def myOnPublish(self, client, userdata, mid):
-        print(f"[{self.clientID}] 📤 Message published with mid: {mid}")
+        print(f"[{self.clientID}] Message published with mid: {mid}")
