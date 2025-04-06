@@ -23,7 +23,7 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
   bool isError = false;
   String errorMessage = "";
 
-  // Current and base settings from the registry
+  // Apartment settings from the registry
   Map<String, dynamic> currentApartmentSettings = <String, dynamic>{};
   Map<String, dynamic> baseSettings = <String, dynamic>{};
 
@@ -72,6 +72,11 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
   final TextEditingController weightIcone = TextEditingController();
   final TextEditingController weightIeqi = TextEditingController();
 
+  // Personal "values": met, clo_warm, clo_cold
+  final TextEditingController metController = TextEditingController();
+  final TextEditingController cloWarmController = TextEditingController();
+  final TextEditingController cloColdController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -95,7 +100,6 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
     });
 
     try {
-      // Retrieve all apartments
       final aptResp = await http.get(Uri.parse("$REGISTRY_BASE_URL/apartments"));
       if (aptResp.statusCode == 200) {
         final List<dynamic> apartments = json.decode(aptResp.body);
@@ -108,9 +112,9 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
         }
         if (targetApt == null) {
           setState(() {
+            isLoading = false;
             isError = true;
             errorMessage = "Apartment not found in registry.";
-            isLoading = false;
           });
           return;
         }
@@ -121,7 +125,6 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
         }
         currentApartmentSettings = Map<String, dynamic>.from(targetApt["settings"]);
 
-        // Retrieve base_settings
         final baseResp = await http.get(Uri.parse("$REGISTRY_BASE_URL/base_settings"));
         if (baseResp.statusCode == 200) {
           baseSettings = json.decode(baseResp.body) as Map<String, dynamic>;
@@ -129,7 +132,6 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
           baseSettings = <String, dynamic>{};
         }
 
-        // Fill controllers
         _populateFieldsFromSettings();
         setState(() => isLoading = false);
       } else {
@@ -157,38 +159,38 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
     final Map<String, dynamic> weights =
         (currentApartmentSettings["weights"] ?? <String, dynamic>{}) as Map<String, dynamic>;
 
-    // 1) Ventilation
+    // Ventilation
     final ventVal = values["ventilation"]?.toString() ?? "nat";
     ventilationType = (ventVal == "mec") ? "mec" : "nat";
 
-    // 2) Adaptive Cat
+    // Adaptive Category
     adaptiveTempCategory = thresholds["adaptive_temp_category"]?.toString() ?? "2";
 
-    // 3) mechanical_temp_cold
+    // mechanical_temp_cold
     final mechCold = thresholds["mechanical_temp_cold"] as Map<String, dynamic>? ?? {};
     mechTempColdG.text = (mechCold["G"] ?? 23.0).toString();
     mechTempColdY.text = (mechCold["Y"] ?? 26.0).toString();
     mechTempColdR.text = (mechCold["R"] ?? 100.0).toString();
 
-    // 4) mechanical_temp_warm
+    // mechanical_temp_warm
     final mechWarm = thresholds["mechanical_temp_warm"] as Map<String, dynamic>? ?? {};
     mechTempWarmG.text = (mechWarm["G"] ?? 26.0).toString();
     mechTempWarmY.text = (mechWarm["Y"] ?? 27.0).toString();
     mechTempWarmR.text = (mechWarm["R"] ?? 100.0).toString();
 
-    // 5) humidity
+    // humidity
     final humThr = thresholds["humidity"] as Map<String, dynamic>? ?? {};
     humidityG.text = (humThr["G"] ?? 60).toString();
     humidityY.text = (humThr["Y"] ?? 70).toString();
     humidityR.text = (humThr["R"] ?? 100).toString();
 
-    // 6) co2_natural
+    // co2_natural
     final co2Nat = thresholds["co2_natural"] as Map<String, dynamic>? ?? {};
     co2NatG.text = (co2Nat["G"] ?? 1200).toString();
     co2NatY.text = (co2Nat["Y"] ?? 1500).toString();
     co2NatR.text = (co2Nat["R"] ?? 10000).toString();
 
-    // 7) co2_mechanical
+    // co2_mechanical
     final co2Mech = thresholds["co2_mechanical"] as Map<String, dynamic>? ?? {};
     co2MechTooGood.text = (co2Mech["Too Good"] ?? 600).toString();
     co2MechG.text = (co2Mech["G"] ?? 1200).toString();
@@ -196,13 +198,13 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
     co2MechR.text = (co2Mech["R"] ?? 2500).toString();
     co2MechExtreme.text = (co2Mech["Extreme"] ?? 10000).toString();
 
-    // 8) overall_score_classification
+    // overall_score_classification
     final overallScore = thresholds["overall_score_classification"] as Map<String, dynamic>? ?? {};
     overallG.text = (overallScore["G"] ?? 100).toString();
     overallY.text = (overallScore["Y"] ?? 70).toString();
     overallR.text = (overallScore["R"] ?? 40).toString();
 
-    // 9) weights
+    // weights
     weightTemp.text = (weights["temperature"] ?? 15.0).toString();
     weightHumidity.text = (weights["humidity"] ?? 10.0).toString();
     weightCo2.text = (weights["co2"] ?? 20.0).toString();
@@ -210,6 +212,11 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
     weightPpd.text = (weights["ppd"] ?? 10.0).toString();
     weightIcone.text = (weights["icone"] ?? 15.0).toString();
     weightIeqi.text = (weights["ieqi"] ?? 15.0).toString();
+
+    // Personal "values"
+    metController.text = (values["met"] ?? 1.2).toString();
+    cloWarmController.text = (values["clo_warm"] ?? 0.5).toString();
+    cloColdController.text = (values["clo_cold"] ?? 1.0).toString();
   }
 
   // -------------------- SAVE / RESET --------------------
@@ -221,7 +228,6 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
       errorMessage = "";
     });
 
-    // We ALWAYS provide "settings" to avoid KeyError on the server:
     final Map<String, dynamic> body = <String, dynamic>{
       "apartmentId": widget.location,
       "settings": <String, dynamic>{
@@ -261,7 +267,10 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
           },
         },
         "values": <String, dynamic>{
-          "ventilation": (ventilationType == "mec") ? "mec" : "nat",
+          "ventilation": ventilationType == "mec" ? "mec" : "nat",
+          "met": double.tryParse(metController.text) ?? 1.2,
+          "clo_warm": double.tryParse(cloWarmController.text) ?? 0.5,
+          "clo_cold": double.tryParse(cloColdController.text) ?? 1.0,
         },
         "weights": <String, dynamic>{
           "temperature": double.tryParse(weightTemp.text) ?? 15.0,
@@ -347,8 +356,6 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
 
   Future<void> _resetSection(String pathKey) async {
     if (widget.location == null) return;
-    // If the server doesn't have baseSettings or apt["settings"], KeyError can still occur
-    // => fix the server side or ensure each apt has an initial "settings" entry
     if (baseSettings.isEmpty) {
       await _fetchCurrentSettings();
       if (baseSettings.isEmpty) {
@@ -364,9 +371,8 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
     final Map<String, dynamic> partialValues = <String, dynamic>{};
     final Map<String, dynamic> partialWeights = <String, dynamic>{};
 
-    dynamic bs(Object? x) => x; // convenience accessor
+    dynamic bs(Object? x) => x;
 
-    // Fill whichever block we need
     switch (pathKey) {
       case "mechanical_temp_cold":
         partialThresholds["mechanical_temp_cold"] =
@@ -418,9 +424,15 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
               },
         );
         break;
+
+      // Reset the personal "values" => met, clo_warm, clo_cold
+      case "personal_values":
+        partialValues["met"] = bs(baseSettings["values"])["met"] ?? 1.2;
+        partialValues["clo_warm"] = bs(baseSettings["values"])["clo_warm"] ?? 0.5;
+        partialValues["clo_cold"] = bs(baseSettings["values"])["clo_cold"] ?? 1.0;
+        break;
     }
 
-    // Always include a "settings" key
     final Map<String, dynamic> settingsMap = <String, dynamic>{};
     if (partialThresholds.isNotEmpty) {
       settingsMap["thresholds"] = partialThresholds;
@@ -432,7 +444,7 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
       settingsMap["weights"] = partialWeights;
     }
 
-    // Ensure we at least send an empty "thresholds" if none used
+    // Ensure we at least send an empty "thresholds" to avoid KeyError
     if (settingsMap.isEmpty) {
       settingsMap["thresholds"] = <String, dynamic>{};
     }
@@ -475,10 +487,10 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
   }
 
   // -------------------- UI BUILDERS --------------------
-  /// We'll show the label as a separate Text() above the field so it can't get truncated.
+  /// We'll show the label above the TextField so no truncation happens.
   Widget _buildLabeledTextField(String label, TextEditingController controller) {
     return SizedBox(
-      width: 140, // Enough space for "Too Good" or "Yellow"
+      width: 140,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -554,12 +566,12 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
                   ),
                   const SizedBox(height: 8),
 
-                  // Reset All button
+                  // Reset ALL
                   Align(
                     alignment: Alignment.centerRight,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 228, 229, 231), // matching Temperature button
+                        backgroundColor: const Color.fromARGB(255, 228, 228, 228), // consistent with your Temperature color
                       ),
                       onPressed: _resetAll,
                       icon: const Icon(Icons.settings_backup_restore),
@@ -612,7 +624,7 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
                     ],
                   ),
 
-                  // CO2 Natural
+                  // CO2 natural
                   _buildExpansionTile(
                     title: "CO2 for Natural Ventilation",
                     sectionKey: "co2_natural",
@@ -623,7 +635,7 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
                     ],
                   ),
 
-                  // CO2 Mechanical
+                  // CO2 mechanical
                   _buildExpansionTile(
                     title: "CO2 for Mechanical Ventilation",
                     sectionKey: "co2_mechanical",
@@ -659,6 +671,18 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
                       _buildLabeledTextField("PPD", weightPpd),
                       _buildLabeledTextField("iCone", weightIcone),
                       _buildLabeledTextField("iEQi", weightIeqi),
+                    ],
+                  ),
+
+                  // Personal Values => met, clo_warm, clo_cold
+                  _buildExpansionTile(
+                    title: "Met & Clothing Level",
+                    sectionKey: "personal_values",
+                    children: [
+                      // All in one row
+                      _buildLabeledTextField("Metabolic Rate", metController),
+                      _buildLabeledTextField("Clothing Level (Warm Season)", cloWarmController),
+                      _buildLabeledTextField("Clothing Level (Cold Season)", cloColdController),
                     ],
                   ),
 
@@ -761,7 +785,6 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
       );
     }
 
-    // Entire page with white background
     return Scaffold(
       backgroundColor: Colors.white,
       body: _buildBodyContent(),

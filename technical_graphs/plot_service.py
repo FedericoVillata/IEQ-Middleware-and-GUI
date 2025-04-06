@@ -9,6 +9,8 @@ from datetime import datetime
 from io import BytesIO, StringIO
 import csv
 from collections import defaultdict
+from matplotlib.colors import TwoSlopeNorm
+import calendar
 
 class PlotService:
     """
@@ -16,12 +18,12 @@ class PlotService:
       /generateCarpetPlot?userId=U&apartmentId=A&measure=M...
       /generateLineChart?userId=U&apartmentId=A&measure=M...
       /exportCsv?userId=U&apartmentId=A&measure=M...
-    We've shortened the figure size and lowered the DPI
-    to produce images faster while retaining decent quality.
     """
 
     # Base URL to the adaptor service
     ADAPTOR_BASE = "http://adaptor:8080"
+    # Base URL to the registry service (where catalog.json data is exposed)
+    REGISTRY_BASE = "http://registry:8081"  # or "http://192.68.0.24:8081" if needed
 
     @cherrypy.expose
     def generateCarpetPlot(self, **kwargs):
@@ -29,6 +31,19 @@ class PlotService:
         Example:
           GET /generateCarpetPlot?userId=user0&apartmentId=apartment0&measure=Temperature
               &room=room0&duration=8760&download=png
+        Special rules for color scale:
+          - Temperature: vmin=-20, vmax=40
+            mid-value = "G" from either mechanical_temp_warm or mechanical_temp_cold
+            depending on the current season (spring/summer -> warm, autumn/winter -> cold)
+          - Humidity: vmin=0, vmax=100
+            mid-value = "G" from thresholds.humidity
+          - CO2: vmin=400, vmax=12000
+            mid-value = "G" from either co2_natural or co2_mechanical
+            depending on the "ventilation" field in the apartment’s settings
+          - PM10.0: (user-chosen "reasonable" scale)
+            For example, vmin=0, vmax=200, mid=50
+          - VOC: (user-chosen "reasonable" scale)
+            For example, vmin=0, vmax=1000, mid=300
         """
         try:
             userId = kwargs["userId"]
@@ -43,16 +58,15 @@ class PlotService:
         end = kwargs.get("end", None)
         download = kwargs.get("download", None)
 
+        # 1) Fetch data from the adaptor
         data = self._fetch_data(userId, apartmentId, measure, start, end, duration)
-
-        # Filter by room
+        # Filter by room if provided
         if room:
             data = [d for d in data if d.get("room") == room]
-
         if not data:
             return self._no_data_image(download=download)
 
-        # Convert times and values
+        # 2) Convert times and values into lists
         times, values = [], []
         for item in data:
             dt = self._parse_time(item["t"])
@@ -62,10 +76,13 @@ class PlotService:
         if not times:
             return self._no_data_image(download=download)
 
-        # Build day x half-hour matrix
+        # 3) Build a day vs. half-hour matrix
+        #    Each day is a column; each half-hour slot is a row
+        #    halfHourIndex: integer from 0..47 for each day
         def halfhour_index(dtobj):
             return dtobj.hour * 2 + (1 if dtobj.minute >= 30 else 0)
 
+        # key = 'YYYY-MM-DD', value = [48 half-hour values]
         day_dict = defaultdict(lambda: [np.nan] * 48)
         for dt, val in zip(times, values):
             day_str = dt.strftime("%Y-%m-%d")
@@ -80,30 +97,34 @@ class PlotService:
         for col, day_str in enumerate(all_days):
             matrix[:, col] = day_dict[day_str]
 
-        # Plot
+        # 4) Determine color scale extremes and midpoint from the catalog logic
+        #    We'll fetch apt settings from the registry and then pick the correct thresholds.
+        vmin_val, vmax_val, vcenter_val = self._get_color_scaling(measure, apartmentId)
+
+        # 5) Create the plot
         fig, ax = plt.subplots(figsize=(12, 8), dpi=100)
-        # For an example color scale from 10°C to 40°C
-        vmin_val = 10
-        vmax_val = 40
+
+        # Use a TwoSlopeNorm to "center" the colormap around vcenter_val
+        norm = TwoSlopeNorm(vcenter=vcenter_val, vmin=vmin_val, vmax=vmax_val)
         cax = ax.imshow(
             matrix,
             origin='lower',
             aspect='auto',
             cmap='jet',
-            vmin=vmin_val,
-            vmax=vmax_val
+            norm=norm
         )
         plt.colorbar(cax, ax=ax, label=measure)
 
-        # Y-axis => half-hours
-        y_ticks = np.arange(0, 48, 2)
+        # Y-axis: show every hour or half-hour
+        # We'll show hour ticks (e.g. 0:00, 1:00, 2:00, ...)
+        y_ticks = np.arange(0, 48, 2)   # every 2 half-hours => 1 hour
         y_labels = [f"{h:02d}:00" for h in range(24)]
         ax.set_yticks(y_ticks)
         ax.set_yticklabels(y_labels)
 
-        # X-axis => days
+        # X-axis: day labels
         x_vals = np.arange(n_days)
-        step_x = max(1, n_days // 8)
+        step_x = max(1, n_days // 8)  # show ~8 labels across the plot
         ax.set_xticks(x_vals[::step_x])
         ax.set_xticklabels([all_days[i] for i in x_vals[::step_x]], rotation=45)
 
@@ -128,6 +149,7 @@ class PlotService:
         Example:
           GET /generateLineChart?userId=user0&apartmentId=apartment0&measure=Temperature
               &room=room0&duration=8760&download=png
+        No special changes in color scaling here; we leave line chart as before.
         """
         try:
             userId = kwargs["userId"]
@@ -144,14 +166,13 @@ class PlotService:
 
         data = self._fetch_data(userId, apartmentId, measure, start, end, duration)
 
-        # Filter room
+        # Filter by room
         if room:
             data = [d for d in data if d.get("room") == room]
 
         if not data:
             return self._no_data_image(download=download)
 
-        # Convert times and values
         times, values = [], []
         for item in data:
             dt = self._parse_time(item["t"])
@@ -161,18 +182,18 @@ class PlotService:
         if not times:
             return self._no_data_image(download=download)
 
-        # Sort by ascending time
+        # Sort data by ascending time
         combined = sorted(zip(times, values), key=lambda x: x[0])
         times = [t for (t, _) in combined]
         values = [v for (_, v) in combined]
 
         # Plot
         fig, ax = plt.subplots(figsize=(12, 8), dpi=100)
-        plt.grid()
         ax.plot(times, values, marker='o', linewidth=2)
         ax.set_title(f"{measure} (Line Chart)")
         ax.set_xlabel("Time")
         ax.set_ylabel(measure)
+        plt.grid()
         fig.autofmt_xdate()
 
         plt.tight_layout()
@@ -206,7 +227,6 @@ class PlotService:
         end = kwargs.get("end", None)
 
         data = self._fetch_data(userId, apartmentId, measure, start, end, duration)
-
         if room:
             data = [d for d in data if d.get("room") == room]
 
@@ -237,14 +257,14 @@ class PlotService:
         if start and end:
             url = f"{self.ADAPTOR_BASE}/getDatainPeriod/{userId}/{apartmentId}"
             params = {
-                "measurament": measure,
+                "measurement": measure,
                 "start": f"{start}T00:00:00Z",
                 "stop":  f"{end}T23:59:59Z",
             }
         else:
             url = f"{self.ADAPTOR_BASE}/getApartmentData/{userId}/{apartmentId}"
             dur = duration if duration else "168"  # default ~1 week
-            params = {"measurament": measure, "duration": dur}
+            params = {"measurement": measure, "duration": dur}
 
         results = []
         try:
@@ -258,7 +278,9 @@ class PlotService:
         return results
 
     def _parse_time(self, tstring):
-        # Common formats from the adaptor
+        """
+        Adaptor can return time in different string formats. Attempt multiple parses.
+        """
         fmts = ["%m/%d/%Y, %H:%M:%S", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d %H:%M:%S"]
         for f in fmts:
             try:
@@ -269,7 +291,7 @@ class PlotService:
 
     def _no_data_image(self, download=None):
         """
-        Return a small placeholder image.
+        Return a small placeholder image that says "No Data".
         """
         fig, ax = plt.subplots(figsize=(2, 1), dpi=80)
         ax.text(0.5, 0.5, "No Data", ha="center", va="center", fontsize=12)
@@ -283,6 +305,94 @@ class PlotService:
         if download == "png":
             cherrypy.response.headers["Content-Disposition"] = 'attachment; filename="nodata.png"'
         return buf.getvalue()
+
+    def _get_color_scaling(self, measure, apartmentId):
+        """
+        Returns (vmin, vmax, vcenter) for the requested measure, reading from the catalog.
+        - Temperature => vmin=-20, vmax=40,
+            mid = G from mechanical_temp_warm or mechanical_temp_cold based on season
+        - Humidity => vmin=0, vmax=100, mid = thresholds.humidity.G
+        - CO2 => vmin=400, vmax=12000, mid = thresholds.co2_natural.G or co2_mechanical.G 
+            based on "ventilation" in apt settings
+        - PM10.0 => user-defined (e.g. vmin=0, vmax=200, mid=50)
+        - VOC => user-defined (e.g. vmin=0, vmax=1000, mid=300)
+        """
+
+        # Load the relevant apartment's settings from the registry
+        apt_settings = self._fetch_apartment_settings(apartmentId)
+        thresholds = apt_settings.get("thresholds", {})
+        values = apt_settings.get("values", {})
+
+        # Decide measure-based logic
+        if measure.lower() == "temperature":
+            # extremes
+            vmin = -20
+            vmax = 40
+            # decide warm vs cold season
+            if self._is_warm_season():
+                mid = thresholds.get("mechanical_temp_warm", {}).get("G", 25)  # fallback if missing
+            else:
+                mid = thresholds.get("mechanical_temp_cold", {}).get("G", 22)
+        elif measure.lower() == "humidity":
+            vmin = 0
+            vmax = 100
+            mid = thresholds.get("humidity", {}).get("G", 60)
+        elif measure.lower() == "co2":
+            vmin = 400
+            vmax = 12000
+            ventilation = values.get("ventilation", "nat")  # default if not found
+            if ventilation == "mec":
+                # co2_mechanical
+                mid = thresholds.get("co2_mechanical", {}).get("G", 1200)
+            else:
+                # co2_natural
+                mid = thresholds.get("co2_natural", {}).get("G", 1200)
+        elif measure.lower() == "pm10.0":
+            # user-chosen example scale
+            vmin = 0
+            vmax = 200
+            mid = 50
+        elif measure.lower() == "voc":
+            # user-chosen example scale
+            vmin = 0
+            vmax = 1000
+            mid = 300
+        else:
+            # fallback if measure is not one of the above
+            # just pick something safe
+            vmin = 0
+            vmax = 100
+            mid = 50
+
+        return vmin, vmax, mid
+
+    def _fetch_apartment_settings(self, apartmentId):
+        """
+        Calls the registry to retrieve the 'settings' field for a given apartment.
+        """
+        try:
+            resp = requests.get(f"{self.REGISTRY_BASE}/apartments", timeout=8)
+            if resp.status_code == 200:
+                apartments = resp.json()  # list of apt
+                for apt in apartments:
+                    if apt.get("apartmentId") == apartmentId:
+                        return apt.get("settings", {})
+        except Exception as e:
+            print("ERROR fetching apartment settings:", e)
+
+        # fallback if not found or error
+        return {}
+
+    def _is_warm_season(self):
+        """
+        Returns True if current month is in spring/summer,
+        otherwise False (autumn/winter).
+        For simplicity: months 3..9 => warm, else cold.
+        """
+        current_month = datetime.now().month
+        # March(3) to September(9) => warm
+        return 3 <= current_month <= 9
+
 
 def main():
     cherrypy.config.update({
@@ -299,6 +409,7 @@ def main():
     cherrypy.tree.mount(PlotService(), "/", conf)
     cherrypy.engine.start()
     cherrypy.engine.block()
+
 
 if __name__ == "__main__":
     main()

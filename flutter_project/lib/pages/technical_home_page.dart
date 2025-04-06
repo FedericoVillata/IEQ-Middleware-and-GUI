@@ -22,7 +22,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
   static const String PLOT_SERVICE_URL = "http://localhost:9090";
 
   // All metrics
-  final List<String> metrics = ["Temperature", "humidity", "CO2", "PM10", "VOC"];
+  final List<String> metrics = ["Temperature", "Humidity", "CO2", "PM10.0", "VOC"];
   String selectedMetric = "Temperature";
 
   // Carpet vs. Line
