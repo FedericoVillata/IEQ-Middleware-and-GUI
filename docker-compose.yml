@@ -83,6 +83,7 @@ services:
   kpi-system:
     build: ./kpis_and_suggestions
     depends_on:
+      - registry
       - adaptor
     networks:
       net:
