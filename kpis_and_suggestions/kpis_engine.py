@@ -178,21 +178,21 @@ class KPIEngine:
 
         events = [
             {"n": f"avg_temperature/{room_id}/value", "u": "Cel", "t": timestamp, "v": avg_temp},
-            {"n": f"temperature_class/{room_id}/class", "u": "class", "t": timestamp, "v": temp_class},
-            {"n": f"avg_humidity/{room_id}/value", "u": "%RH", "t": timestamp, "v": avg_humidity},
-            {"n": f"humidity_class/{room_id}/class", "u": "class", "t": timestamp, "v": hum_class},
-            {"n": f"avg_co2/{room_id}/value", "u": "ppm", "t": timestamp, "v": avg_co2},
-            {"n": f"co2_class/{room_id}/class", "u": "class", "t": timestamp, "v": co2_class},
-            {"n": f"pmv_kpis/{room_id}/value", "u": "arb", "t": timestamp, "v": pmv},
-            {"n": f"pmv_class/{room_id}/class", "u": "class", "t": timestamp, "v": pmv_class},
-            {"n": f"ppd/{room_id}/value", "u": "%", "t": timestamp, "v": ppd},
-            {"n": f"ppd_class/{room_id}/class", "u": "class", "t": timestamp, "v": ppd_class},
-            {"n": f"icone/{room_id}/value", "u": "arb", "t": timestamp, "v": icone},
-            {"n": f"icone_class/{room_id}/class", "u": "class", "t": timestamp, "v": icone_class},
-            {"n": f"ieqi/{room_id}/value", "u": "arb", "t": timestamp, "v": ieqi},
-            {"n": f"ieqi_class/{room_id}/class", "u": "class", "t": timestamp, "v": ieqi_class},
-            {"n": f"environment_score/{room_id}/value", "u": "score", "t": timestamp, "v": env_score},
-            {"n": f"environment_score_class/{room_id}/class", "u": "class", "t": timestamp, "v": env_classification}
+            {"n": f"temperature_class/{room_id}/class", "u": "class", "t": timestamp, "v": temp_class}#,
+            # {"n": f"avg_humidity/{room_id}/value", "u": "%RH", "t": timestamp, "v": avg_humidity},
+            # {"n": f"humidity_class/{room_id}/class", "u": "class", "t": timestamp, "v": hum_class},
+            # {"n": f"avg_co2/{room_id}/value", "u": "ppm", "t": timestamp, "v": avg_co2},
+            # {"n": f"co2_class/{room_id}/class", "u": "class", "t": timestamp, "v": co2_class},
+            # {"n": f"pmv_kpis/{room_id}/value", "u": "arb", "t": timestamp, "v": pmv},
+            # {"n": f"pmv_class/{room_id}/class", "u": "class", "t": timestamp, "v": pmv_class},
+            # {"n": f"ppd/{room_id}/value", "u": "%", "t": timestamp, "v": ppd},
+            # {"n": f"ppd_class/{room_id}/class", "u": "class", "t": timestamp, "v": ppd_class},
+            # {"n": f"icone/{room_id}/value", "u": "arb", "t": timestamp, "v": icone},
+            # {"n": f"icone_class/{room_id}/class", "u": "class", "t": timestamp, "v": icone_class},
+            # {"n": f"ieqi/{room_id}/value", "u": "arb", "t": timestamp, "v": ieqi},
+            # {"n": f"ieqi_class/{room_id}/class", "u": "class", "t": timestamp, "v": ieqi_class},
+            # {"n": f"environment_score/{room_id}/value", "u": "score", "t": timestamp, "v": env_score},
+            # {"n": f"environment_score_class/{room_id}/class", "u": "class", "t": timestamp, "v": env_classification}
         ]
 
         if adaptive_comfort:
@@ -248,7 +248,7 @@ if __name__ == "__main__":
 
     # wait_for_data()  # Commented out for debug purposes
 
-    INTERVAL_SECONDS = 30 #* 60
+    INTERVAL_SECONDS = 30 * 60
 
     while True:
         print("Starting new KPI cycle...")
