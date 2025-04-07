@@ -1,5 +1,6 @@
 import cherrypy
 import json
+from matplotlib import dates
 import requests
 import matplotlib
 matplotlib.use('Agg')
@@ -146,10 +147,8 @@ class PlotService:
     @cherrypy.expose
     def generateLineChart(self, **kwargs):
         """
-        Example:
-          GET /generateLineChart?userId=user0&apartmentId=apartment0&measure=Temperature
-              &room=room0&duration=8760&download=png
-        No special changes in color scaling here; we leave line chart as before.
+        GET /generateLineChart?userId=U&apartmentId=A&measure=M&duration=H&room=XYZ&download=png
+        If duration>168 => daily average. Then label with date or day.
         """
         try:
             userId = kwargs["userId"]
@@ -159,44 +158,76 @@ class PlotService:
 
         measure = kwargs.get("measure", "Temperature")
         room = kwargs.get("room", None)
-        duration = kwargs.get("duration", None)
+        duration_str = kwargs.get("duration", None)
         start = kwargs.get("start", None)
         end = kwargs.get("end", None)
         download = kwargs.get("download", None)
 
-        data = self._fetch_data(userId, apartmentId, measure, start, end, duration)
-
-        # Filter by room
+        data = self._fetch_data(userId, apartmentId, measure, start, end, duration_str)
         if room:
             data = [d for d in data if d.get("room") == room]
 
         if not data:
             return self._no_data_image(download=download)
 
-        times, values = [], []
+        times_values = []
         for item in data:
             dt = self._parse_time(item["t"])
             val = item["v"]
-            times.append(dt)
-            values.append(val)
-        if not times:
+            times_values.append((dt, val))
+        times_values.sort(key=lambda x: x[0])
+        if not times_values:
             return self._no_data_image(download=download)
 
-        # Sort data by ascending time
-        combined = sorted(zip(times, values), key=lambda x: x[0])
-        times = [t for (t, _) in combined]
-        values = [v for (_, v) in combined]
+        # If >168 => daily average
+        durationH = 168
+        if duration_str is not None:
+            try:
+                durationH = int(duration_str)
+            except:
+                pass
+        if durationH > 168:
+            from collections import defaultdict
+            day_map = defaultdict(lambda: {"sum": 0.0, "count": 0})
+            for dt, val in times_values:
+                dStr = dt.strftime("%Y-%m-%d")
+                day_map[dStr]["sum"] += val
+                day_map[dStr]["count"] += 1
+            grouped = []
+            for dStr, agg in day_map.items():
+                y, m, d = dStr.split("-")
+                dt_obj = datetime(int(y), int(m), int(d))
+                avg_val = agg["sum"] / agg["count"]
+                grouped.append((dt_obj, avg_val))
+            grouped.sort(key=lambda x: x[0])
+            times_values = grouped
 
-        # Plot
+        # Prepare figure
         fig, ax = plt.subplots(figsize=(12, 8), dpi=100)
-        ax.plot(times, values, marker='o', linewidth=2)
+        x_vals = [tv[0] for tv in times_values]
+        y_vals = [tv[1] for tv in times_values]
+
+        ax.plot(x_vals, y_vals, marker='o', linewidth=2, color='blue')
         ax.set_title(f"{measure} (Line Chart)")
         ax.set_xlabel("Time")
         ax.set_ylabel(measure)
-        plt.grid()
-        fig.autofmt_xdate()
+        plt.grid(True)
 
+        # Format X ticks
+        if durationH <= 24:
+            # hour only
+            ax.xaxis.set_major_formatter(dates.DateFormatter('%H:%M'))
+        elif durationH <= 72:
+            # date + hour + year
+            ax.xaxis.set_major_formatter(dates.DateFormatter('%d/%m/%Y %H:%M'))
+        else:
+            # day + year
+            ax.xaxis.set_major_formatter(dates.DateFormatter('%d/%m/%Y'))
+            ax.xaxis.set_major_locator(dates.DayLocator())
+
+        plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
         plt.tight_layout()
+
         buf = BytesIO()
         plt.savefig(buf, format='png')
         plt.close(fig)
@@ -206,13 +237,12 @@ class PlotService:
         if download == "png":
             cherrypy.response.headers["Content-Disposition"] = f'attachment; filename="line_{measure}.png"'
         return buf.getvalue()
-
+    
     @cherrypy.expose
     def exportCsv(self, **kwargs):
         """
-        Example:
-          GET /exportCsv?userId=user0&apartmentId=apartment0&measure=Temperature
-              &room=room0&duration=8760
+        GET /exportCsv?userId=U&apartmentId=A&measure=M&duration=H...
+        Writes two columns: "timestamp","measurementValue"
         """
         try:
             userId = kwargs["userId"]
@@ -222,27 +252,26 @@ class PlotService:
 
         measure = kwargs.get("measure", "Temperature")
         room = kwargs.get("room", None)
-        duration = kwargs.get("duration", None)
+        duration_str = kwargs.get("duration", None)
         start = kwargs.get("start", None)
         end = kwargs.get("end", None)
 
-        data = self._fetch_data(userId, apartmentId, measure, start, end, duration)
+        data = self._fetch_data(userId, apartmentId, measure, start, end, duration_str)
         if room:
             data = [d for d in data if d.get("room") == room]
 
         cherrypy.response.headers["Content-Type"] = "text/csv; charset=utf-8"
         cherrypy.response.headers["Content-Disposition"] = f'attachment; filename="{measure}_data.csv"'
 
-        if not data:
-            return "timestamp,value\n"
-
+        # Build CSV with two columns
         output = StringIO()
-        writer = csv.writer(output)
+        writer = csv.writer(output, delimiter=',', lineterminator='\n')
         writer.writerow(["timestamp", measure])
         for item in data:
             dt = self._parse_time(item["t"])
             val = item["v"]
-            writer.writerow([dt.isoformat(), val])
+            if dt:
+                writer.writerow([dt.isoformat(), val])
 
         return output.getvalue()
 

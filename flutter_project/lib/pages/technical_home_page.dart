@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
 
 class TechnicalHomePage extends StatefulWidget {
   final String username;
@@ -18,21 +18,19 @@ class TechnicalHomePage extends StatefulWidget {
 }
 
 class _TechnicalHomePageState extends State<TechnicalHomePage> {
-  // PlotService base URL
-  static const String PLOT_SERVICE_URL = "http://localhost:9090";
+  // The base URL for your adaptor and plot service
+  // static const String ADAPTOR_URL = "http://localhost:8080";      // For CSV data, etc.
+  static const String PLOT_SERVICE_URL = "http://localhost:9090"; // For images (line/carpet)
 
-  // All metrics
+  // Metrics
   final List<String> metrics = ["Temperature", "Humidity", "CO2", "PM10.0", "VOC"];
   String selectedMetric = "Temperature";
 
-  // Carpet vs. Line
-  String selectedChartType = "carpet";
+  // Chart type
+  // The user asked to swap the order: now "Line Chart" is first, "Carpet Plot" is second
+  String selectedChartType = "line"; // possible values: "line" or "carpet"
 
-  // Rooms
-  List<String> availableRooms = [];
-  String? selectedRoom;
-
-  // Duration dropdown
+  // Duration options
   final Map<String, String> durationOptions = {
     "1 day": "24",
     "3 days": "72",
@@ -41,9 +39,17 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     "3 months": "2160",
     "6 months": "4320",
     "1 year": "8760",
-    "all": "999999"
+    "all": "999999",
   };
   String selectedDuration = "24";
+
+  // Rooms
+  List<String> availableRooms = [];
+  String? selectedRoom;
+
+  // For error or fallback
+  String? errorMessage;
+  bool isLoadingRooms = false;
 
   @override
   void initState() {
@@ -52,39 +58,47 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
   }
 
   Future<void> _fetchRoomsForApartment(String apartmentId) async {
+    setState(() {
+      isLoadingRooms = true;
+      errorMessage = null;
+      availableRooms = [];
+      selectedRoom = null;
+    });
+
     try {
-      final response = await http.get(Uri.parse("http://localhost:8081/apartments"));
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        final List<String> foundRooms = [];
-        for (final apt in data) {
-          if (apt["apartmentId"] == apartmentId) {
-            final List<dynamic> rooms = apt["rooms"];
-            for (final r in rooms) {
-              foundRooms.add(r["roomId"]);
+      final resp = await http.get(Uri.parse("http://localhost:8081/apartments"));
+      if (resp.statusCode == 200) {
+        final arr = json.decode(resp.body);
+        if (arr is List) {
+          for (var apt in arr) {
+            if (apt["apartmentId"] == apartmentId) {
+              final rooms = apt["rooms"] as List<dynamic>;
+              final foundRooms = rooms.map((r) => r["roomId"].toString()).toList();
+              setState(() {
+                if (foundRooms.isEmpty) {
+                  availableRooms = ["(No rooms)"];
+                  selectedRoom = null;
+                } else {
+                  availableRooms = foundRooms;
+                  selectedRoom = foundRooms.first;
+                }
+                isLoadingRooms = false;
+              });
+              return;
             }
-            break;
           }
         }
-        setState(() {
-          if (foundRooms.isEmpty) {
-            availableRooms = ["(No rooms)"];
-            selectedRoom = null;
-          } else {
-            availableRooms = foundRooms;
-            selectedRoom = foundRooms.first;
-          }
-        });
-      } else {
-        setState(() {
-          availableRooms = ["(FallbackRoom1)", "(FallbackRoom2)"];
-          selectedRoom = "(FallbackRoom1)";
-        });
       }
+      // If we got here, no success
+      setState(() {
+        availableRooms = ["(FallbackRoom1)", "(FallbackRoom2)"];
+        selectedRoom = "(FallbackRoom1)";
+        isLoadingRooms = false;
+      });
     } catch (e) {
       setState(() {
-        availableRooms = ["(Error fetching rooms)"];
-        selectedRoom = null;
+        isLoadingRooms = false;
+        errorMessage = "Connection error: $e";
       });
     }
   }
@@ -94,83 +108,54 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     return Scaffold(
       body: Column(
         children: [
-          // Row of metric selection
+          // Metric selection
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: metrics.map((metricName) {
-                final isSelected = (selectedMetric == metricName);
+              children: metrics.map((m) {
+                final sel = (m == selectedMetric);
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isSelected ? Colors.indigo : Colors.blueGrey,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      backgroundColor: sel ? Colors.indigo : Colors.blueGrey,
                     ),
-                    child: Text(
-                      metricName,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                    onPressed: () => setState(() {
-                      selectedMetric = metricName;
-                    }),
+                    onPressed: () {
+                      setState(() => selectedMetric = m);
+                    },
+                    child: Text(m, style: const TextStyle(color: Colors.white)),
                   ),
                 );
               }).toList(),
             ),
           ),
 
-          // Chart type selection
-          Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            elevation: 3,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildToggleButton("Carpet Plot", "carpet"),
-                  const SizedBox(width: 16),
-                  _buildToggleButton("Line Chart", "line"),
-                ],
-              ),
-            ),
+          // Chart type: Line vs. Carpet (swapped order)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildChartTypeButton("Line Chart", "line"),
+              const SizedBox(width: 16),
+              _buildChartTypeButton("Carpet Plot", "carpet"),
+            ],
           ),
 
           // Room selection
           if (availableRooms.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 2,
                 child: ListTile(
                   title: const Text("Select Room"),
-                  trailing: SizedBox(
-                    width: 150,
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      value: selectedRoom,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedRoom = value;
-                        });
-                      },
-                      items: availableRooms.map((roomId) {
-                        return DropdownMenuItem<String>(
-                          value: roomId,
-                          child: Text(roomId),
-                        );
-                      }).toList(),
-                    ),
+                  trailing: DropdownButton<String>(
+                    value: selectedRoom,
+                    items: availableRooms.map((r) {
+                      return DropdownMenuItem(value: r, child: Text(r));
+                    }).toList(),
+                    onChanged: (val) {
+                      setState(() => selectedRoom = val);
+                    },
                   ),
                 ),
               ),
@@ -178,39 +163,26 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
 
           // Duration selection
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 2,
               child: ListTile(
                 title: const Text("Select Duration"),
-                trailing: SizedBox(
-                  width: 150,
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: selectedDuration,
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          selectedDuration = val;
-                        });
-                      }
-                    },
-                    items: durationOptions.entries.map((entry) {
-                      final label = entry.key;
-                      final hours = entry.value;
-                      return DropdownMenuItem<String>(
-                        value: hours,
-                        child: Text(label),
-                      );
-                    }).toList(),
-                  ),
+                trailing: DropdownButton<String>(
+                  value: selectedDuration,
+                  items: durationOptions.entries.map((e) {
+                    return DropdownMenuItem(value: e.value, child: Text(e.key));
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val == null) return;
+                    setState(() => selectedDuration = val);
+                  },
                 ),
               ),
             ),
           ),
 
-          // Download/Export
+          // Buttons for "Download Chart" and "Export CSV"
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -228,10 +200,14 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
             ],
           ),
 
-          // Chart display
+          // The main chart area
           Expanded(
             child: Center(
-              child: _buildChartImage(),
+              child: isLoadingRooms
+                  ? const CircularProgressIndicator()
+                  : (errorMessage != null
+                      ? Text(errorMessage!, style: const TextStyle(color: Colors.red))
+                      : _buildChartImage()),
             ),
           ),
         ],
@@ -239,84 +215,78 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     );
   }
 
-  // Button for toggling "carpet" vs. "line"
-  Widget _buildToggleButton(String label, String typeValue) {
-    final bool selected = (selectedChartType == typeValue);
+  // ---------------------------------------------
+  //   Chart Type Button
+  // ---------------------------------------------
+  Widget _buildChartTypeButton(String label, String value) {
+    final isSelected = (selectedChartType == value);
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
-        side: BorderSide(color: selected ? Colors.indigo : Colors.grey, width: 2),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: selected ? Colors.indigo.shade50 : Colors.transparent,
+        backgroundColor: isSelected ? Colors.blue.shade100 : Colors.white,
+        side: BorderSide(color: isSelected ? Colors.blue : Colors.grey),
       ),
-      onPressed: () => setState(() {
-        selectedChartType = typeValue;
-      }),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: selected ? Colors.indigo : Colors.black87,
-          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
+      onPressed: () {
+        setState(() {
+          selectedChartType = value;
+        });
+      },
+      child: Text(label, style: TextStyle(color: isSelected ? Colors.blue : Colors.black)),
     );
   }
 
-  // The chart image with a spinner while loading
+  // --------------------------------------------------
+  //  Build the image from plot_service.py
+  // --------------------------------------------------
   Widget _buildChartImage() {
-    final userId = widget.username;
-    final aptId = widget.location ?? "apartment0";
-    final endpoint = (selectedChartType == "carpet")
-        ? "/generateCarpetPlot"
-        : "/generateLineChart";
+    final user = widget.username;
+    final apt = widget.location ?? "apartment0";
+    final measure = selectedMetric;
+    final dur = selectedDuration;
 
-    // Construct the URL
-    String chartUrl = "$PLOT_SERVICE_URL$endpoint"
-        "?userId=$userId"
-        "&apartmentId=$aptId"
-        "&measure=$selectedMetric"
-        "&duration=$selectedDuration";
+    // Decide which endpoint to use
+    final endpoint = (selectedChartType == "line") ? "generateLineChart" : "generateCarpetPlot";
 
-    if (selectedRoom != null) {
-      chartUrl += "&room=$selectedRoom";
+    // Build URL
+    String url = "$PLOT_SERVICE_URL/$endpoint?userId=$user&apartmentId=$apt&measure=$measure&duration=$dur";
+    if (selectedRoom != null && !selectedRoom!.startsWith("(")) {
+      url += "&room=$selectedRoom";
     }
     // Add a timestamp param to avoid caching
     final ts = DateTime.now().millisecondsSinceEpoch;
-    chartUrl += "&ts=$ts";
+    url += "&ts=$ts";
 
-    return Image.network(
-      chartUrl,
-      // If loading is in progress, show spinner
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) {
-          // Fully loaded
-          return child;
-        }
-        // Still loading => show spinner
-        return const Center(child: CircularProgressIndicator());
-      },
-      // If error occurs (e.g. 404), show message
-      errorBuilder: (context, error, stackTrace) {
-        return const Text("Error loading chart. Possibly no data found.");
-      },
+    return SizedBox(
+      width: 1600,
+      height: 900,
+      child: Image.network(
+        url,
+        fit: BoxFit.contain,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return const CircularProgressIndicator();
+        },
+        errorBuilder: (context, error, stack) => const Text("Error loading chart image."),
+      ),
     );
   }
 
-  // Download chart as PNG
+  // --------------------------------------------------
+  //           Download / Export
+  // --------------------------------------------------
   Future<void> _downloadChart() async {
-    final userId = widget.username;
-    final aptId = widget.location ?? "apartment0";
-    final endpoint = (selectedChartType == "carpet")
-        ? "/generateCarpetPlot"
-        : "/generateLineChart";
+    final user = widget.username;
+    final apt = widget.location ?? "apartment0";
+    final measure = selectedMetric;
+    final dur = selectedDuration;
 
-    String url = "$PLOT_SERVICE_URL$endpoint"
-        "?userId=$userId"
-        "&apartmentId=$aptId"
-        "&measure=$selectedMetric"
-        "&duration=$selectedDuration"
-        "&download=png";
+    // Which endpoint
+    final endpoint = (selectedChartType == "line") ? "generateLineChart" : "generateCarpetPlot";
 
-    if (selectedRoom != null) {
+    // Add download=png param
+    String url = "$PLOT_SERVICE_URL/$endpoint?userId=$user&apartmentId=$apt"
+        "&measure=$measure&duration=$dur&download=png";
+
+    if (selectedRoom != null && !selectedRoom!.startsWith("(")) {
       url += "&room=$selectedRoom";
     }
     if (await canLaunchUrl(Uri.parse(url))) {
@@ -324,18 +294,17 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     }
   }
 
-  // Export CSV
   Future<void> _exportCsv() async {
-    final userId = widget.username;
-    final aptId = widget.location ?? "apartment0";
+    final user = widget.username;
+    final apt = widget.location ?? "apartment0";
+    final measure = selectedMetric;
+    final dur = selectedDuration;
 
-    String url = "$PLOT_SERVICE_URL/exportCsv"
-        "?userId=$userId"
-        "&apartmentId=$aptId"
-        "&measure=$selectedMetric"
-        "&duration=$selectedDuration";
+    // The plot service uses exportCsv for CSV
+    String url = "$PLOT_SERVICE_URL/exportCsv?userId=$user&apartmentId=$apt"
+        "&measure=$measure&duration=$dur";
 
-    if (selectedRoom != null) {
+    if (selectedRoom != null && !selectedRoom!.startsWith("(")) {
       url += "&room=$selectedRoom";
     }
     if (await canLaunchUrl(Uri.parse(url))) {

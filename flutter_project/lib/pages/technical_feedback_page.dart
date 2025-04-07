@@ -4,8 +4,8 @@ import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
 
 class TechnicalFeedbackPage extends StatefulWidget {
-  final String username;     // The logged technical user
-  final String? location;    // The selected apartment ID
+  final String username;    // The technical user's ID
+  final String? location;   // The chosen apartment
 
   const TechnicalFeedbackPage({
     Key? key,
@@ -18,10 +18,9 @@ class TechnicalFeedbackPage extends StatefulWidget {
 }
 
 class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
-  // Adaptor endpoint
   static const String adaptorUrl = "http://localhost:8080";
 
-  // The feedback categories available
+  // Feedback categories
   final feedbackTypes = [
     "Temperature Perception",
     "Humidity Perception",
@@ -30,7 +29,7 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
   ];
   String selectedFeedback = "Temperature Perception";
 
-  // Time range selection, just like in technical_home_page.dart
+  // Duration dropdown
   final Map<String, String> durationOptions = {
     "1 day": "24",
     "3 days": "72",
@@ -41,9 +40,9 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
     "1 year": "8760",
     "all": "999999"
   };
-  String selectedDuration = "168"; // default to "1 week" (168 hours)
+  String selectedDuration = "168"; // default to 1 week
 
-  // The distribution ratingCounts[r-1] => how many times rating=r was given
+  // ratingCounts[r-1] => how many times rating=r was submitted
   List<int> ratingCounts = [0, 0, 0, 0, 0];
 
   bool isLoading = false;
@@ -55,8 +54,7 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
     _fetchFeedbackData();
   }
 
-  /// Convert the user-friendly label to the underlying Influx field name
-  /// "Temperature Perception" => "Temperature"
+  // Convert the UI label to the underlying Influx field
   String _mapFeedbackToField(String label) {
     switch (label) {
       case "Temperature Perception":
@@ -72,8 +70,8 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
     }
   }
 
-  /// Fetch data from: GET /getAllApartmentData/<techUser>/<apartment>?duration=...
-  /// Filter by room="Feedback" & measurement=the mapped field => build rating distribution
+  /// GET /getAllApartmentData/<techUser>/<apartment>?duration=...
+  /// Then filter by room="Feedback" and measurement=the chosen field => build rating distribution
   Future<void> _fetchFeedbackData() async {
     setState(() {
       isLoading = true;
@@ -82,18 +80,17 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
     });
 
     final apartmentId = widget.location ?? "apartment0";
-    final duration = selectedDuration;
-    final measurementNeeded = _mapFeedbackToField(selectedFeedback);
+    final fieldNeeded = _mapFeedbackToField(selectedFeedback);
 
     final url =
-        "$adaptorUrl/getAllApartmentData/${widget.username}/$apartmentId?duration=$duration";
+        "$adaptorUrl/getAllApartmentData/${widget.username}/$apartmentId?duration=$selectedDuration";
 
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode != 200) {
         setState(() {
-          isLoading = false;
           errorMessage = "Adaptor error: ${response.statusCode}\n${response.body}";
+          isLoading = false;
         });
         return;
       }
@@ -101,16 +98,15 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
       final raw = json.decode(response.body);
       if (raw is! List) {
         setState(() {
+          errorMessage = "Adaptor returned non-list JSON!";
           isLoading = false;
-          errorMessage = "Adaptor returned non-list JSON";
         });
         return;
       }
 
-      // Filter: room=="Feedback" and measurement==measurementNeeded
       for (var item in raw) {
         if (item is Map<String, dynamic>) {
-          if (item["room"] == "Feedback" && item["measurement"] == measurementNeeded) {
+          if (item["room"] == "Feedback" && item["measurement"] == fieldNeeded) {
             final val = item["v"];
             if (val is num) {
               final rating = val.toInt();
@@ -124,12 +120,11 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
 
       setState(() {
         isLoading = false;
-        // ratingCounts updated
       });
     } catch (e) {
       setState(() {
-        isLoading = false;
         errorMessage = "Connection/Parsing error: $e";
+        isLoading = false;
       });
     }
   }
@@ -139,7 +134,7 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
     return Scaffold(
       body: Column(
         children: [
-          // 1) Time range selection (dropdown)
+          // Duration selection
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Card(
@@ -166,7 +161,7 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
             ),
           ),
 
-          // 2) Feedback type selection
+          // Feedback type selection
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -178,18 +173,21 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: sel ? Colors.indigo : Colors.blueGrey,
                     ),
-                    child: Text(f, style: const TextStyle(color: Colors.white)),
                     onPressed: () async {
                       setState(() => selectedFeedback = f);
                       await _fetchFeedbackData();
                     },
+                    child: Text(
+                      f,
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ),
                 );
               }).toList(),
             ),
           ),
 
-          // 3) The bar chart or loading/error
+          // Chart or loading/error
           Expanded(
             child: Center(
               child: isLoading
@@ -204,25 +202,25 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
     );
   }
 
-  /// We have ratingCounts[0..4], each representing how many times rating i+1 was selected
-  /// x-axis => 1..5, y-axis => ratingCounts
   Widget _buildBarChart() {
-    // If there's no data (i.e. sum(ratingCounts)==0), we can display "No data"
-    final totalFeedbacks = ratingCounts.reduce((a, b) => a + b);
-    if (totalFeedbacks == 0) {
+    // If no data (sum==0), show a simple text
+    final total = ratingCounts.reduce((a, b) => a + b);
+    if (total == 0) {
       return const Text("No feedback data found in this period.");
     }
 
-    // Build 5 bars => x=1..5
+    // Create bar groups for x=1..5
     final barGroups = <BarChartGroupData>[];
+    int maxCount = 0;
     for (int i = 0; i < 5; i++) {
-      final count = ratingCounts[i].toDouble();
+      final count = ratingCounts[i];
+      if (count > maxCount) maxCount = count;
       barGroups.add(
         BarChartGroupData(
-          x: i + 1, // rating=1..5
+          x: i + 1,
           barRods: [
             BarChartRodData(
-              toY: count,
+              toY: count.toDouble(),
               width: 22,
               color: Colors.blue,
             )
@@ -231,31 +229,41 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
       );
     }
 
-    // Y-axis max => add a bit of headroom
-    final maxCount = ratingCounts.reduce((a, b) => a > b ? a : b);
-    final yMax = (maxCount + 2).toDouble();
+    // Add a bit of headroom
+    final yMax = maxCount + 2.0;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+    return Container(
+      width: 1600,  // the size you prefer
+      height: 900,
+      alignment: Alignment.center,
       child: BarChart(
         BarChartData(
           maxY: yMax,
           barGroups: barGroups,
           barTouchData: BarTouchData(enabled: true),
-
           gridData: FlGridData(
             drawHorizontalLine: true,
             drawVerticalLine: false,
           ),
           borderData: FlBorderData(show: false),
-
           titlesData: FlTitlesData(
             leftTitles: AxisTitles(
+              axisNameSize: 40, // more space to avoid cutting
+              axisNameWidget: Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                // Rotate "Number of votes" so it fits
+                child: RotatedBox(
+                  quarterTurns: 0,
+                  child: Text(
+                    "Number of votes",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
               sideTitles: SideTitles(
                 showTitles: true,
-                interval: 1, // show integer steps on Y
+                interval: 1,
                 getTitlesWidget: (value, meta) {
-                  // Show integer if value is near an integer
                   if (value % 1 == 0) {
                     return Text(value.toInt().toString());
                   }
@@ -263,21 +271,28 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
                 },
               ),
             ),
-            rightTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            topTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
             bottomTitles: AxisTitles(
+              axisNameSize: 40,
+              axisNameWidget: Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  "Rating (1..5)",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
               sideTitles: SideTitles(
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
-                  final int xVal = value.toInt();
-                  return Text(xVal.toString());
+                  final xVal = value.toInt();
+                  if (xVal >= 1 && xVal <= 5) {
+                    return Text(xVal.toString());
+                  }
+                  return const SizedBox();
                 },
               ),
             ),
+            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
         ),
       ),
