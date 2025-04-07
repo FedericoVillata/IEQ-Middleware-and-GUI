@@ -168,42 +168,56 @@ class KPIEngine:
                 )
 
     def publish_room_metrics(self, apartment_id, room_id, avg_temp, avg_humidity, avg_co2,
-                             pmv, ppd, icone, ieqi, temp_class, hum_class, co2_class,
-                             pmv_class, ppd_class, icone_class, ieqi_class,
-                             adaptive_comfort, env_score, env_classification):
+                            pmv, ppd, icone, ieqi, temp_class, hum_class, co2_class,
+                            pmv_class, ppd_class, icone_class, ieqi_class,
+                            adaptive_comfort, env_score, env_classification):
 
         topic = f"{self.MQTT_BASE_TOPIC}/{apartment_id}"
         base_name = topic
         timestamp = time.time()
 
+        # Prepare all KPI events
         events = [
             {"n": f"avg_temperature/{room_id}/value", "u": "Cel", "t": timestamp, "v": avg_temp},
-            {"n": f"temperature_class/{room_id}/class", "u": "class", "t": timestamp, "v": temp_class}#,
-            # {"n": f"avg_humidity/{room_id}/value", "u": "%RH", "t": timestamp, "v": avg_humidity},
-            # {"n": f"humidity_class/{room_id}/class", "u": "class", "t": timestamp, "v": hum_class},
-            # {"n": f"avg_co2/{room_id}/value", "u": "ppm", "t": timestamp, "v": avg_co2},
-            # {"n": f"co2_class/{room_id}/class", "u": "class", "t": timestamp, "v": co2_class},
-            # {"n": f"pmv_kpis/{room_id}/value", "u": "arb", "t": timestamp, "v": pmv},
-            # {"n": f"pmv_class/{room_id}/class", "u": "class", "t": timestamp, "v": pmv_class},
-            # {"n": f"ppd/{room_id}/value", "u": "%", "t": timestamp, "v": ppd},
-            # {"n": f"ppd_class/{room_id}/class", "u": "class", "t": timestamp, "v": ppd_class},
-            # {"n": f"icone/{room_id}/value", "u": "arb", "t": timestamp, "v": icone},
-            # {"n": f"icone_class/{room_id}/class", "u": "class", "t": timestamp, "v": icone_class},
-            # {"n": f"ieqi/{room_id}/value", "u": "arb", "t": timestamp, "v": ieqi},
-            # {"n": f"ieqi_class/{room_id}/class", "u": "class", "t": timestamp, "v": ieqi_class},
-            # {"n": f"environment_score/{room_id}/value", "u": "score", "t": timestamp, "v": env_score},
-            # {"n": f"environment_score_class/{room_id}/class", "u": "class", "t": timestamp, "v": env_classification}
+            {"n": f"temperature_class/{room_id}/class", "u": "class", "t": timestamp, "v": temp_class},
+            {"n": f"avg_humidity/{room_id}/value", "u": "%RH", "t": timestamp, "v": avg_humidity},
+            {"n": f"humidity_class/{room_id}/class", "u": "class", "t": timestamp, "v": hum_class},
+            {"n": f"avg_co2/{room_id}/value", "u": "ppm", "t": timestamp, "v": avg_co2},
+            {"n": f"co2_class/{room_id}/class", "u": "class", "t": timestamp, "v": co2_class},
+            {"n": f"pmv_kpis/{room_id}/value", "u": "arb", "t": timestamp, "v": pmv},
+            {"n": f"pmv_class/{room_id}/class", "u": "class", "t": timestamp, "v": pmv_class},
+            {"n": f"ppd/{room_id}/value", "u": "%", "t": timestamp, "v": ppd},
+            {"n": f"ppd_class/{room_id}/class", "u": "class", "t": timestamp, "v": ppd_class},
+            {"n": f"icone/{room_id}/value", "u": "arb", "t": timestamp, "v": icone},
+            {"n": f"icone_class/{room_id}/class", "u": "class", "t": timestamp, "v": icone_class},
+            {"n": f"ieqi/{room_id}/value", "u": "arb", "t": timestamp, "v": ieqi},
+            {"n": f"ieqi_class/{room_id}/class", "u": "class", "t": timestamp, "v": ieqi_class},
+            {"n": f"environment_score/{room_id}/value", "u": "score", "t": timestamp, "v": env_score},
+            {"n": f"environment_score_class/{room_id}/class", "u": "class", "t": timestamp, "v": env_classification}
         ]
 
+        # Add adaptive comfort metrics if available
         if adaptive_comfort:
-            events.append({"n": f"adaptive_comfort_running_mean/{room_id}/value", "u": "value", "t": timestamp, "v": adaptive_comfort.get("Running Mean Temperature", -999)})
-            events.append({"n": f"adaptive_comfort_t_comf/{room_id}/value", "u": "value", "t": timestamp, "v": adaptive_comfort.get("Comfort Temperature", -999)})
+            events.append({
+                "n": f"adaptive_comfort_running_mean/{room_id}/value",
+                "u": "value",
+                "t": timestamp,
+                "v": adaptive_comfort.get("Running Mean Temperature", -999)
+            })
+            events.append({
+                "n": f"adaptive_comfort_t_comf/{room_id}/value",
+                "u": "value",
+                "t": timestamp,
+                "v": adaptive_comfort.get("Comfort Temperature", -999)
+            })
 
-        senml_payload = {"bn": base_name, "e": events}
+        # Publish each KPI as a separate SenML message
+        for event in events:
+            payload = {"bn": base_name, "e": [event]}
+            print(f"\n🔁 Publishing event: {event['n']} to topic: {topic}")
+            print(json.dumps(payload, indent=2))
+            self.publisher.myPublish(json.dumps(payload), topic)
 
-        print(f"Final SenML Metrics for {room_id}: {json.dumps(senml_payload, indent=2)}")
-        print(f"Publishing on topic: {topic}")
-        self.publisher.myPublish(json.dumps(senml_payload), topic)
 
 
     def run(self):
