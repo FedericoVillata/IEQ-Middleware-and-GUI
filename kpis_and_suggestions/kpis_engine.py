@@ -26,7 +26,7 @@ class KPIEngine:
             self.MQTT_BASE_TOPIC = self.config["base_topic"]
             self.MQTT_BROKER = self.config.get("messageBroker")
             self.MQTT_PORT = self.config.get("brokerPort")
-            self.MQTT_QOS = self.config.get["qos"]
+            self.MQTT_QOS = self.config.get("qos")
         except KeyError as e:
             raise ValueError(f"Missing configuration key: {e}")
 
@@ -177,13 +177,13 @@ class KPIEngine:
         timestamp = time.time()
 
         events = [
-            {"n": f"temperature_kpis/{room_id}/value", "u": "Cel", "t": timestamp, "v": avg_temp},
+            {"n": f"avg_temperature/{room_id}/value", "u": "Cel", "t": timestamp, "v": avg_temp},
             {"n": f"temperature_class/{room_id}/class", "u": "class", "t": timestamp, "v": temp_class},
-            {"n": f"humidity/{room_id}/value", "u": "%RH", "t": timestamp, "v": avg_humidity},
+            {"n": f"avg_humidity/{room_id}/value", "u": "%RH", "t": timestamp, "v": avg_humidity},
             {"n": f"humidity_class/{room_id}/class", "u": "class", "t": timestamp, "v": hum_class},
-            {"n": f"co2/{room_id}/value", "u": "ppm", "t": timestamp, "v": avg_co2},
+            {"n": f"avg_co2/{room_id}/value", "u": "ppm", "t": timestamp, "v": avg_co2},
             {"n": f"co2_class/{room_id}/class", "u": "class", "t": timestamp, "v": co2_class},
-            {"n": f"pmv/{room_id}/value", "u": "arb", "t": timestamp, "v": pmv},
+            {"n": f"pmv_kpis/{room_id}/value", "u": "arb", "t": timestamp, "v": pmv},
             {"n": f"pmv_class/{room_id}/class", "u": "class", "t": timestamp, "v": pmv_class},
             {"n": f"ppd/{room_id}/value", "u": "%", "t": timestamp, "v": ppd},
             {"n": f"ppd_class/{room_id}/class", "u": "class", "t": timestamp, "v": ppd_class},
