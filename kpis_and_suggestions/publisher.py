@@ -4,6 +4,7 @@ import json
 import time
 
 class MyPublisher:
+    
     def __init__(self, clientID, base_topic, broker="localhost", port=1883, qos=2):
         self.clientID = clientID
         self.base_topic = base_topic
@@ -43,7 +44,7 @@ class MyPublisher:
             payload_size = len(message.encode("utf-8"))
             print(f"[{self.clientID}] Publishing to topic '{clean_topic}' | Payload size: {payload_size} bytes")
 
-            result = self._paho_mqtt.publish(clean_topic, message, self.qos)
+            result = self._paho_mqtt.publish(clean_topic, message, self.qos, retain=False)
 
             if result.rc != PahoMQTT.MQTT_ERR_SUCCESS:
                 print(f"[{self.clientID}] Publish failed with result code {result.rc}")

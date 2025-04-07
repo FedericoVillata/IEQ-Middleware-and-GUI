@@ -34,7 +34,7 @@ class KPIEngine:
         if "apartments" not in self.catalog or not isinstance(self.catalog["apartments"], list):
             raise ValueError("Catalog JSON missing or invalid: no 'apartments' list found.")
 
-        self.publisher = MyPublisher("KPIModule", self.MQTT_BASE_TOPIC, self.MQTT_BROKER, self.MQTT_PORT, )
+        self.publisher = MyPublisher("KPIModule", self.MQTT_BASE_TOPIC, self.MQTT_BROKER, self.MQTT_PORT, self.MQTT_QOS)
 
     def get_catalog(self, retries=10, delay=3):
         for attempt in range(retries):
@@ -177,8 +177,8 @@ class KPIEngine:
         timestamp = time.time()
 
         events = [
-            {"n": f"temperature_kpis/{room_id}/value", "u": "Cel", "t": timestamp, "v": avg_temp,},
-            {"n": f"temperature_class/{room_id}/class", "u": "class", "t": timestamp, "v": temp_class, },
+            {"n": f"temperature_kpis/{room_id}/value", "u": "Cel", "t": timestamp, "v": avg_temp},
+            {"n": f"temperature_class/{room_id}/class", "u": "class", "t": timestamp, "v": temp_class},
             {"n": f"humidity/{room_id}/value", "u": "%RH", "t": timestamp, "v": avg_humidity},
             {"n": f"humidity_class/{room_id}/class", "u": "class", "t": timestamp, "v": hum_class},
             {"n": f"co2/{room_id}/value", "u": "ppm", "t": timestamp, "v": avg_co2},
@@ -204,6 +204,7 @@ class KPIEngine:
         print(f"Final SenML Metrics for {room_id}: {json.dumps(senml_payload, indent=2)}")
         print(f"Publishing on topic: {topic}")
         self.publisher.myPublish(json.dumps(senml_payload), topic)
+
 
     def run(self):
         self.publisher.start()
@@ -247,7 +248,7 @@ if __name__ == "__main__":
 
     # wait_for_data()  # Commented out for debug purposes
 
-    INTERVAL_SECONDS = 30 * 60
+    INTERVAL_SECONDS = 30 #* 60
 
     while True:
         print("Starting new KPI cycle...")
