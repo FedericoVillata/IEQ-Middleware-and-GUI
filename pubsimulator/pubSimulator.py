@@ -108,6 +108,6 @@ if __name__ == '__main__':
             ]
         
         out = {"bn": pubTopic2,"e":events}
-        myPub.myPublish(json.dumps(out), pubTopic2)
+        #myPub.myPublish(json.dumps(out), pubTopic2)
 
         time.sleep(10)

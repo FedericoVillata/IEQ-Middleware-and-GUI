@@ -26,6 +26,7 @@ class KPIEngine:
             self.MQTT_BASE_TOPIC = self.config["base_topic"]
             self.MQTT_BROKER = self.config.get("messageBroker")
             self.MQTT_PORT = self.config.get("brokerPort")
+            self.MQTT_QOS = self.config.get["qos"]
         except KeyError as e:
             raise ValueError(f"Missing configuration key: {e}")
 
@@ -33,12 +34,12 @@ class KPIEngine:
         if "apartments" not in self.catalog or not isinstance(self.catalog["apartments"], list):
             raise ValueError("Catalog JSON missing or invalid: no 'apartments' list found.")
 
-        self.publisher = MyPublisher("KPIModule", self.MQTT_BASE_TOPIC, self.MQTT_BROKER, self.MQTT_PORT)
+        self.publisher = MyPublisher("KPIModule", self.MQTT_BASE_TOPIC, self.MQTT_BROKER, self.MQTT_PORT, )
 
     def get_catalog(self, retries=10, delay=3):
         for attempt in range(retries):
             try:
-                response = requests.get(self.REGISTRY_URL + "catalog")
+                response = requests.get(self.REGISTRY_URL + "/catalog")
                 response.raise_for_status()
                 print("Catalog fetched successfully.")
                 return response.json()
@@ -176,27 +177,27 @@ class KPIEngine:
         timestamp = time.time()
 
         events = [
-            {"n": f"temperature_kpis/{room_id}/value", "v": avg_temp, "u": "Cel", "t": timestamp},
-            {"n": f"temperature_class/{room_id}/class", "v": temp_class, "u": "class", "t": timestamp},
-            {"n": f"humidity/{room_id}/value", "v": avg_humidity, "u": "%RH", "t": timestamp},
-            {"n": f"humidity_class/{room_id}/class", "v": hum_class, "u": "class", "t": timestamp},
-            {"n": f"co2/{room_id}/value", "v": avg_co2, "u": "ppm", "t": timestamp},
-            {"n": f"co2_class/{room_id}/class", "v": co2_class, "u": "class", "t": timestamp},
-            {"n": f"pmv/{room_id}/value", "v": pmv, "u": "arb", "t": timestamp},
-            {"n": f"pmv_class/{room_id}/class", "v": pmv_class, "u": "class", "t": timestamp},
-            {"n": f"ppd/{room_id}/value", "v": ppd, "u": "%", "t": timestamp},
-            {"n": f"ppd_class/{room_id}/class", "v": ppd_class, "u": "class", "t": timestamp},
-            {"n": f"icone/{room_id}/value", "v": icone, "u": "arb", "t": timestamp},
-            {"n": f"icone_class/{room_id}/class", "v": icone_class, "u": "class", "t": timestamp},
-            {"n": f"ieqi/{room_id}/value", "v": ieqi, "u": "arb", "t": timestamp},
-            {"n": f"ieqi_class/{room_id}/class", "v": ieqi_class, "u": "class", "t": timestamp},
-            {"n": f"environment_score/{room_id}/value", "v": env_score, "u": "score", "t": timestamp},
-            {"n": f"environment_score_class/{room_id}/class", "v": env_classification, "u": "class", "t": timestamp}
+            {"n": f"temperature_kpis/{room_id}/value", "u": "Cel", "t": timestamp, "v": avg_temp,},
+            {"n": f"temperature_class/{room_id}/class", "u": "class", "t": timestamp, "v": temp_class, },
+            {"n": f"humidity/{room_id}/value", "u": "%RH", "t": timestamp, "v": avg_humidity},
+            {"n": f"humidity_class/{room_id}/class", "u": "class", "t": timestamp, "v": hum_class},
+            {"n": f"co2/{room_id}/value", "u": "ppm", "t": timestamp, "v": avg_co2},
+            {"n": f"co2_class/{room_id}/class", "u": "class", "t": timestamp, "v": co2_class},
+            {"n": f"pmv/{room_id}/value", "u": "arb", "t": timestamp, "v": pmv},
+            {"n": f"pmv_class/{room_id}/class", "u": "class", "t": timestamp, "v": pmv_class},
+            {"n": f"ppd/{room_id}/value", "u": "%", "t": timestamp, "v": ppd},
+            {"n": f"ppd_class/{room_id}/class", "u": "class", "t": timestamp, "v": ppd_class},
+            {"n": f"icone/{room_id}/value", "u": "arb", "t": timestamp, "v": icone},
+            {"n": f"icone_class/{room_id}/class", "u": "class", "t": timestamp, "v": icone_class},
+            {"n": f"ieqi/{room_id}/value", "u": "arb", "t": timestamp, "v": ieqi},
+            {"n": f"ieqi_class/{room_id}/class", "u": "class", "t": timestamp, "v": ieqi_class},
+            {"n": f"environment_score/{room_id}/value", "u": "score", "t": timestamp, "v": env_score},
+            {"n": f"environment_score_class/{room_id}/class", "u": "class", "t": timestamp, "v": env_classification}
         ]
 
         if adaptive_comfort:
-            events.append({"n": "adaptive_comfort_running_mean", "v": adaptive_comfort.get("Running Mean Temperature", -999), "t": timestamp})
-            events.append({"n": "adaptive_comfort_t_comf", "v": adaptive_comfort.get("Comfort Temperature", -999), "t": timestamp})
+            events.append({"n": f"adaptive_comfort_running_mean/{room_id}/value", "u": "value", "t": timestamp, "v": adaptive_comfort.get("Running Mean Temperature", -999)})
+            events.append({"n": f"adaptive_comfort_t_comf/{room_id}/value", "u": "value", "t": timestamp, "v": adaptive_comfort.get("Comfort Temperature", -999)})
 
         senml_payload = {"bn": base_name, "e": events}
 

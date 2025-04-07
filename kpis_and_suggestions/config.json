@@ -1,6 +1,6 @@
 {
     "brokerPort": 1883,
-    "base_topic": "IEQmidAndGUI/",
+    "base_topic": "IEQmidAndGUI",
     "messageBroker": "mqtt.eclipseprojects.io",
     "url_db": "http://192.68.0.21:8086",
     "influx_token": "56a2fc64e4b1ef0ee725f0e900a43eb511942d859dbbfa864e28adf029227938",
@@ -10,5 +10,6 @@
     "registry_url": "http://192.68.0.24:8081",
     "measures": ["Humidity", "Temperature", "CO2", "VOC", "PM1", "PM2.5", "PM10", "Noise", "Light", "Pressure"],
     "alive_topic": "IEQmidAndGUI/microservices/Adaptor",
-    "test": 1
+    "test": 1,
+    "qos": 2
 }
