@@ -222,7 +222,17 @@ class KPIEngine:
                     }
                     self.publisher.myPublish(json.dumps(alert_event), f"{self.MQTT_BASE_TOPIC}/{apartment_id}")
 
-            suggestions = get_suggestions(classifications)
+            suggestions = get_suggestions(
+                classifications=classifications,
+                temp=avg_temp,
+                humidity=avg_humidity,
+                co2=avg_co2,
+                t_ext=t_ext,
+                hour=datetime.now().hour
+            )
+            if suggestions:
+                print(f"Generated {len(suggestions)} suggestions for room {room_id}")
+                
             self.publish_suggestions(apartment_id, room_id, suggestions)        
 
 
