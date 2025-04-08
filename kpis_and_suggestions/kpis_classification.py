@@ -32,23 +32,52 @@ def classify_temperature(temp, season, t_ext, settings, adaptive_range=None):
     key = f"mechanical_temp_{season}"
     t_thresh = thresholds.get(key)
 
-    if temp <= t_thresh["G"]:
-        return "G"
-    elif temp <= t_thresh["Y"]:
-        return "Y"
+    if isinstance(t_thresh["G"], list):
+        g_min, g_max = t_thresh["G"]
+        y_min, y_max = t_thresh["Y"]
+        r1_min, r1_max, r2_min, r2_max = t_thresh["R"]
+
+        if g_min <= temp <= g_max:
+            return "G"
+        elif y_min <= temp <= g_min or g_max <= temp <= y_max:
+            return "Y"
+        elif r1_min <= temp < y_min or temp > y_max:
+            return "R"
+        else:
+            return "Unknown"
     else:
-        return "R"
+        if temp <= t_thresh["G"]:
+            return "G"
+        elif temp <= t_thresh["Y"]:
+            return "Y"
+        else:
+            return "R"
 
 def classify_humidity(humidity, settings):
     thresholds = settings["thresholds"]["humidity"]
     if humidity == -999:
         return "Unknown"
-    if humidity <= thresholds["G"]:
-        return "G"
-    elif humidity <= thresholds["Y"]:
-        return "Y"
+
+    if isinstance(thresholds["G"], list):
+        g_min, g_max = thresholds["G"]
+        y_min, y_max = thresholds["Y"]
+        r1_min, r1_max, r2_min, r2_max = thresholds["R"]
+
+        if g_min <= humidity <= g_max:
+            return "G"
+        elif y_min <= humidity < g_min or g_max < humidity <= y_max:
+            return "Y"
+        elif humidity < r1_max or humidity > r2_min:
+            return "R"
+        else:
+            return "Unknown"
     else:
-        return "R"
+        if humidity <= thresholds["G"]:
+            return "G"
+        elif humidity <= thresholds["Y"]:
+            return "Y"
+        else:
+            return "R"
 
 def classify_co2(co2, settings):
     thresholds = settings["thresholds"]
