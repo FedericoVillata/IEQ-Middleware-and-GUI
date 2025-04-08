@@ -13,6 +13,11 @@ INDEX = P / 'index.html'
 MAXDELAY_DEVICE = 60
 MAXDELAY_SERVICE = 60
 
+def CORS():
+    cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+    cherrypy.response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE"
+    cherrypy.response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+
 """Catalog class that interacts with the catalog.json file"""
 class Catalog(object):
     def __init__(self):
@@ -325,12 +330,14 @@ class Webserver(object):
         conf={
             '/':{
             'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
-            'tools.sessions.on':True
+            'tools.sessions.on':True,
+            'tools.CORS.on': True
             }
         }
         cherrypy.tree.mount(self,'/',conf)
         cherrypy.config.update({'server.socket_port':8081})
         cherrypy.config.update({'server.socket_host':'0.0.0.0'})
+        cherrypy.tools.CORS = cherrypy.Tool('before_handler', CORS)
         cherrypy.engine.start()
         try:
             with open(SETTINGS, "r") as fs:                

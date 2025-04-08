@@ -368,7 +368,7 @@ class PlotService:
             mid = thresholds.get("humidity", {}).get("G", 60)
         elif measure.lower() == "co2":
             vmin = 400
-            vmax = 12000
+            vmax = 8000
             ventilation = values.get("ventilation", "nat")  # default if not found
             if ventilation == "mec":
                 # co2_mechanical

@@ -17,7 +17,7 @@ class LocationSelectionPage extends StatefulWidget {
 }
 
 class _LocationSelectionPageState extends State<LocationSelectionPage> {
-  static const String REGISTRY_URL = "http://localhost:8081/apartments";
+  static const String REGISTRY_URL = "http://192.168.1.38:8081/apartments";
 
   final TextEditingController _searchController = TextEditingController();
 
