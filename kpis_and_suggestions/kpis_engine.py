@@ -8,6 +8,7 @@ import requests
 import numpy as np
 
 from kpis_classification import *
+from kpis_suggestions import *
 from publisher import MyPublisher
 from datetime import datetime
 
@@ -221,6 +222,9 @@ class KPIEngine:
                     }
                     self.publisher.myPublish(json.dumps(alert_event), f"{self.MQTT_BASE_TOPIC}/{apartment_id}")
 
+            suggestions = get_suggestions(classifications)
+            self.publish_suggestions(apartment_id, room_id, suggestions)        
+
 
     def publish_room_metrics(self, apartment_id, room_id, avg_temp, avg_humidity, avg_co2,
                             pmv, ppd, icone, ieqi, temp_class, hum_class, co2_class,
@@ -273,6 +277,25 @@ class KPIEngine:
             print(json.dumps(payload, indent=2))
             self.publisher.myPublish(json.dumps(payload), topic)
 
+    def publish_suggestions(self, apartment_id, room_id, suggestions):
+        if not suggestions:
+            return
+
+        topic = f"{self.MQTT_BASE_TOPIC}/{apartment_id}"
+        timestamp = time.time()
+
+        for metric, tip in suggestions.items():
+            event = {
+                "bn": topic,
+                "e": [{
+                    "n": f"suggestion/{room_id}/{metric}",
+                    "t": timestamp,
+                    "u": "string",
+                    "v": tip
+                }]
+            }
+            print(f"\n📌 Publishing suggestion for {metric} in {room_id}: {tip}")
+            self.publisher.myPublish(json.dumps(event), topic)
 
 
     def run(self):
