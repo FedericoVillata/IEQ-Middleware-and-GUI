@@ -99,7 +99,6 @@ class PlotService:
             matrix[:, col] = day_dict[day_str]
 
         # 4) Determine color scale extremes and midpoint from the catalog logic
-        #    We'll fetch apt settings from the registry and then pick the correct thresholds.
         vmin_val, vmax_val, vcenter_val = self._get_color_scaling(measure, apartmentId)
 
         # 5) Create the plot
@@ -117,7 +116,6 @@ class PlotService:
         plt.colorbar(cax, ax=ax, label=measure)
 
         # Y-axis: show every hour or half-hour
-        # We'll show hour ticks (e.g. 0:00, 1:00, 2:00, ...)
         y_ticks = np.arange(0, 48, 2)   # every 2 half-hours => 1 hour
         y_labels = [f"{h:02d}:00" for h in range(24)]
         ax.set_yticks(y_ticks)
@@ -337,63 +335,61 @@ class PlotService:
 
     def _get_color_scaling(self, measure, apartmentId):
         """
-        Returns (vmin, vmax, vcenter) for the requested measure, reading from the catalog.
-        - Temperature => vmin=-20, vmax=40,
-            mid = G from mechanical_temp_warm or mechanical_temp_cold based on season
-        - Humidity => vmin=0, vmax=100, mid = thresholds.humidity.G
-        - CO2 => vmin=400, vmax=12000, mid = thresholds.co2_natural.G or co2_mechanical.G 
-            based on "ventilation" in apt settings
-        - PM10.0 => user-defined (e.g. vmin=0, vmax=200, mid=50)
-        - VOC => user-defined (e.g. vmin=0, vmax=1000, mid=300)
-        """
+        Extend color scaling logic for new advanced measures:
+        - environment_score => 0..100, mid=50
+        - ppd => 0..100, mid=50
+        - icone => 0..4, mid=2
+        - ieqi => 0..4, mid=2
+        - pmv => -3..3, mid=0
 
-        # Load the relevant apartment's settings from the registry
+        Keep existing logic for:
+        - Temperature, Humidity, CO2, PM10.0, VOC
+        """
         apt_settings = self._fetch_apartment_settings(apartmentId)
         thresholds = apt_settings.get("thresholds", {})
         values = apt_settings.get("values", {})
 
-        # Decide measure-based logic
-        if measure.lower() == "temperature":
-            # extremes
-            vmin = -20
-            vmax = 40
-            # decide warm vs cold season
+        measure_lower = measure.lower()
+
+        # Existing base measures:
+        if measure_lower == "temperature":
+            vmin, vmax = -20, 40
+            # Decide if warm or cold season
             if self._is_warm_season():
-                mid = thresholds.get("mechanical_temp_warm", {}).get("G", 25)  # fallback if missing
+                mid = thresholds.get("mechanical_temp_warm", {}).get("G", 25)
             else:
                 mid = thresholds.get("mechanical_temp_cold", {}).get("G", 22)
-        elif measure.lower() == "humidity":
-            vmin = 0
-            vmax = 100
+        elif measure_lower == "humidity":
+            vmin, vmax = 0, 100
             mid = thresholds.get("humidity", {}).get("G", 60)
-        elif measure.lower() == "co2":
-            vmin = 400
-            vmax = 8000
-            ventilation = values.get("ventilation", "nat")  # default if not found
+        elif measure_lower == "co2":
+            vmin, vmax = 400, 12000
+            ventilation = values.get("ventilation", "nat")
             if ventilation == "mec":
-                # co2_mechanical
                 mid = thresholds.get("co2_mechanical", {}).get("G", 1200)
             else:
-                # co2_natural
                 mid = thresholds.get("co2_natural", {}).get("G", 1200)
-        elif measure.lower() == "pm10.0":
-            # user-chosen example scale
-            vmin = 0
-            vmax = 200
-            mid = 50
-        elif measure.lower() == "voc":
-            # user-chosen example scale
-            vmin = 0
-            vmax = 1000
-            mid = 300
-        else:
-            # fallback if measure is not one of the above
-            # just pick something safe
-            vmin = 0
-            vmax = 100
-            mid = 50
+        elif measure_lower == "pm10.0":
+            vmin, vmax, mid = 0, 200, 50
+        elif measure_lower == "voc":
+            vmin, vmax, mid = 0, 1000, 300
 
-        return vmin, vmax, mid
+        # Advanced measures:
+        elif measure_lower == "environment_score":
+            vmin, vmax, mid = 0, 100, 50
+        elif measure_lower == "ppd":
+            vmin, vmax, mid = 0, 100, 50
+        elif measure_lower == "icone":
+            vmin, vmax, mid = 0, 4, 2
+        elif measure_lower == "ieqi":
+            vmin, vmax, mid = 0, 4, 2
+        elif measure_lower == "pmv":
+            vmin, vmax, mid = -3, 3, 0
+        else:
+            # fallback
+            vmin, vmax, mid = 0, 100, 50
+
+        return (vmin, vmax, mid)
 
     def _fetch_apartment_settings(self, apartmentId):
         """
@@ -416,10 +412,9 @@ class PlotService:
         """
         Returns True if current month is in spring/summer,
         otherwise False (autumn/winter).
-        For simplicity: months 3..9 => warm, else cold.
+        For simplicity: months 3..9 => warm
         """
         current_month = datetime.now().month
-        # March(3) to September(9) => warm
         return 3 <= current_month <= 9
 
 
