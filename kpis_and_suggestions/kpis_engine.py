@@ -8,6 +8,7 @@ import requests
 import numpy as np
 
 from kpis_classification import *
+from kpis_suggestions import *
 from publisher import MyPublisher
 from datetime import datetime
 
@@ -113,59 +114,127 @@ class KPIEngine:
                 room_filtered = [e for e in fetched if e.get("room") == room_id]
                 measure_data[measure] = room_filtered
 
-            if all(measure_data.get(m) for m in ["Temperature", "Humidity", "CO2"]):
-                avg_temp = np.mean([d["v"] for d in measure_data["Temperature"]])
-                avg_humidity = np.mean([d["v"] for d in measure_data["Humidity"]])
-                avg_co2 = np.mean([d["v"] for d in measure_data["CO2"]])
-                avg_pm10 = np.mean([d["v"] for d in measure_data.get("PM10", [])]) if measure_data.get("PM10") else 0
-                avg_tvoc = np.mean([d["v"] for d in measure_data.get("VOC", [])]) if measure_data.get("VOC") else 0
+            required_metrics = ["Temperature", "Humidity", "CO2"]
+            missing = [m for m in required_metrics if not measure_data.get(m)]
 
-                season = self.get_season_from_timestamp(measure_data["Temperature"][0]["t"])
-                outdoor_temps = [d.get("outdoor_temp", avg_temp) for d in measure_data["Temperature"]][-7:]
-                adaptive_comfort = adaptive_thermal_comfort(outdoor_temps)
-                t_ext = adaptive_comfort['Running Mean Temperature'] if adaptive_comfort else avg_temp
+            if missing:
+                print(f"Missing data for {room_id} in {apartment_id}: {missing}")
+                alert_event = {
+                    "bn": f"{self.MQTT_BASE_TOPIC}/{apartment_id}",
+                    "e": [{
+                        "n": f"missing_data/{room_id}",
+                        "t": time.time(),
+                        "u": "error",
+                        "v": f"Missing data: {', '.join(missing)}"
+                    }]
+                }
+                self.publisher.myPublish(json.dumps(alert_event), f"{self.MQTT_BASE_TOPIC}/{apartment_id}")
+                continue  # skip room
 
-                cat_num = settings["thresholds"].get("adaptive_temp_category", 2)
-                cat_label = f"Cat {'I' if cat_num == 1 else 'II' if cat_num == 2 else 'III'}"
-                adaptive_range = adaptive_comfort["Acceptable Range"].get(cat_label) if adaptive_comfort else None
+            # Handle optional metrics (PM10 and VOC) if missing
+            optional_missing = [m for m in ["PM10", "VOC"] if not measure_data.get(m)]
+            if optional_missing:
+                print(f"Optional data missing in {room_id}: {optional_missing}")
+                warning_event = {
+                    "bn": f"{self.MQTT_BASE_TOPIC}/{apartment_id}",
+                    "e": [{
+                        "n": f"missing_optional_data/{room_id}",
+                        "t": time.time(),
+                        "u": "warning",
+                        "v": f"Optional data missing: {', '.join(optional_missing)}"
+                    }]
+                }
+                self.publisher.myPublish(json.dumps(warning_event), f"{self.MQTT_BASE_TOPIC}/{apartment_id}")
 
-                if adaptive_range is None:
-                    print(f"Missing adaptive range for {cat_label}, skipping room.")
-                    continue
+            avg_temp = np.mean([d["v"] for d in measure_data["Temperature"]])
+            avg_humidity = np.mean([d["v"] for d in measure_data["Humidity"]])
+            avg_co2 = np.mean([d["v"] for d in measure_data["CO2"]])
+            avg_pm10 = np.mean([d["v"] for d in measure_data.get("PM10", [])]) if measure_data.get("PM10") else None
+            avg_tvoc = np.mean([d["v"] for d in measure_data.get("VOC", [])]) if measure_data.get("VOC") else None
 
-                temp_class = classify_temperature(avg_temp, season, t_ext, settings, adaptive_range)
-                hum_class = classify_humidity(avg_humidity, settings)
-                co2_class = classify_co2(avg_co2, settings)
-                pmv = calculate_pmv(season, avg_temp, avg_temp, 0.1, avg_humidity, settings)
-                pmv_class = classify_pmv(pmv, settings)
-                ppd = calculate_ppd(pmv)
-                ppd_class = classify_ppd(ppd, settings)
+            season = self.get_season_from_timestamp(measure_data["Temperature"][0]["t"])
+            outdoor_temps = [d.get("outdoor_temp", avg_temp) for d in measure_data["Temperature"]][-7:]
+            adaptive_comfort = adaptive_thermal_comfort(outdoor_temps)
+            t_ext = adaptive_comfort['Running Mean Temperature'] if adaptive_comfort else avg_temp
+
+            cat_num = settings["thresholds"].get("adaptive_temp_category", 2)
+            cat_label = f"Cat {'I' if cat_num == 1 else 'II' if cat_num == 2 else 'III'}"
+            adaptive_range = adaptive_comfort["Acceptable Range"].get(cat_label) if adaptive_comfort else None
+
+            if adaptive_range is None:
+                print(f"Missing adaptive range for {cat_label}, skipping room.")
+                continue
+
+            temp_class = classify_temperature(avg_temp, season, t_ext, settings, adaptive_range)
+            hum_class = classify_humidity(avg_humidity, settings)
+            co2_class = classify_co2(avg_co2, settings)
+            pmv = calculate_pmv(season, avg_temp, avg_temp, 0.1, avg_humidity, settings)
+            pmv_class = classify_pmv(pmv, settings)
+            ppd = calculate_ppd(pmv)
+            ppd_class = classify_ppd(ppd, settings)
+
+            classifications = {
+                "temperature": temp_class,
+                "humidity": hum_class,
+                "co2": co2_class,
+                "pmv": pmv_class,
+                "ppd": ppd_class
+            }
+
+            icone = None
+            ieqi = None
+            icone_class = None
+            ieqi_class = None
+
+            if avg_pm10 is not None and avg_tvoc is not None:
                 icone = calculate_icone(avg_co2, avg_pm10, avg_tvoc)
                 icone_class = classify_icone(icone, settings)
                 ieqi = calculate_ieqi(icone, avg_temp, avg_humidity, settings)
                 ieqi_class = classify_ieqi(ieqi, settings)
 
-                classifications = {
-                    "temperature": temp_class,
-                    "humidity": hum_class,
-                    "co2": co2_class,
-                    "pmv": pmv_class,
-                    "ppd": ppd_class,
-                    "icone": icone_class,
-                    "ieqi": ieqi_class
-                }
+                classifications["icone"] = icone_class
+                classifications["ieqi"] = ieqi_class
 
-                env_score = overall_score(classifications, settings)
-                env_classification = classify_overall_score(env_score, settings)
+            env_score = overall_score(classifications, settings)
+            env_classification = classify_overall_score(env_score, settings)
 
-                self.publish_room_metrics(
-                    apartment_id, room_id,
-                    avg_temp, avg_humidity, avg_co2,
-                    pmv, ppd, icone, ieqi,
-                    temp_class, hum_class, co2_class,
-                    pmv_class, ppd_class, icone_class, ieqi_class,
-                    adaptive_comfort, env_score, env_classification
-                )
+            self.publish_room_metrics(
+                apartment_id, room_id,
+                avg_temp, avg_humidity, avg_co2,
+                pmv, ppd, icone, ieqi,
+                temp_class, hum_class, co2_class,
+                pmv_class, ppd_class, icone_class, ieqi_class,
+                adaptive_comfort, env_score, env_classification
+            )
+
+            # Publish alerts for metrics with critical classification
+            critical_labels = ["R", "Extreme", "Very Cold", "Very Warm"]
+            for metric, label in classifications.items():
+                if label in critical_labels:
+                    alert_event = {
+                        "bn": f"{self.MQTT_BASE_TOPIC}/{apartment_id}",
+                        "e": [{
+                            "n": f"alert/{room_id}",
+                            "t": time.time(),
+                            "u": "alert",
+                            "v": f"{metric} classified as {label}"
+                        }]
+                    }
+                    self.publisher.myPublish(json.dumps(alert_event), f"{self.MQTT_BASE_TOPIC}/{apartment_id}")
+
+            suggestions = get_suggestions(
+                classifications=classifications,
+                temp=avg_temp,
+                humidity=avg_humidity,
+                co2=avg_co2,
+                t_ext=t_ext,
+                hour=datetime.now().hour
+            )
+            if suggestions:
+                print(f"Generated {len(suggestions)} suggestions for room {room_id}")
+                
+            self.publish_suggestions(apartment_id, room_id, suggestions)        
+
 
     def publish_room_metrics(self, apartment_id, room_id, avg_temp, avg_humidity, avg_co2,
                             pmv, ppd, icone, ieqi, temp_class, hum_class, co2_class,
@@ -218,6 +287,25 @@ class KPIEngine:
             print(json.dumps(payload, indent=2))
             self.publisher.myPublish(json.dumps(payload), topic)
 
+    def publish_suggestions(self, apartment_id, room_id, suggestions):
+        if not suggestions:
+            return
+
+        topic = f"{self.MQTT_BASE_TOPIC}/{apartment_id}"
+        timestamp = time.time()
+
+        for metric, tip in suggestions.items():
+            event = {
+                "bn": topic,
+                "e": [{
+                    "n": f"suggestion/{room_id}/{metric}",
+                    "t": timestamp,
+                    "u": "string",
+                    "v": tip
+                }]
+            }
+            print(f"\n📌 Publishing suggestion for {metric} in {room_id}: {tip}")
+            self.publisher.myPublish(json.dumps(event), topic)
 
 
     def run(self):
