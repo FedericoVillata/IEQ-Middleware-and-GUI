@@ -4,6 +4,7 @@ import time
 import requests
 import threading
 import paho.mqtt.client as PahoMQTT
+import datetime
 from pathlib import Path
 
 P = Path(__file__).parent.absolute()
@@ -120,12 +121,20 @@ class Catalog(object):
         return f"apartment{i}"      
       
     def add_apartment(self, adaptor_url, apt_json):
+
+        updated_rooms = []
+        for room in apt_json["rooms"]:
+            updated_sensors = [{"sensorId": sensor_id, "lastUpdate": 0} for sensor_id in room["sensors"]]
+            updated_rooms.append({
+                "roomId": room["roomId"],
+                "sensors": updated_sensors
+            })
         apt_res ={
             "users": [apt_json["userId"]],
             "apartmentId": self.find_smallest_missing_apartmentId(),
             "apartmentName": apt_json["apartmentName"],
             "MAC": apt_json["MAC"],
-            "rooms": apt_json["rooms"],
+            "rooms": updated_rooms,
             "settings": self.catalog["base_settings"]
         }
         headers = {'content-type': 'application/json; charset=UTF-8'}
@@ -507,6 +516,27 @@ class Webserver(object):
             else:
                 response = {"status": "OK", "code": 200, "message": "Data updated successfully"}
             return json.dumps(response)
+        elif uri[0] == 'update_sensors':
+            #Update sensors data
+            body = json.loads(cherrypy.request.body.read())
+            self.cat.load_file()
+            apartmentId = body["apartmentId"]
+            found = False
+            for apartment in self.cat.catalog["apartments"]:
+                if apartment["apartmentId"] == apartmentId:
+                    found = True
+                    for point in body["points"]:
+                        mac = point["tags"]["MAC"]
+                        timestamp = point["time"]
+                        for room in apartment["rooms"]:
+                            for sensor in room["sensors"]:
+                                if sensor["sensorId"] == mac:
+                                    sensor["lastUpdate"] = datetime.datetime.utcfromtimestamp(timestamp / 1e9).isoformat() + "Z"
+            if not found:
+                response = {"status": "NOT_OK", "code": 400, "message": "Invalid apartment ID"}
+            else:
+                self.cat.write_catalog()
+                response = {"status": "OK", "code": 200, "message": "Data updated successfully"}
         elif uri[0] == 'modify_settings':
             body = json.loads(cherrypy.request.body.read())  # Read body data
             apartmentId = body["apartmentId"]

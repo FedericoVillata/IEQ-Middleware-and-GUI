@@ -59,7 +59,7 @@ class MyPublisher:
 
 if __name__ == '__main__':
 
-    pubTopic = "IEQmidAndGUI/apartment0"
+    pubTopic = "IEQmidAndGUI/apartment0/sensorData"
     pubTopic2 = "IEQmidAndGUI/apartment0"
     print(pubTopic)
     myPub = MyPublisher("54234", pubTopic)

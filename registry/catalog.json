@@ -35,19 +35,26 @@
       ],
       "apartmentId": "apartment0",
       "rooms": [
-        {
-          "roomId": "room0",
-          "sensors": [
-            "sensor0"
-          ]
-        },
-        {
-          "roomId": "room1",
-          "sensors": [
-            "sensor1"
-          ]
-        }
-      ]
+  {
+    "roomId": "room0",
+    "sensors": [
+      {
+        "sensorId": "sensor0",
+        "lastUpdate": 0
+      }
+    ]
+  },
+  {
+    "roomId": "room1",
+    "sensors": [
+      {
+        "sensorId": "sensor1",
+        "lastUpdate": 0
+      }
+    ]
+  }
+]
+
     },
     {
       "users": [
