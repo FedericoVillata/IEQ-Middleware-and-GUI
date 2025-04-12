@@ -119,20 +119,61 @@ class Catalog(object):
         while i in numbers:
             i += 1
         return f"apartment{i}"      
-      
+    def add_suggestion(self, suggestion_json):
+        self.load_file()
+        suggestion = {
+            "suggestionId": self.find_smallest_missing_suggestionId(),
+            "suggestionName": suggestion_json["suggestionName"],
+            "text": suggestion_json["text"],
+            "type": suggestion_json["type"]
+        }
+        self.catalog["suggestions"].append(suggestion)
+        for apt in self.catalog["apartments"]:
+            for room in apt["rooms"]:
+                room["suggestions"].append({
+                    "suggestionId": suggestion["suggestionId"],
+                    "state": 1
+                })
+        self.write_catalog()
+        return "done"
+
+    def find_smallest_missing_suggestionId(self):
+        self.load_file()
+        numbers = set()
+        for s in self.catalog["suggestions"]:
+            s_id = s.get("suggestionId", "")
+            if s_id.startswith("S"):
+                try:
+                    num = int(s_id[1:])  # Extract integer part
+                    numbers.add(num)
+                except ValueError:
+                    pass  # Ignore invalid cases
+        i = 0
+        while i in numbers:
+            i += 1
+        return f"S{i}" 
+        
     def add_apartment(self, adaptor_url, apt_json):
 
         updated_rooms = []
+        suggestions = []
+        for s in self.catalog["suggestions"]:
+            suggestions.append({
+                "suggestionId": s["suggestionId"],
+                "state": 1
+            })
         for room in apt_json["rooms"]:
             updated_sensors = [{"sensorId": sensor_id, "lastUpdate": 0} for sensor_id in room["sensors"]]
             updated_rooms.append({
                 "roomId": room["roomId"],
-                "sensors": updated_sensors
+                "sensors": updated_sensors,
+                "suggestions": suggestions
             })
         apt_res ={
             "users": [apt_json["userId"]],
             "apartmentId": self.find_smallest_missing_apartmentId(),
             "apartmentName": apt_json["apartmentName"],
+            "coordinates": apt_json["coordinates"],
             "MAC": apt_json["MAC"],
             "rooms": updated_rooms,
             "settings": self.catalog["base_settings"]
@@ -463,6 +504,12 @@ class Webserver(object):
             else:
                 response = {"status": "OK", "code": 200, "message": out}
                 return json.dumps(response)
+        if uri[0] == 'add_suggestion':
+            # Add suggestion.
+            body = json.loads(cherrypy.request.body.read())
+            out = self.cat.add_suggestion(body)
+            response = {"status": "OK", "code": 200, "message": "Data processed"}
+            return json.dumps(response)
             
 
     def PUT(self, *uri, **params):
