@@ -42,7 +42,8 @@
         "sensorId": "sensor0",
         "lastUpdate": 0
       }
-    ]
+    ],
+    "suggestions": []
   },
   {
     "roomId": "room1",
@@ -51,7 +52,8 @@
         "sensorId": "sensor1",
         "lastUpdate": 0
       }
-    ]
+    ],
+    "suggestions": []
   }
 ]
 
@@ -76,25 +78,29 @@
           "roomId": "livingroom",
           "sensors": [
             "03:00:00:0c:e0:98"
-          ]
+          ],
+          "suggestions": []
         },
         {
           "roomId": "bathroom",
           "sensors": [
             "03:00:00:0d:34:20"
-          ]
+          ],
+          "suggestions": []
         },
         {
           "roomId": "exterior",
           "sensors": [
             "02:00:00:af:60:ee"
-          ]
+          ],
+          "suggestions": []
         },
         {
           "roomId": "bedroom",
           "sensors": [
             "03:00:00:0c:e0:b2"
-          ]
+          ],
+          "suggestions": []
         }
       ],
       "settings": {
@@ -208,39 +214,45 @@
           "roomId": "1C",
           "sensors": [
             "0000F269"
-          ]
+          ],
+          "suggestions": []
         },
         {
           "roomId": "1D",
           "sensors": [
             "0000B323",
             "0000F258"
-          ]
+          ],
+          "suggestions": []
         },
         {
           "roomId": "3C",
           "sensors": [
             "0000F26B"
-          ]
+          ],
+          "suggestions": []
         },
         {
           "roomId": "3D",
           "sensors": [
             "0000F26C"
-          ]
+          ],
+          "suggestions": []
         },
         {
           "roomId": "2C",
           "sensors": [
             "0000F26A",
             "0000F264"
-          ]
+          ],
+          "suggestions": []
         },
         {
           "roomId": "exterior",
           "sensors": [
             "0000F257"
-          ]
+          ],
+          "suggestions": []
         }
       ],
       "settings": {
@@ -431,6 +443,8 @@
       "ieqi": 15.0
     }
   },
+  "suggestions": [
+    ],
   "devices": [],
   "services": []
 }
