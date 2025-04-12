@@ -392,6 +392,16 @@ class MySubscriber:
                         for c in converted:
                             print("Writing to InfluxDB:", c)
                             self.write_api.write(bucket=apartmentId, org=self.org, record=c)
+                        if len(msg.topic.split("/")) > 2:
+                            if msg.topic.split("/")[2] == "sensorData":
+                                url = self.registry_url + "/update_sensors"
+                                headers = {"Content-Type": "application/json"}
+                                message = {"apartmentId": apartmentId, "points": converted}
+                                response = requests.put(url, headers=headers, data=json.dumps(message))
+                                if response.status_code == 200:
+                                    print("Sensor update data sent to registry")
+                                else:
+                                    print("Failed to send data to registry")
                     else:
                         print("Invalid message")
                 except Exception as e:
