@@ -123,6 +123,7 @@ class Catalog(object):
         self.load_file()
         suggestion = {
             "suggestionId": self.find_smallest_missing_suggestionId(),
+            "suggestionName": suggestion_json["suggestionName"],
             "text": suggestion_json["text"],
             "type": suggestion_json["type"]
         }
