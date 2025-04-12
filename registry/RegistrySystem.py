@@ -172,6 +172,7 @@ class Catalog(object):
             "users": [apt_json["userId"]],
             "apartmentId": self.find_smallest_missing_apartmentId(),
             "apartmentName": apt_json["apartmentName"],
+            "coordinates": apt_json["coordinates"],
             "MAC": apt_json["MAC"],
             "rooms": updated_rooms,
             "settings": self.catalog["base_settings"]

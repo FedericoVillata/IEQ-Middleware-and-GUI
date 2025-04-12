@@ -34,6 +34,11 @@
         "user0"
       ],
       "apartmentId": "apartment0",
+      "apartmentName": "Test apartment",
+      "coordinates": {
+        "long": 7.6868565,
+        "lat": 45.070312
+      },
       "rooms": [
   {
     "roomId": "room0",
@@ -65,6 +70,11 @@
         "user1"
       ],
       "apartmentId": "apartment1",
+      "apartmentName": "Luca's apartment",
+      "coordinates": {
+        "long": 7.6868565,
+        "lat": 45.070312
+      },
       "MAC": [
         {
           "name": "netatmo",
@@ -203,6 +213,11 @@
         "user1"
       ],
       "apartmentId": "apartment3",
+      "apartmentName": "School",
+      "coordinates": {
+        "long": 7.6868565,
+        "lat": 45.070312
+      },
       "MAC": [
         {
           "name": "capetti",
