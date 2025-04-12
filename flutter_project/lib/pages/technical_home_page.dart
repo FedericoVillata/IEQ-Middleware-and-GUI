@@ -41,7 +41,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     "1 year": "8760",
     "all": "999999",
   };
-  String selectedDuration = "24";
+  String selectedDuration = "168";
 
   // Rooms
   List<String> availableRooms = [];
@@ -256,7 +256,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     url += "&ts=$ts";
 
     return SizedBox(
-      width: 1600,
+      width: 1200,
       height: 900,
       child: Image.network(
         url,
