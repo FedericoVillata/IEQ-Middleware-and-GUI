@@ -16,9 +16,20 @@ from datetime import datetime
 print("kpis_engine.py started")
 
 # Fetch weather data from Open-Meteo API
-def get_external_weather():
+def get_external_weather(lat, lon):
     try:
-        url = "https://api.open-meteo.com/v1/forecast?latitude=45.08&longitude=7.68&hourly=temperature_2m,weather_code&timezone=auto&forecast_days=1"
+        # Validate latitude and longitude ranges
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            raise ValueError(f"Invalid coordinates: lat={lat}, lon={lon}")
+
+        # Build the weather API request URL using the apartment's coordinates
+        url = (
+            f"https://api.open-meteo.com/v1/forecast"
+            f"?latitude={lat}&longitude={lon}"
+            f"&hourly=temperature_2m,weather_code"
+            f"&timezone=auto&forecast_days=1"
+        )
+
         response = requests.get(url)
         if response.status_code != 200:
             raise Exception(f"Bad response: {response.status_code}")
@@ -29,9 +40,10 @@ def get_external_weather():
         code_now = data["hourly"]["weather_code"][now_hour]
 
         sunny = code_now == 0
-        temp_list = data["hourly"]["temperature_2m"][:now_hour+1]
+        temp_list = data["hourly"]["temperature_2m"][:now_hour + 1]
         temp_drop = len(temp_list) >= 2 and temp_list[-1] < temp_list[0]
 
+        # Weather codes indicating bad conditions (rain, storms, etc.)
         bad_weather_codes = {61, 63, 65, 80, 81, 82}
         bad_days = sum(1 for c in data["hourly"]["weather_code"] if c in bad_weather_codes)
 
@@ -426,6 +438,30 @@ class KPIEngine:
             }
             print(f"\n🛠️ Publishing technical suggestion for {key} in {room_id}: {tip}")
             self.publisher.myPublish(json.dumps(event), topic)
+
+    def run(self):
+        self.publisher.start()
+
+        if "apartments" not in self.catalog or not isinstance(self.catalog["apartments"], list):
+            raise ValueError("Catalog JSON missing or invalid: no 'apartments' list found.")
+
+        for apartment in self.catalog['apartments']:
+            coords = apartment.get("coordinates", {})
+            lat = coords.get("lat")
+            lon = coords.get("long")
+
+            if lat is None or lon is None:
+                print(f"No coordinates found for apartment {apartment.get('apartmentId')}, skipping weather fetch.")
+                continue
+
+            # Fetch weather data based on the apartment's coordinates
+            weather_info = get_external_weather(lat, lon)
+
+            # Process apartment data along with the corresponding weather information
+            self.process_apartment(apartment, weather_info)
+
+        self.publisher.stop()
+
 
 def wait_for_data(config_path='config.json'):
     try:
