@@ -3,32 +3,46 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
 
-class TechnicalHomePage extends StatefulWidget {
+class TechnicalAdvancePage extends StatefulWidget {
   final String username;
   final String? location;
 
-  const TechnicalHomePage({
+  const TechnicalAdvancePage({
     Key? key,
     required this.username,
     required this.location,
   }) : super(key: key);
 
   @override
-  State<TechnicalHomePage> createState() => _TechnicalHomePageState();
+  State<TechnicalAdvancePage> createState() => _TechnicalAdvancePageState();
 }
 
-class _TechnicalHomePageState extends State<TechnicalHomePage> {
-  // The base URL for your adaptor and plot service
-  // static const String ADAPTOR_URL = "http://localhost:8080";      // For CSV data, etc.
-  static const String PLOT_SERVICE_URL = "http://localhost:9090"; // For images (line/carpet)
+class _TechnicalAdvancePageState extends State<TechnicalAdvancePage> {
+  // The base URL for the plot service
+  static const String PLOT_SERVICE_URL = "http://localhost:9090";
 
-  // Metrics
-  final List<String> metrics = ["Temperature", "Humidity", "CO2", "PM10.0", "VOC"];
-  String selectedMetric = "Temperature";
+  // Advanced metrics list
+  // These strings map to the measure names expected by plot_service.py
+  final List<String> metrics = [
+    "Environment Score",
+    "ICONE",
+    "IEQI",
+    "PMV",
+    "PPD",
+  ];
 
-  // Chart type
-  // The user asked to swap the order: now "Line Chart" is first, "Carpet Plot" is second
-  String selectedChartType = "line"; // possible values: "line" or "carpet"
+  // Internal mapping from display label to the actual measure parameter
+  // used in the query string to plot_service.py
+  Map<String, String> measureMap = {
+    "Environment Score": "environment_score",
+    "ICONE": "icone",
+    "IEQI": "ieqi",
+    "PMV": "pmv",
+    "PPD": "ppd",
+  };
+
+  String selectedMetric = "Environment Score";
+  String selectedChartType = "line"; // "line" or "carpet"
 
   // Duration options
   final Map<String, String> durationOptions = {
@@ -41,7 +55,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     "1 year": "8760",
     "all": "999999",
   };
-  String selectedDuration = "168";
+  String selectedDuration = "24";
 
   // Rooms
   List<String> availableRooms = [];
@@ -73,7 +87,9 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
           for (var apt in arr) {
             if (apt["apartmentId"] == apartmentId) {
               final rooms = apt["rooms"] as List<dynamic>;
-              final foundRooms = rooms.map((r) => r["roomId"].toString()).toList();
+              final foundRooms =
+                  rooms.map((r) => r["roomId"].toString()).toList();
+
               setState(() {
                 if (foundRooms.isEmpty) {
                   availableRooms = ["(No rooms)"];
@@ -89,7 +105,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
           }
         }
       }
-      // If we got here, no success
+      // If we got here, it means we didn't succeed in finding the apt
       setState(() {
         availableRooms = ["(FallbackRoom1)", "(FallbackRoom2)"];
         selectedRoom = "(FallbackRoom1)";
@@ -123,14 +139,17 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
                     onPressed: () {
                       setState(() => selectedMetric = m);
                     },
-                    child: Text(m, style: const TextStyle(color: Colors.white)),
+                    child: Text(
+                      m,
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ),
                 );
               }).toList(),
             ),
           ),
 
-          // Chart type: Line vs. Carpet (swapped order)
+          // Chart type: Line or Carpet
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -206,7 +225,10 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
               child: isLoadingRooms
                   ? const CircularProgressIndicator()
                   : (errorMessage != null
-                      ? Text(errorMessage!, style: const TextStyle(color: Colors.red))
+                      ? Text(
+                          errorMessage!,
+                          style: const TextStyle(color: Colors.red),
+                        )
                       : _buildChartImage()),
             ),
           ),
@@ -215,9 +237,6 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     );
   }
 
-  // ---------------------------------------------
-  //   Chart Type Button
-  // ---------------------------------------------
   Widget _buildChartTypeButton(String label, String value) {
     final isSelected = (selectedChartType == value);
     return OutlinedButton(
@@ -230,33 +249,36 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
           selectedChartType = value;
         });
       },
-      child: Text(label, style: TextStyle(color: isSelected ? Colors.blue : Colors.black)),
+      child: Text(
+        label,
+        style: TextStyle(color: isSelected ? Colors.blue : Colors.black),
+      ),
     );
   }
 
-  // --------------------------------------------------
-  //  Build the image from plot_service.py
-  // --------------------------------------------------
   Widget _buildChartImage() {
     final user = widget.username;
     final apt = widget.location ?? "apartment0";
-    final measure = selectedMetric;
+    final measureKey = measureMap[selectedMetric] ?? "environment_score";
     final dur = selectedDuration;
 
-    // Decide which endpoint to use
-    final endpoint = (selectedChartType == "line") ? "generateLineChart" : "generateCarpetPlot";
+    final endpoint =
+        (selectedChartType == "line") ? "generateLineChart" : "generateCarpetPlot";
 
-    // Build URL
-    String url = "$PLOT_SERVICE_URL/$endpoint?userId=$user&apartmentId=$apt&measure=$measure&duration=$dur";
+    // Build the URL
+    String url =
+        "$PLOT_SERVICE_URL/$endpoint?userId=$user&apartmentId=$apt&measure=$measureKey&duration=$dur";
+
     if (selectedRoom != null && !selectedRoom!.startsWith("(")) {
       url += "&room=$selectedRoom";
     }
+
     // Add a timestamp param to avoid caching
     final ts = DateTime.now().millisecondsSinceEpoch;
     url += "&ts=$ts";
 
     return SizedBox(
-      width: 1200,
+      width: 1600,
       height: 900,
       child: Image.network(
         url,
@@ -265,30 +287,29 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
           if (progress == null) return child;
           return const CircularProgressIndicator();
         },
-        errorBuilder: (context, error, stack) => const Text("Error loading chart image."),
+        errorBuilder: (context, error, stack) =>
+            const Text("Error loading chart image."),
       ),
     );
   }
 
-  // --------------------------------------------------
-  //           Download / Export
-  // --------------------------------------------------
   Future<void> _downloadChart() async {
     final user = widget.username;
     final apt = widget.location ?? "apartment0";
-    final measure = selectedMetric;
+    final measureKey = measureMap[selectedMetric] ?? "environment_score";
     final dur = selectedDuration;
 
-    // Which endpoint
-    final endpoint = (selectedChartType == "line") ? "generateLineChart" : "generateCarpetPlot";
+    final endpoint =
+        (selectedChartType == "line") ? "generateLineChart" : "generateCarpetPlot";
 
-    // Add download=png param
-    String url = "$PLOT_SERVICE_URL/$endpoint?userId=$user&apartmentId=$apt"
-        "&measure=$measure&duration=$dur&download=png";
+    // Add &download=png to trigger download
+    String url =
+        "$PLOT_SERVICE_URL/$endpoint?userId=$user&apartmentId=$apt&measure=$measureKey&duration=$dur&download=png";
 
     if (selectedRoom != null && !selectedRoom!.startsWith("(")) {
       url += "&room=$selectedRoom";
     }
+
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     }
@@ -297,16 +318,16 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
   Future<void> _exportCsv() async {
     final user = widget.username;
     final apt = widget.location ?? "apartment0";
-    final measure = selectedMetric;
+    final measureKey = measureMap[selectedMetric] ?? "environment_score";
     final dur = selectedDuration;
 
-    // The plot service uses exportCsv for CSV
-    String url = "$PLOT_SERVICE_URL/exportCsv?userId=$user&apartmentId=$apt"
-        "&measure=$measure&duration=$dur";
+    String url =
+        "$PLOT_SERVICE_URL/exportCsv?userId=$user&apartmentId=$apt&measure=$measureKey&duration=$dur";
 
     if (selectedRoom != null && !selectedRoom!.startsWith("(")) {
       url += "&room=$selectedRoom";
     }
+
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     }

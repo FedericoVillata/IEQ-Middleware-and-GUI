@@ -8,7 +8,7 @@
     "adaptor_url": "http://192.68.0.25:8080",
     "adaptor_port": 8080,
     "registry_url": "http://192.68.0.24:8081",
-    "measures": ["Humidity", "Temperature", "CO2", "VOC", "PM1", "PM2.5", "PM10", "Noise", "Light", "Pressure"],
+    "measures": ["Humidity", "Temperature", "CO2", "VOC", "PM1", "PM2.5", "PM10", "Noise", "Light", "Pressure", "icone", "ieqi", "pmv","ppd", "environment_score"],
     "alive_topic": "IEQmidAndGUI/microservices/Adaptor",
     "test": 0
 }

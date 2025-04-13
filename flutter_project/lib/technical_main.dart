@@ -5,6 +5,8 @@ import 'pages/technical_feedback_page.dart';
 import 'pages/technical_threshold_page.dart';
 import 'pages/technical_deleted_suggestions.dart';
 import 'pages/technical_suggestions_page.dart';
+// Import the new page
+import 'pages/technical_advanced_page.dart';
 
 class TechnicalMainPage extends StatefulWidget {
   final String username;
@@ -34,6 +36,7 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
       const Placeholder(),
       const Placeholder(),
       const Placeholder(),
+      const Placeholder(),
     ];
   }
 
@@ -41,10 +44,17 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
     setState(() {
       selectedLocation = loc;
       pages = [
+        // index 0
         TechnicalHomePage(username: widget.username, location: selectedLocation),
+        // index 1
+        TechnicalAdvancePage(username: widget.username, location: selectedLocation),
+        // index 2
         TechnicalFeedbackPage(username: widget.username, location: selectedLocation),
+        // index 3
         TechnicalThresholdPage(username: widget.username, location: selectedLocation),
+        // index 4
         TechnicalDeletedSuggestionsPage(username: widget.username, location: selectedLocation),
+        // index 5
         TechnicalSuggestionsPage(username: widget.username, location: selectedLocation),
       ];
     });
@@ -119,30 +129,43 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
                   ),
                   const SizedBox(height: 4),
 
+                  // index=0: Detailed Metrics
                   _buildSidebarItem(
                     icon: Icons.home,
                     label: "Detailed Metrics",
                     index: 0,
                   ),
+
+                  // index=1: Advanced Metrics (NEW)
+                  _buildSidebarItem(
+                    icon: Icons.construction, // or any relevant icon
+                    label: "Advanced Metrics",
+                    index: 1,
+                  ),
+
+                  // index=2: Tenant Feedback
                   _buildSidebarItem(
                     icon: Icons.bar_chart,
                     label: "Tenant Feedback",
-                    index: 1,
+                    index: 2,
                   ),
+                  // index=3: Threshold Adjustments
                   _buildSidebarItem(
                     icon: Icons.settings,
                     label: "Threshold Adjust.",
-                    index: 2,
+                    index: 3,
                   ),
+                  // index=4: Deleted Suggestions
                   _buildSidebarItem(
                     icon: Icons.delete_forever,
                     label: "Deleted Suggs.",
-                    index: 3,
+                    index: 4,
                   ),
+                  // index=5: Technical Suggestions
                   _buildSidebarItem(
                     icon: Icons.lightbulb,
                     label: "Tech. Suggestions",
-                    index: 4,
+                    index: 5,
                   ),
 
                   const Spacer(),

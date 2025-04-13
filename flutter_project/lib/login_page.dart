@@ -16,7 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
-  final String baseUrl = "http://192.168.1.38:8081";
+  final String baseUrl = "http://localhost:8081";
 
   // Handles the login logic
   Future<void> _attemptLogin() async {
