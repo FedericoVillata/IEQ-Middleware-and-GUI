@@ -459,7 +459,84 @@
     }
   },
   "suggestions": [
-    ],
+  ],
+  "technical_suggestions":[
+    {
+      "suggestionID": "TEMP_COLD_NEUTRAL",
+      "type": "technical",
+      "text": "Temperature classified as critical (R \u2013 cold), but user perception = Neutral. Suggestion: the lower thresholds might be too restrictive."
+    },
+    {
+      "suggestionID": "TEMP_HOT_NEUTRAL",
+      "type": "technical",
+      "text": "Temperature classified as critical (R \u2013 hot), but user perception = Neutral. Suggestion: the upper thresholds might be too tight."
+    },
+    {
+      "suggestionID": "TEMP_COLD_WARM_PERCEPTION",
+      "type": "technical",
+      "text": "Temperature classified as cold, but user perception = Warm or Very Warm. Suggestion: possible inconsistency between real comfort and classification. Check sensors and thresholds."
+    },
+    {
+      "suggestionID": "TEMP_HOT_COLD_PERCEPTION",
+      "type": "technical",
+      "text": "Temperature classified as hot, but user perception = Cold or Very Cold. Suggestion: possible reversal in threshold logic or sensor measurement issues."
+    },
+    {
+      "suggestionID": "TEMP_GOOD_DISCOMFORT",
+      "type": "technical",
+      "text": "Temperature classified as good (G), but user perception = discomfort (1, 2, 4 or 5). Suggestion: the comfort zone might not reflect actual user experience."
+    },
+    {
+      "suggestionID": "HUMIDITY_CRITICAL_NEUTRAL",
+      "type": "technical",
+      "text": "Humidity classified as critical (R), but user perception = Neutral. Suggestion: thresholds may be too strict. Consider relaxing them."
+    },
+    {
+      "suggestionID": "HUMIDITY_DRY_HUMID_PERCEPTION",
+      "type": "technical",
+      "text": "Humidity classified as too dry, but user perception = Humid or Very Humid. Suggestion: review threshold logic; possible discrepancy in measurement."
+    },
+    {
+      "suggestionID": "HUMIDITY_HUMID_DRY_PERCEPTION",
+      "type": "technical",
+      "text": "Humidity classified as too humid, but user perception = Very Dry or Dry. Suggestion: measured humidity does not match perceived dryness. Review sensor accuracy and thresholds."
+    },
+    {
+      "suggestionID": "HUMIDITY_GOOD_EXTREME_PERCEPTION",
+      "type": "technical",
+      "text": "Humidity classified as good (G), but user perception = Very Dry or Very Humid. Suggestion: \"G\" range may not reflect actual comfort. Consider readjusting thresholds."
+    },
+    {
+      "suggestionID": "ENV_SCORE_GOOD_UNSATISFIED",
+      "type": "technical",
+      "text": "Overall environmental score = good (G), but satisfaction feedback = Very Unsatisfied or Unsatisfied. Suggestion: review global thresholds or consider environmental variables not currently measured."
+    },
+    {
+      "suggestionID": "ENV_SCORE_CRITICAL_SATISFIED",
+      "type": "technical",
+      "text": "Overall score = critical (R), but satisfaction feedback = Very Satisfied or Satisfied. Suggestion: the system might be classifying as critical conditions perceived as acceptable."
+    },
+    {
+      "suggestionID": "PMV_NEUTRAL_DISCOMFORT",
+      "type": "technical",
+      "text": "PMV classified as Neutral, but user perception = Cold, Very Cold, Warm or Very Warm. Suggestion: estimated comfort not aligned with perception. Verify user profiles and met/clo parameters."
+    },
+    {
+      "suggestionID": "PMV_COLD_WARM_PERCEPTION",
+      "type": "technical",
+      "text": "PMV = Cold or Very Cold, but perception = Warm or Very Warm. Suggestion: possible modeling or measurement error. Check consistency."
+    },
+    {
+      "suggestionID": "PMV_VERY_WARM_COLD_PERCEPTION",
+      "type": "technical",
+      "text": "PMV = Very Warm, but perception = Cold or Very Cold. Suggestion: thermal comfort perceived is the opposite of calculated. Verify input parameters."
+    },
+    {
+      "suggestionID": "METRIC_GOOD_TREND_DISCOMFORT",
+      "type": "technical",
+      "text": "Metric classified as good (G), but trend = rising/falling and perception = Neutral or mild discomfort. Suggestion: even if the value is still acceptable, a preventive action is recommended before critical levels are reached."
+    }
+  ],  
   "devices": [],
   "services": []
 }
