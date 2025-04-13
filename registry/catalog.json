@@ -87,28 +87,44 @@
         {
           "roomId": "livingroom",
           "sensors": [
-            "03:00:00:0c:e0:98"
+            {
+              "sensorId": "03:00:00:0c:e0:98",
+              "lastUpdate": 0
+            }
+            
           ],
           "suggestions": []
         },
         {
           "roomId": "bathroom",
           "sensors": [
-            "03:00:00:0d:34:20"
+            {
+              "sensorId":"03:00:00:0d:34:20"
+              ,
+              "lastUpdate": 0
+            }
           ],
           "suggestions": []
         },
         {
           "roomId": "exterior",
           "sensors": [
-            "02:00:00:af:60:ee"
+            {
+              "sensorId": "02:00:00:af:60:ee",
+              "lastUpdate": 0
+            }
+            
           ],
           "suggestions": []
         },
         {
           "roomId": "bedroom",
           "sensors": [
-            "03:00:00:0c:e0:b2"
+            
+            {
+              "sensorId": "03:00:00:0c:e0:b2",
+              "lastUpdate": 0
+            }
           ],
           "suggestions": []
         }
@@ -228,44 +244,76 @@
         {
           "roomId": "1C",
           "sensors": [
-            "0000F269"
+            {
+              "sensorId": "0000F269",
+              "lastUpdate": 0
+            }
+            
           ],
           "suggestions": []
         },
         {
           "roomId": "1D",
           "sensors": [
-            "0000B323",
-            "0000F258"
+            {
+              "sensorId": "0000B323",
+              "lastUpdate": 0
+            }
+            ,
+            {
+              "sensorId": "0000F258",
+              "lastUpdate": 0
+            }
+            
           ],
           "suggestions": []
         },
         {
           "roomId": "3C",
           "sensors": [
-            "0000F26B"
+            
+            {
+              "sensorId": "0000F26B",
+              "lastUpdate": 0
+            }
           ],
           "suggestions": []
         },
         {
           "roomId": "3D",
           "sensors": [
-            "0000F26C"
+            {
+              "sensorId": "0000F26C",
+              "lastUpdate": 0
+            }
+            
           ],
           "suggestions": []
         },
         {
           "roomId": "2C",
           "sensors": [
-            "0000F26A",
-            "0000F264"
+            {
+              "sensorId": "0000F26A",
+              "lastUpdate": 0
+            }
+            ,
+            {
+              "sensorId": "0000F264",
+              "lastUpdate": 0
+            }
+            
           ],
           "suggestions": []
         },
         {
           "roomId": "exterior",
           "sensors": [
-            "0000F257"
+            {
+              "sensorId": "0000F257",
+              "lastUpdate": 0
+            }
+            
           ],
           "suggestions": []
         }

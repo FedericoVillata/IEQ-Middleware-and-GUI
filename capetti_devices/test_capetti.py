@@ -5,15 +5,15 @@ import time
 from pathlib import Path
 import paho.mqtt.client as PahoMQTT
 
-def get_users():
-    users_url = "http://registry:8081/users"
+def get_users(registry_url):
+    users_url = f"{registry_url}/users"
     response = requests.get(users_url)
     if response.status_code != 200:
         raise Exception(f"Failed to fetch users data: {response.status_code}")
     return response.json()
 
-def get_apartments():
-    apartments_url = "http://registry:8081/apartments"
+def get_apartments(registry_url):
+    apartments_url = f"{registry_url}/apartments"
     response = requests.get(apartments_url)
     if response.status_code != 200:
         raise Exception(f"Failed to fetch apartments data: {response.status_code}")
@@ -26,18 +26,18 @@ def process_capetti_data(apartment_data):
             mac_address = mac_entry['MAC']
             for room in apartment_data['rooms']:
                 for sensor in room['sensors']:
-                    sensor_room_mapping[sensor] = room['roomId']
+                    sensor_room_mapping[sensor['sensorId']] = room['roomId']
             return mac_address, sensor_room_mapping
     raise Exception("No MAC entry with name 'capetti' found.")
 
 class CapettiAPI:
-    def __init__(self, username, rest_license, mac, apartment_id, sensor_room_mapping):
+    def __init__(self, username, rest_license, mac,capetti_url, apartment_id, sensor_room_mapping):
         self.username = username
         self.rest_license = rest_license
         self.mac = mac
         self.apartment_id = apartment_id
         self.sensor_room_mapping = sensor_room_mapping
-        self.base_url = 'https://www.winecap.it/api/v1/'
+        self.base_url = capetti_url
         self.token = None
         self.first_request = True
 
@@ -56,7 +56,7 @@ class CapettiAPI:
             print(f"Error retrieving user token: {response.status_code}")
             print("Response Content:", response.content)
 
-    def get_sensor_list(self, first_request,user_id):
+    def get_sensor_list(self, first_request, user_id):
         if not self.token:
             print("Error: User token not available.")
             return
@@ -73,7 +73,7 @@ class CapettiAPI:
         if response.status_code == 401:  # Token expired
             print("UserToken expired. Renewing token...")
             self.get_user_token()
-            return self.get_sensor_list(first_request)  # retray with new token
+            return self.get_sensor_list(first_request, user_id)  # Retry with new token
 
         if response.status_code != 200:
             print(f"Error: {response.status_code}")
@@ -86,39 +86,19 @@ class CapettiAPI:
             print(f"Error parsing response: {e}")
             print(response.content)
             return
-        
-        if first_request:
-        # Effettua la richiesta all'endpoint per ottenere l'ultimo dato
-            last_data_url = f"http://adaptor:8080/getLastData/{user_id}/{self.apartment_id}/"
-            print(f"Username: {user_id}, Apartment ID: {self.apartment_id}")
-            print(f"Fetching last data from: {last_data_url}")  # Debug
-            try:
-                last_data_response = requests.get(last_data_url)
-                if last_data_response.status_code == 200:
-                    last_data = last_data_response.json()
-                    # Trova il timestamp più recente tra i dati restituiti
-                    last_timestamps = [
-                        int(datetime.strptime(item["t"], "%m/%d/%Y, %H:%M:%S").timestamp())
-                        for item in last_data
-                    ]
-                    date_from = max(last_timestamps)  # Timestamp più recente
-                    print(f"Last data timestamp: {datetime.fromtimestamp(date_from)}")
-                elif last_data_response.status_code == 400:
-                    print("Bad Request: Please check the parameters sent to the server.")
-                    print(f"URL: {last_data_url}")
-                    print(f"Response: {last_data_response.text}")
-                    return
-                else:
-                    print(f"Failed to fetch last data: {last_data_response.status_code}")
-                    return
-            except Exception as e:
-                print(f"Error fetching last data: {e}")
-                return
 
-            # Imposta `date_to` come il timestamp corrente
-            date_to = int(time.time())
-            print(f"Fetching history values from {datetime.fromtimestamp(date_from)} to {datetime.fromtimestamp(date_to)}")
-            self.get_history_values(date_from=date_from, date_to=date_to)
+        if first_request:
+            date_to = int(time.time())  # Timestamp current
+            date_from = date_to - int(timedelta(days=30).total_seconds())  
+            print(f"Fetching data for the last 24 hours from {datetime.fromtimestamp(date_from)} to {datetime.fromtimestamp(date_to)}")
+
+            # one hour block
+            current_start = date_from
+            while current_start < date_to:
+                current_end = current_start + int(timedelta(hours=1).total_seconds())
+                print(f"Fetching data from {datetime.fromtimestamp(current_start)} to {datetime.fromtimestamp(current_end)}")
+                self.get_history_values(date_from=current_start, date_to=current_end)
+                current_start = current_end
         else:
             self.get_current_values()
 
@@ -219,7 +199,7 @@ class CapettiAPI:
         254: ("Custom", "-")
         }
 
-        pubTopic = f"IEQmidAndGUI/{self.apartment_id}"
+        pubTopic = f"IEQmidAndGUI/{self.apartment_id}/sensorData"
         myPub = MyPublisher("54234")
         myPub.start()
 
@@ -240,7 +220,6 @@ class CapettiAPI:
 
             if sensor_mac in self.sensor_room_mapping:
                 room_id = self.sensor_room_mapping[sensor_mac]
-                # Costruisci il campo `n`
                 n_field = f"{measure_type}/{room_id}/{sensor_mac}"
                 if "/" not in n_field or len(n_field.split("/")) < 3:
                     print(f"Invalid 'n' field: {n_field}")
@@ -416,8 +395,8 @@ if __name__ == '__main__':
     with open('./config_capetti.json') as config_file:
         config = json.load(config_file)
 
-    users = get_users()
-    apartments = get_apartments()
+    users = get_users(registry_url=config["registry_url"])
+    apartments = get_apartments(registry_url=config["registry_url"])
 
     for apartment in apartments:
         try:
@@ -439,6 +418,7 @@ if __name__ == '__main__':
                 username=config["username"],  # Usa l'userId corretto
                 rest_license=config['rest_license'],
                 mac=mac_address,
+                capetti_url=config["capetti_url"],
                 apartment_id=apartment_id,
                 sensor_room_mapping=sensor_room_mapping
             )
@@ -448,4 +428,4 @@ if __name__ == '__main__':
             while True:
                 capetti.get_sensor_list(capetti.first_request, user_id)
                 capetti.first_request = False
-                time.sleep(40)  # 10 minutes
+                time.sleep(3600)  # 1 hours

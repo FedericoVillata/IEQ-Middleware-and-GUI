@@ -5,15 +5,15 @@ import json
 import time
 import paho.mqtt.client as PahoMQTT
 
-def get_users():
-    users_url = "http://registry:8081/users"
+def get_users(registry_url):
+    users_url = f"{registry_url}/users"
     response = requests.get(users_url)
     if response.status_code != 200:
         raise Exception(f"Failed to fetch users data: {response.status_code}")
     return response.json()
 
-def get_apartments():
-    apartments_url = "http://registry:8081/apartments"
+def get_apartments(registry_url):
+    apartments_url = f"{registry_url}/apartments"
     response = requests.get(apartments_url)
     if response.status_code != 200:
         raise Exception(f"Failed to fetch apartments data: {response.status_code}")
@@ -25,12 +25,18 @@ def process_netatmo_data(apartment_data):
             mac_address = mac_entry['MAC']
             access_token = mac_entry['accessToken']
             refresh_token = mac_entry['refreshToken']
-            sensors = {room['roomId']: room['sensors'][0] for room in apartment_data['rooms']}
+            sensors={}
+            for room in apartment_data['rooms']:
+                sen = []
+                for sensor in room['sensors']:
+                    sen.append(sensor['sensorId'])
+                sensors[room['roomId']] = sen
+                        
             return mac_address, access_token, refresh_token, sensors
     raise Exception("No MAC entry with name 'netatmo' found.")
 
 class NetatmoAPI:
-    def __init__(self, clientId, clientSecret, username, password, accessToken, mac, modules, scope='read_station'):
+    def __init__(self, clientId, clientSecret, username, password,netatmo_url, accessToken, mac, modules, scope='read_station'):
         self.clientId = clientId
         self.clientSecret = clientSecret
         self.username = username
@@ -38,11 +44,11 @@ class NetatmoAPI:
         self.mac = mac
         self.modules = modules
         self.scope = scope
-        self.base_url = 'https://api.netatmo.com'
+        self.base_url = netatmo_url
         self.data = {module: None for module in modules}
         self._accessToken = accessToken
         self.expiration = 0
-        self.manual_refresh()
+        #self.manual_refresh()
         self.first_request = True
 
     @property
@@ -51,59 +57,12 @@ class NetatmoAPI:
             self.manual_refresh()
         return self._accessToken
 
-    def manual_refresh(self):
-        postParams = {
-            "grant_type": "password",
-            "username": self.username,
-            "password": self.password,
-            "client_id": self.clientId,
-            "client_secret": self.clientSecret,
-            "scope": self.scope
-        }
-        response = requests.post("https://api.netatmo.com/oauth2/token", data=postParams)
-        resp = response.json()
-
-        if 'access_token' not in resp:
-            print(f"Error refreshing token manually: {resp}")
-            return
-
-        self._accessToken = resp['access_token']
-        self.expiration = int(resp['expire_in'] + time.time())
-
     def get_measurements(self, apartment_id, user_id):
         if self.first_request:
-            last_data_url = f"http://adaptor:8080/getLastData/{user_id}/{apartment_id}/"
-            print(f"Username: {user_id}, Apartment ID: {apartment_id}")
-            print(f"Fetching last data from: {last_data_url}")  # Debug
-            try:
-                last_data_response = requests.get(last_data_url)
-                if last_data_response.status_code == 200:
-                    last_data = last_data_response.json()
-                    last_timestamps = [
-                        int(datetime.strptime(item["t"], "%m/%d/%Y, %H:%M:%S").timestamp())
-                        for item in last_data
-                    ]
-                    if last_timestamps:
-                        date_start = datetime.fromtimestamp(max(last_timestamps))  # Convert to datetime
-                        print(f"Last data timestamp: {date_start}")
-                    else:
-                        print("No previous data found. Defaulting to the last 24 hours.")
-                        date_start = datetime.now() - timedelta(days=1)
-                elif last_data_response.status_code == 400:
-                    print("Bad Request: Please check the parameters sent to the server.")
-                    print(f"URL: {last_data_url}")
-                    print(f"Response: {last_data_response.text}")
-                    return
-                else:
-                    print(f"Failed to fetch last data: {last_data_response.status_code}")
-                    return
-            except Exception as e:
-                print(f"Error fetching last data: {e}")
-                return
-
+            date_start = datetime.now() - timedelta(days=1)  # Ultime 24 ore
             self.first_request = False
         else:
-            date_start = datetime.now() - timedelta(minutes=30)
+            date_start = datetime.now() - timedelta(minutes=30)  # Ultimi 30 minuti
         
         # Convert `date_start` to a timestamp
         date_start = int(date_start.timestamp())
@@ -161,9 +120,11 @@ class NetatmoAPI:
             print(f"Data for {module_name}:")
             print(self.data[module_name].head())
 
-            for data_type in ['Temperature', 'Humidity', 'CO2', 'Pressure', 'Noise']:
+            for data_type in ['Temperature', 'Humidity', 'CO2']:
                 Event = []
                 for i, val in enumerate(values[data_type]):
+                    if isinstance(module_id, list) and len(module_id) == 1:
+                        module_id = module_id[0]# take the module_id from the list
                     event = {
                         "n": f"{data_type}/{module_name}/{module_id}",
                         "u": "Celsius" if data_type == "Temperature" else "Percentage" if data_type == "Humidity" else "ppm" if data_type == "CO2" else "hPa" if data_type == "Pressure" else "dB",
@@ -171,11 +132,11 @@ class NetatmoAPI:
                         "v": float(val) if val is not None else 0
                     }
                     Event.append(event)
-                    pubTopic = f"IEQmidAndGUI/{apartment_id}/{data_type}"
-                    out = {"bn": pubTopic, "e": Event}
-                    print(out)
+                pubTopic = f"IEQmidAndGUI/{apartment_id}/sensorData"
+                out = {"bn": pubTopic, "e": Event}
+                print(out)
                 myPub.myPublish(json.dumps(out), pubTopic)
-                time.sleep(1)
+                time.sleep(1)  # Attendi 1 secondo tra le pubblicazioni
 
 class MyPublisher:
     def __init__(self, clientID):
@@ -208,8 +169,9 @@ class MyPublisher:
 if __name__ == '__main__':
     with open('./netatmo_config.json') as config_file:
         config = json.load(config_file)
-    users = get_users()
-    apartments = get_apartments()
+    
+    users = get_users(registry_url = config['registry_url'])
+    apartments = get_apartments(registry_url = config['registry_url'])
     for apartment in apartments:
         try:
             mac_address, access_token, refresh_token, sensors = process_netatmo_data(apartment)
@@ -225,6 +187,7 @@ if __name__ == '__main__':
                     clientSecret=config['client_secret'],
                     username=config['email'],
                     password=config['password'],
+                    netatmo_url=config['netatmo_url'],
                     accessToken=access_token,
                     mac=mac_address,
                     modules=sensors,
@@ -232,7 +195,7 @@ if __name__ == '__main__':
                 )
                 while True:
                     netatmo.get_measurements(apartment_id,user_id)
-                    time.sleep(1800)  # Attendi 30 minuti prima della prossima richiesta
+                    time.sleep(1800)  # 30 min
         except Exception as e:
             print(f"Error processing apartment {apartment.get('apartmentId', 'unknown')}: {e}")
             continue

@@ -2,5 +2,7 @@
     "email": "lucabaro2000@gmail.com",
     "password": "LucaBaro2.0",
     "client_id": "67251eba6d76256ccc0a6e4d",
-    "client_secret": "KpVb19ZFzAxqQ8DUfPF9ceqByeiCAQ"
+    "client_secret": "KpVb19ZFzAxqQ8DUfPF9ceqByeiCAQ",
+    "registry_url":"http://registry:8081",
+    "netatmo_url":"https://api.netatmo.com"
 }
