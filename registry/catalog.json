@@ -458,8 +458,10 @@
       "ieqi": 15.0
     }
   },
-  "suggestions": [
+  "tenant_suggestions": [
     ],
+  "technical_suggestions": [
+  ],
   "devices": [],
   "services": []
 }

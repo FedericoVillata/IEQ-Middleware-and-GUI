@@ -124,10 +124,9 @@ class Catalog(object):
         suggestion = {
             "suggestionId": self.find_smallest_missing_suggestionId(),
             "suggestionName": suggestion_json["suggestionName"],
-            "text": suggestion_json["text"],
-            "type": suggestion_json["type"]
+            "text": suggestion_json["text"]
         }
-        self.catalog["suggestions"].append(suggestion)
+        self.catalog["tenant_suggestions"].append(suggestion)
         for apt in self.catalog["apartments"]:
             for room in apt["rooms"]:
                 room["suggestions"].append({
@@ -140,7 +139,7 @@ class Catalog(object):
     def find_smallest_missing_suggestionId(self):
         self.load_file()
         numbers = set()
-        for s in self.catalog["suggestions"]:
+        for s in self.catalog["tenant_suggestions"]:
             s_id = s.get("suggestionId", "")
             if s_id.startswith("S"):
                 try:
@@ -157,7 +156,7 @@ class Catalog(object):
 
         updated_rooms = []
         suggestions = []
-        for s in self.catalog["suggestions"]:
+        for s in self.catalog["tenant_suggestions"]:
             suggestions.append({
                 "suggestionId": s["suggestionId"],
                 "state": 1
