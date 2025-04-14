@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'tenant_main.dart';
 import 'technical_main.dart';
+import 'app_config.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -16,8 +17,9 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
+  final String baseUrl = AppConfig.registryUrl;
   //final String baseUrl = "http://registry:8081";
-  final String baseUrl = "Registry.ieqmiddleware.com";
+  //final String baseUrl = "Registry.ieqmiddleware.com";
 
   // Handles the login logic
   Future<void> _attemptLogin() async {

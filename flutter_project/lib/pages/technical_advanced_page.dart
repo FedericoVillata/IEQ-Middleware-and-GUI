@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
+import '../app_config.dart';
 
 class TechnicalAdvancePage extends StatefulWidget {
   final String username;
@@ -19,7 +20,8 @@ class TechnicalAdvancePage extends StatefulWidget {
 
 class _TechnicalAdvancePageState extends State<TechnicalAdvancePage> {
   // The base URL for the plot service
-  static const String PLOT_SERVICE_URL = "http://plot_service:9090";
+  //static const String PLOT_SERVICE_URL = "http://plot_service:9090";
+  static String get PLOT_SERVICE_URL => AppConfig.plotServiceUrl;
 
   // Advanced metrics list
   // These strings map to the measure names expected by plot_service.py
@@ -80,7 +82,8 @@ class _TechnicalAdvancePageState extends State<TechnicalAdvancePage> {
     });
 
     try {
-      final resp = await http.get(Uri.parse("http://registry:8081/apartments"));
+      //final resp = await http.get(Uri.parse("http://registry:8081/apartments"));
+      final resp = await http.get(Uri.parse(AppConfig.registryUrl + "/apartments"));
       if (resp.statusCode == 200) {
         final arr = json.decode(resp.body);
         if (arr is List) {
