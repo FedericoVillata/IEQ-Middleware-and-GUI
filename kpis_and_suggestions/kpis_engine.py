@@ -309,6 +309,12 @@ class KPIEngine:
             suggestion_settings = dict(base_settings)
             suggestion_settings["values"] = context_values
 
+            # Extract only active suggestion for this room
+            enabled_ids = {s["suggestionId"] for s in room.get("suggestions", []) if s.get("state", 0) == 1}
+            id_to_name = {s["suggestionId"]: s["suggestionName"] for s in self.catalog.get("tenant_suggestions", [])}
+            enabled_suggestion_names = {id_to_name.get(sid) for sid in enabled_ids if id_to_name.get(sid)}
+
+
             # Tenant suggestions
             tenant_suggestions = get_tenant_suggestions(
                 classifications=classifications,
@@ -319,8 +325,10 @@ class KPIEngine:
                 hour=datetime.now().hour,
                 pmv=pmv,
                 trends=trends,
-                settings=suggestion_settings
+                settings=suggestion_settings,
+                enabled_suggestions=enabled_suggestion_names
             )
+
 
             if tenant_suggestions:
                 print(f"Generated {len(tenant_suggestions)} suggestions for room {room_id}")
