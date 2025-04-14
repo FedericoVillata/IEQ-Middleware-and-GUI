@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'start_screen.dart';
+import 'app_config.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Carica il JSON
+  await AppConfig.load();
+  
   runApp(const MainSelectorApp());
 }
 
