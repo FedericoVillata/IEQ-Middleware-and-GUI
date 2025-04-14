@@ -19,7 +19,7 @@ class TechnicalAdvancePage extends StatefulWidget {
 
 class _TechnicalAdvancePageState extends State<TechnicalAdvancePage> {
   // The base URL for the plot service
-  static const String PLOT_SERVICE_URL = "http://localhost:9090";
+  static const String PLOT_SERVICE_URL = "http://plot_service:9090";
 
   // Advanced metrics list
   // These strings map to the measure names expected by plot_service.py
@@ -80,7 +80,7 @@ class _TechnicalAdvancePageState extends State<TechnicalAdvancePage> {
     });
 
     try {
-      final resp = await http.get(Uri.parse("http://localhost:8081/apartments"));
+      final resp = await http.get(Uri.parse("http://registry:8081/apartments"));
       if (resp.statusCode == 200) {
         final arr = json.decode(resp.body);
         if (arr is List) {

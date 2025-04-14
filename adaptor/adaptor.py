@@ -14,6 +14,17 @@ import queue
 P = Path(__file__).parent.absolute()
 SETTINGS = P / "settings.json"
 
+def CORS():
+        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+        cherrypy.response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        cherrypy.response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+
+        if cherrypy.request.method == "OPTIONS":
+            cherrypy.response.status = 200
+            cherrypy.response.body = b""
+            cherrypy.serving.request.handled = True
+
+
 def get_request(url):
     """Function to try multiple requests if errors are encountered"""
     for i in range(15):
@@ -82,15 +93,19 @@ class Adaptor(object):
         return False
                 
     def start(self):
+
         conf={
             '/':{
             'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
-            'tools.sessions.on':True
+            'tools.sessions.on':True,
+            "tools.CORS.on": True
             }
         }
+
         cherrypy.tree.mount(self,'/',conf)
         cherrypy.config.update({'server.socket_port': self.port})
         cherrypy.config.update({'server.socket_host':'0.0.0.0'})
+        cherrypy.tools.CORS = cherrypy.Tool('before_handler', CORS)
         cherrypy.engine.start()
         #cherrypy.engine.block()
         

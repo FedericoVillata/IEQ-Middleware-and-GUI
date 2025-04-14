@@ -20,7 +20,7 @@ class TechnicalHomePage extends StatefulWidget {
 class _TechnicalHomePageState extends State<TechnicalHomePage> {
   // The base URL for your adaptor and plot service
   // static const String ADAPTOR_URL = "http://localhost:8080";      // For CSV data, etc.
-  static const String PLOT_SERVICE_URL = "http://localhost:9090"; // For images (line/carpet)
+  static const String PLOT_SERVICE_URL = "http://service_plot:9090"; // For images (line/carpet)
 
   // Metrics
   final List<String> metrics = ["Temperature", "Humidity", "CO2", "PM10.0", "VOC"];

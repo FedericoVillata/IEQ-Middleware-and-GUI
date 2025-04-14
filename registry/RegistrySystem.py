@@ -16,8 +16,14 @@ MAXDELAY_SERVICE = 60
 
 def CORS():
     cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-    cherrypy.response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE"
+    cherrypy.response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
     cherrypy.response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+
+    if cherrypy.request.method == "OPTIONS":
+        cherrypy.response.status = 200
+        cherrypy.response.body = b""
+        cherrypy.serving.request.handled = True
+
 
 """Catalog class that interacts with the catalog.json file"""
 class Catalog(object):
@@ -406,6 +412,15 @@ class Catalog(object):
         if found == 0:
             return "User not found"
 class Webserver(object):
+
+    @cherrypy.expose
+    def OPTIONS(self, *args, **kwargs):
+        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+        cherrypy.response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        cherrypy.response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        cherrypy.response.status = 200
+        return ""
+    
     """CherryPy webserver."""
     exposed = True
     def start(self):

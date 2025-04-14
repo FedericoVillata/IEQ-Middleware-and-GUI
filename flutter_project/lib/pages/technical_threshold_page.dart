@@ -17,7 +17,7 @@ class TechnicalThresholdPage extends StatefulWidget {
 }
 
 class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
-  static const String REGISTRY_BASE_URL = "http://localhost:8081";
+  static const String REGISTRY_BASE_URL = "http://registry:8081";
 
   bool isLoading = false;
   bool isError = false;

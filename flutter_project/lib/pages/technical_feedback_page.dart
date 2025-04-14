@@ -18,7 +18,7 @@ class TechnicalFeedbackPage extends StatefulWidget {
 }
 
 class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
-  static const String adaptorUrl = "http://localhost:8080";
+  static const String adaptorUrl = "http://adaptor:8080";
 
   // Feedback categories
   final feedbackTypes = [
