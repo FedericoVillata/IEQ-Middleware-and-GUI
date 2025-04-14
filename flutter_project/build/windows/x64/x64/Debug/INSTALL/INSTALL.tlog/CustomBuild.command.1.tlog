@@ -1,0 +1,10 @@
+^C:\USERS\FEDER\ONEDRIVE\DESKTOP\INTERDISCIPLINARY\FLUTTER_PROJECT\BUILD\WINDOWS\X64\CMAKEFILES\FAC83D84CF964238922DC3D619CFD3C4\INSTALL_FORCE.RULE
+setlocal
+cd .
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
