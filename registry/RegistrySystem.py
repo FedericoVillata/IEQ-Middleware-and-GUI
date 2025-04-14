@@ -135,7 +135,40 @@ class Catalog(object):
                 })
         self.write_catalog()
         return "done"
-
+    def update_suggestion(self, suggestion_json):
+        self.load_file()
+        found = 0
+        for suggestion in self.catalog["tenant_suggestions"]:
+            if suggestion["suggestionId"] == suggestion_json["suggestionId"]:
+                found = 1
+                suggestion["text"] = suggestion_json["text"]
+                for apt in self.catalog["apartments"]:
+                    for room in apt["rooms"]:
+                        for s in room["suggestions"]:
+                            if s["suggestionId"] == suggestion_json["suggestionId"]:
+                                s["text"] = suggestion_json["text"]
+                self.write_catalog()
+        if found == 0:
+            return "Suggestion not found"
+        else:  
+            return "done"
+    def remove_suggestion(self, suggestionId):
+        self.load_file()
+        found = 0
+        for suggestion in self.catalog["tenant_suggestions"]:
+            if suggestion["suggestionId"] == suggestionId:
+                found = 1
+                self.catalog["tenant_suggestions"].remove(suggestion)
+                for apt in self.catalog["apartments"]:
+                    for room in apt["rooms"]:
+                        for s in room["suggestions"]:
+                            if s["suggestionId"] == suggestionId:
+                                room["suggestions"].remove(s)
+                self.write_catalog()
+        if found == 0:
+            return "Suggestion not found"
+        else:  
+            return "done"
     def find_smallest_missing_suggestionId(self):
         self.load_file()
         numbers = set()
@@ -513,39 +546,18 @@ class Webserver(object):
 
     def PUT(self, *uri, **params):
         self.cat.load_file()
-        """ if uri[0] == 'updateInterval':
-            #update intervals and mode of a specific plant
-            body = json.loads(cherrypy.request.body.read())  # Read body data
-            plantCode = body["plantCode"]
-            state = body["state"]
-            init = body["init"]
-            end = body["end"]
-            found = False
-            output = ""
-            for plant in self.cat.catalog["plants"]:
-                if plant["plantCode"] == plantCode:
-                    found = True
-                    if state == "auto":
-                        plant['state']="auto"
-                        plant["auto_init"] = init
-                        plant["auto_end"] = end
-                        self.cat.write_catalog()
-                    elif state == "manual":
-                        plant['state']="manual"
-                        plant["manual_init"] = init
-                        plant["manual_end"] = end
-                        self.cat.write_catalog()
-                    else:
-                        output = "Invalid state"
-            if not found:   
-                response = {"status": "NOT_OK", "code": 400, "message": "Invalid plant code"}
-            elif output != "":
-                response = {"status": "NOT_OK", "code": 400, "message": output}  
+        
+        if uri[0] == 'update_suggestion':
+            #Update suggestion data
+            body = json.loads(cherrypy.request.body.read())
+            out = self.cat.update_suggestion(body)
+            if out == "Suggestion not found":
+                response = {"status": "NOT_OK", "code": 400, "message": "Invalid suggestion ID"}
             else:
                 response = {"status": "OK", "code": 200, "message": "Data updated successfully"}
-            return json.dumps(response) """
-        
-        if uri[0] == 'mod_apartment':
+            return json.dumps(response)
+
+        elif uri[0] == 'mod_apartment':
             #Update apartment data
             body = json.loads(cherrypy.request.body.read())  # Read body data
             apartmentId = body["apartmentId"]
@@ -663,6 +675,15 @@ class Webserver(object):
             else:
                 result = {"status": "OK", "code": 200, "message": "Data processed"}
                 return json.dumps(result)
+        elif uri[0] == 'del_suggestion':
+            #Delete suggestion
+            body = json.loads(cherrypy.request.body.read())
+            out = self.cat.remove_suggestion(body["suggestionId"])
+            if out == "Suggestion not found":
+                response = {"status": "NOT_OK", "code": 400, "message": "Invalid suggestion ID"}
+            else:   
+                response = {"status": "OK", "code": 200, "message": "Data deleted successfully"}
+            return json.dumps(response)
 
 class MySubscriber:
         def __init__(self, clientID, topic, broker, port):
