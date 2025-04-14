@@ -8,8 +8,8 @@ import requests
 import numpy as np
 
 from kpis_classification import *
-from kpis_and_suggestions.tenant_suggestions import *
-from kpis_and_suggestions.technical_suggestions import *
+from tenant_suggestions import *
+from technical_suggestions import *
 from publisher import MyPublisher
 from datetime import datetime
 
