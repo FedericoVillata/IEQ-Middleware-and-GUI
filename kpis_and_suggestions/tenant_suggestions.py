@@ -162,7 +162,7 @@ def smart_suggestions(classifications, values, settings, trends=None):
     return suggestions
 
 # --- Public wrapper ---
-def get_tenant_suggestions(classifications, temp=None, humidity=None, co2=None, t_ext=None, hour=None, pmv=None, trends=None, settings=None):
+def get_tenant_suggestions(classifications, temp=None, humidity=None, co2=None, t_ext=None, hour=None, pmv=None, trends=None, settings=None, enabled_suggestions=None):
     values = {
         "temperature": temp,
         "humidity": humidity,
@@ -173,4 +173,15 @@ def get_tenant_suggestions(classifications, temp=None, humidity=None, co2=None, 
         "weather": settings["values"].get("weather"),
         "forecast": settings["values"].get("forecast", {})
     }
-    return smart_suggestions(classifications, values, settings, trends)
+
+    all_suggestions = smart_suggestions(classifications, values, settings, trends)
+
+    if enabled_suggestions is not None:
+        filtered = {k: v for k, v in all_suggestions.items() if k in enabled_suggestions}
+        skipped = set(all_suggestions) - set(filtered)
+        if skipped:
+            print(f"[Suggestions] Skipped disabled suggestions: {', '.join(skipped)}")
+        return filtered
+
+    return all_suggestions
+
