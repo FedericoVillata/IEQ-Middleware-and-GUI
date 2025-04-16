@@ -388,7 +388,12 @@ class MySubscriber:
 
     def checkBnNotAlive(self, bn):
         return bn not in ["updateCatalogDevice", "updateCatalogService"]
-
+    
+    def checkIfNotSuggestion(self, topic):
+        if topic == "suggestion":
+            return False
+        else:
+            return True
     def myOnMessageReceived(self, paho_mqtt, userdata, msg):
         """Push received messages to the queue instead of processing immediately"""
         print("Message received on topic:", msg.topic)
@@ -402,7 +407,7 @@ class MySubscriber:
                 try:
                     apartmentId = msg.topic.split("/")[1]
                     msgJson = json.loads(msg.payload)
-                    if self.checkApartmentPresence(apartmentId) and self.checkBnNotAlive(msgJson["bn"]):
+                    if self.checkApartmentPresence(apartmentId) and self.checkBnNotAlive(msgJson["bn"]) and self.checkIfNotSuggestion(msg.topic.split("/")[2]):
                         converted = senmlToInflux(msgJson)
                         for c in converted:
                             print("Writing to InfluxDB:", c)
