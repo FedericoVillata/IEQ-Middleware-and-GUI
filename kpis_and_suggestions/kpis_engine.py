@@ -403,7 +403,7 @@ class KPIEngine:
 
         for event in events:
             payload = {"bn": base_name, "e": [event]}
-            print(f"\n🔁 Publishing event: {event['n']} to topic: {topic}")
+            print(f"\n Publishing event: {event['n']} to topic: {topic}")
             print(json.dumps(payload, indent=2))
             self.publisher.myPublish(json.dumps(payload), topic)
 
@@ -411,34 +411,34 @@ class KPIEngine:
         if not suggestions:
             return
 
-        topic = f"{self.MQTT_BASE_TOPIC}/{apartment_id}"
+        topic = f"{self.MQTT_BASE_TOPIC}/{apartment_id}/tenant_suggestion"
         timestamp = time.time()
 
         for metric, tip in suggestions.items():
             event = {
                 "bn": topic,
                 "e": [{
-                    "n": f"tenant_suggestion/{room_id}/{metric}",
+                    "n": f"{room_id}/{metric}",
                     "t": timestamp,
                     "u": "string",
                     "v": tip
                 }]
             }
-            print(f"\n📌 Publishing suggestion for {metric} in {room_id}: {tip}")
+            print(f"\n Publishing tenant suggestion for {metric} in {room_id}: {tip}")
             self.publisher.myPublish(json.dumps(event), topic)
 
     def publish_technical_suggestions(self, apartment_id, room_id, suggestions):
         if not suggestions:
             return
 
-        topic = f"{self.MQTT_BASE_TOPIC}/{apartment_id}"
+        topic = f"{self.MQTT_BASE_TOPIC}/{apartment_id}/technical_suggestion"
         timestamp = time.time()
 
         for key, tip in suggestions.items():
             event = {
                 "bn": topic,
                 "e": [{
-                    "n": f"technical_suggestion/{room_id}/{key}",
+                    "n": f"{room_id}/{key}",
                     "t": timestamp,
                     "u": "string",
                     "v": tip
