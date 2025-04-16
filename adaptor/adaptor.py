@@ -389,14 +389,14 @@ class MySubscriber:
     def checkBnNotAlive(self, bn):
         return bn not in ["updateCatalogDevice", "updateCatalogService"]
     
-    def checkIfNotSuggestion(self, topic):
+    def checkIfNotSuggestionorAlert(self, topic):
         if len(topic.split("/")) > 2:
-            if topic.split("/")[2] == "suggestion":
+            if topic.split("/")[2] == "suggestion" or topic.split("/")[2] == "alert":
                 return False
         return True
     def myOnMessageReceived(self, paho_mqtt, userdata, msg):
         """Push received messages to the queue instead of processing immediately"""
-        print("Message received on topic:", msg.topic)
+        print("Message received on topic:", msg.topic, msg.payload)
         self.message_queue.put(msg)
     def write_with_retry(self, bucket, record, retries=3, delay=1):
         for attempt in range(retries):
@@ -414,35 +414,42 @@ class MySubscriber:
             if msg:
                 try:
                     topic_parts = msg.topic.split("/")
-                    apartmentId = topic_parts[1]
-                    msgJson = json.loads(msg.payload)
-
-                    if (
-                        self.checkApartmentPresence(apartmentId) and
-                        self.checkBnNotAlive(msgJson.get("bn")) and
-                        self.checkIfNotSuggestion(msg.topic)
-                    ):
-                        converted = senmlToInflux(msgJson)
-
-                        if converted:
-                            self.write_with_retry(apartmentId, converted)
-                            if len(topic_parts) > 2 and topic_parts[2] == "sensorData":
-                                url = self.registry_url + "/update_sensors"
-                                headers = {"Content-Type": "application/json"}
-                                message = {
-                                    "apartmentId": apartmentId,
-                                    "points": converted
-                                }
-                                response = requests.put(url, headers=headers, data=json.dumps(message))
-
-                                if response.status_code == 200:
-                                    print("Sensor update data sent to registry")
-                                else:
-                                    print(f"Failed to send data to registry: {response.status_code}")
-                        else:
-                            print("No valid points converted from message.")
+                    if len(topic_parts) < 2:
+                        print(f"[Warning] Unexpected topic format: {msg.topic} with payload {msg.payload}")
+                        self.message_queue.task_done()
+                        continue  # skip this message
                     else:
-                        print("Invalid message or skipped based on filters.")
+                        print(f"Processing message: {msg.topic} with payload {msg.payload}")
+                        apartmentId = topic_parts[1]
+                        msgJson = json.loads(msg.payload)
+
+                        if (
+                            self.checkApartmentPresence(apartmentId) and
+                            self.checkBnNotAlive(msgJson.get("bn")) and
+                            self.checkIfNotSuggestionorAlert(msg.topic)
+                        ):
+                            converted = senmlToInflux(msgJson)
+
+                            if converted:
+                                self.write_with_retry(apartmentId, converted)
+                                # if len(topic_parts) > 2:
+                                #     if topic_parts[2] == "sensorData":
+                                #         url = self.registry_url + "/update_sensors"
+                                #         headers = {"Content-Type": "application/json"}
+                                #         message = {
+                                #             "apartmentId": apartmentId,
+                                #             "points": converted
+                                #         }
+                                #         response = requests.put(url, headers=headers, data=json.dumps(message))
+
+                                #         if response.status_code == 200:
+                                #             print("Sensor update data sent to registry")
+                                #         else:
+                                #             print(f"Failed to send data to registry: {response.status_code}")
+                            else:
+                                print("No valid points converted from message.")
+                        else:
+                            print("Invalid message or skipped based on filters.")
                 except Exception as e:
                     print("Error processing message:", e)
                 finally:
