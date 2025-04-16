@@ -158,6 +158,34 @@ class Catalog(object):
             return "Suggestion not found"
         else:  
             return "done"
+    def activate_suggestion(self, suggestionId, apartmentId, roomId):
+        self.load_file()
+        found = 0
+        for apt in self.catalog["apartments"]:
+            if apt["apartmentId"] == apartmentId:
+                found = 1
+                for room in apt["rooms"]:
+                    for s in room["suggestions"]:
+                        if s["suggestionId"] == suggestionId:
+                            s["state"] = 1
+                            self.write_catalog()
+                            return "done"
+        if found == 0:
+            return "Apartment not found"
+    def deactivate_suggestion(self, suggestionId, apartmentId, roomId):
+        self.load_file()
+        found = 0
+        for apt in self.catalog["apartments"]:
+            if apt["apartmentId"] == apartmentId:
+                found = 1
+                for room in apt["rooms"]:
+                    for s in room["suggestions"]:
+                        if s["suggestionId"] == suggestionId:
+                            s["state"] = 0
+                            self.write_catalog()
+                            return "done"
+        if found == 0:
+            return "Apartment not found"
     def remove_suggestion(self, suggestionId):
         self.load_file()
         found = 0
@@ -635,6 +663,24 @@ class Webserver(object):
                     apt["settings"] = self.cat.catalog["base_settings"]
                     self.cat.write_catalog()
             if not found:   
+                response = {"status": "NOT_OK", "code": 400, "message": "Invalid apartment ID"}
+            else:
+                response = {"status": "OK", "code": 200, "message": "Data updated successfully"}
+            return json.dumps(response)
+        elif uri[0] == 'activate_suggestion':
+            #Activate suggestion
+            body = json.loads(cherrypy.request.body.read())
+            out = self.cat.activate_suggestion(body["suggestionId"], body["apartmentId"], body["roomId"])
+            if out == "Apartment not found":
+                response = {"status": "NOT_OK", "code": 400, "message": "Invalid apartment ID"}
+            else:
+                response = {"status": "OK", "code": 200, "message": "Data updated successfully"}
+            return json.dumps(response)
+        elif uri[0] == 'deactivate_suggestion':
+            #Deactivate suggestion
+            body = json.loads(cherrypy.request.body.read())
+            out = self.cat.deactivate_suggestion(body["suggestionId"], body["apartmentId"], body["roomId"])
+            if out == "Apartment not found":
                 response = {"status": "NOT_OK", "code": 400, "message": "Invalid apartment ID"}
             else:
                 response = {"status": "OK", "code": 200, "message": "Data updated successfully"}
