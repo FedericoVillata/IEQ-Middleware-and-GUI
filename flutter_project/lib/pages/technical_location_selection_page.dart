@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../app_config.dart';
 
 class LocationSelectionPage extends StatefulWidget {
   final Function(String) onLocationSelected;
@@ -17,7 +18,8 @@ class LocationSelectionPage extends StatefulWidget {
 }
 
 class _LocationSelectionPageState extends State<LocationSelectionPage> {
-  static const String REGISTRY_URL = "http://registry:8081/apartments";
+  //static const String REGISTRY_URL = "http://registry:8081/apartments";
+  static String get REGISTRY_URL => "${AppConfig.registryUrl}/apartments";
 
   final TextEditingController _searchController = TextEditingController();
 

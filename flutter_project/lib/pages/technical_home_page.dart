@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
+import '../app_config.dart';
 
 class TechnicalHomePage extends StatefulWidget {
   final String username;
@@ -20,7 +21,8 @@ class TechnicalHomePage extends StatefulWidget {
 class _TechnicalHomePageState extends State<TechnicalHomePage> {
   // The base URL for your adaptor and plot service
   // static const String ADAPTOR_URL = "http://localhost:8080";      // For CSV data, etc.
-  static const String PLOT_SERVICE_URL = "http://service_plot:9090"; // For images (line/carpet)
+  //static const String PLOT_SERVICE_URL = "http://service_plot:9090"; // For images (line/carpet)
+  static String get PLOT_SERVICE_URL => AppConfig.plotServiceUrl;
 
   // Metrics
   final List<String> metrics = ["Temperature", "Humidity", "CO2", "PM10.0", "VOC"];
@@ -66,7 +68,8 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     });
 
     try {
-      final resp = await http.get(Uri.parse("http://localhost:8081/apartments"));
+      // final resp = await http.get(Uri.parse("http://localhost:8081/apartments"));
+      final resp = await http.get(Uri.parse(AppConfig.registryUrl + "/apartments"));
       if (resp.statusCode == 200) {
         final arr = json.decode(resp.body);
         if (arr is List) {

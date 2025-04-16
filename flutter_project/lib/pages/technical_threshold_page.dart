@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../app_config.dart';
 
 class TechnicalThresholdPage extends StatefulWidget {
   final String username;
@@ -17,7 +18,8 @@ class TechnicalThresholdPage extends StatefulWidget {
 }
 
 class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
-  static const String REGISTRY_BASE_URL = "http://registry:8081";
+  // static const String REGISTRY_BASE_URL = "http://registry:8081";
+  static String get REGISTRY_BASE_URL => AppConfig.registryUrl;
 
   bool isLoading = false;
   bool isError = false;

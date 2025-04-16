@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
+import '../app_config.dart';
 
 class TechnicalFeedbackPage extends StatefulWidget {
   final String username;    // The technical user's ID
@@ -18,7 +19,8 @@ class TechnicalFeedbackPage extends StatefulWidget {
 }
 
 class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
-  static const String adaptorUrl = "http://adaptor:8080";
+  //static const String adaptorUrl = "http://adaptor:8080";
+  static String get adaptorUrl => AppConfig.adaptorUrl;
 
   // Feedback categories
   final feedbackTypes = [

@@ -1,0 +1,5 @@
+{
+    "REGISTRY_URL": "http://localhost:8081",
+    "ADAPTOR_URL": "http://localhost:8080",
+    "PLOT_SERVICE_URL": "http://localhost:9090"
+  }
