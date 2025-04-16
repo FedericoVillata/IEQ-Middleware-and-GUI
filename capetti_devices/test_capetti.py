@@ -239,7 +239,8 @@ class CapettiAPI:
 
             # Salva l'indice corrente in caso di errore
             start_index = index
-            time.sleep(0.1)
+            time.sleep(2)
+            
     def get_current_values(self):
         pubTopic = f"IEQmidAndGUI/{self.apartment_id}"
         if not self.token:
