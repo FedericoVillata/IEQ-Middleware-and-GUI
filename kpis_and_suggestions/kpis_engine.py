@@ -285,15 +285,15 @@ class KPIEngine:
             for metric, label in classifications.items():
                 if label in critical_labels:
                     alert_event = {
-                        "bn": f"{self.MQTT_BASE_TOPIC}/{apartment_id}",
+                        "bn": f"{self.MQTT_BASE_TOPIC}/{apartment_id}/alert",
                         "e": [{
-                            "n": f"alert/{room_id}",
+                            "n": f"{room_id}",
                             "t": time.time(),
                             "u": "alert",
                             "v": f"{metric} classified as {label}"
                         }]
                     }
-                    self.publisher.myPublish(json.dumps(alert_event), f"{self.MQTT_BASE_TOPIC}/{apartment_id}")
+                    self.publisher.myPublish(json.dumps(alert_event), f"{self.MQTT_BASE_TOPIC}/{apartment_id}/alert")
 
             # Prepare context for suggestions
             context_values = dict(base_settings.get("values", {}))
