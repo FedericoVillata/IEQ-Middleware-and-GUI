@@ -182,32 +182,32 @@ class KPIEngine:
 
             if missing:
                 print(f"Missing data for {room_id} in {apartment_id}: {missing}")
-                alert_event = {
-                    "bn": f"{self.MQTT_BASE_TOPIC}/{apartment_id}",
-                    "e": [{
-                        "n": f"missing_data/{room_id}",
-                        "t": time.time(),
-                        "u": "error",
-                        "v": f"Missing data: {', '.join(missing)}"
-                    }]
-                }
-                self.publisher.myPublish(json.dumps(alert_event), f"{self.MQTT_BASE_TOPIC}/{apartment_id}")
+                # alert_event = {
+                #     "bn": f"{self.MQTT_BASE_TOPIC}/{apartment_id}",
+                #     "e": [{
+                #         "n": f"missing_data/{room_id}",
+                #         "t": time.time(),
+                #         "u": "error",
+                #         "v": f"Missing data: {', '.join(missing)}"
+                #     }]
+                # }
+                # self.publisher.myPublish(json.dumps(alert_event), f"{self.MQTT_BASE_TOPIC}/{apartment_id}")
                 continue
 
             # Optional metrics
             optional_missing = [m for m in ["PM10", "VOC"] if not measure_data.get(m)]
             if optional_missing:
                 print(f"Optional data missing in {room_id}: {optional_missing}")
-                warning_event = {
-                    "bn": f"{self.MQTT_BASE_TOPIC}/{apartment_id}",
-                    "e": [{
-                        "n": f"missing_optional_data/{room_id}",
-                        "t": time.time(),
-                        "u": "warning",
-                        "v": f"Optional data missing: {', '.join(optional_missing)}"
-                    }]
-                }
-                self.publisher.myPublish(json.dumps(warning_event), f"{self.MQTT_BASE_TOPIC}/{apartment_id}")
+                # warning_event = {
+                #     "bn": f"{self.MQTT_BASE_TOPIC}/{apartment_id}",
+                #     "e": [{
+                #         "n": f"missing_optional_data/{room_id}",
+                #         "t": time.time(),
+                #         "u": "warning",
+                #         "v": f"Optional data missing: {', '.join(optional_missing)}"
+                #     }]
+                # }
+                # self.publisher.myPublish(json.dumps(warning_event), f"{self.MQTT_BASE_TOPIC}/{apartment_id}")
 
             # Calculate averages
             avg_temp = np.mean([d["v"] for d in measure_data["Temperature"]])
