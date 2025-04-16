@@ -89,7 +89,7 @@ class CapettiAPI:
 
         if first_request:
             date_to = int(time.time())  # Timestamp current
-            date_from = date_to - int(timedelta(days=30).total_seconds())  
+            date_from = date_to - int(timedelta(days=1).total_seconds())  
             print(f"Fetching data for the last 24 hours from {datetime.fromtimestamp(date_from)} to {datetime.fromtimestamp(date_to)}")
 
             # one hour block
