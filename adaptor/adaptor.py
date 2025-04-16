@@ -420,7 +420,6 @@ class MySubscriber:
                             print(f"Writing {len(converted)} points to InfluxDB for apartment {apartmentId}")
                             # Batch write
                             self.write_api.write(bucket=apartmentId, org=self.org, record=converted)
-
                             # Update sensor registry if topic indicates sensor data
                             if len(topic_parts) > 2 and topic_parts[2] == "sensorData":
                                 url = self.registry_url + "/update_sensors"
