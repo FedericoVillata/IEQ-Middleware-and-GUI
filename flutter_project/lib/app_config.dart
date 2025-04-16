@@ -12,4 +12,7 @@ class AppConfig {
   static String get registryUrl => _settings["REGISTRY_URL"] as String;
   static String get adaptorUrl => _settings["ADAPTOR_URL"] as String;
   static String get plotServiceUrl => _settings["PLOT_SERVICE_URL"] as String;
+  static String get mqttBroker => _settings["MQTT_BROKER"] as String;
+  static int get mqttPort => _settings["MQTT_PORT"] as int;
+  static String get mqttTopicBase => _settings["MQTT_TOPIC_BASE"] as String;
 }

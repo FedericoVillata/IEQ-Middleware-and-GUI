@@ -95,10 +95,11 @@ class CapettiAPI:
             # one hour block
             current_start = date_from
             while current_start <= date_to:
-                current_end = current_start + int(timedelta(days=1).total_seconds())
+                current_end = current_start + int(timedelta(hours=1).total_seconds())
                 print(f"Fetching data from {datetime.fromtimestamp(current_start)} to {datetime.fromtimestamp(current_end)}")
                 self.get_history_values(date_from=current_start, date_to=current_end)
                 current_start = current_end
+                time.sleep(2)
         else:
             self.get_current_values()
 
@@ -233,13 +234,14 @@ class CapettiAPI:
                     "v": float(value)
                 }
                 Event.append(event)
-            out = {"bn": pubTopic, "e": Event}
-            print(f"Publishing message: {out}")
-            myPub.myPublish(json.dumps(out), pubTopic)
+        out = {"bn": pubTopic, "e": Event}
+        print(f"Publishing message: {out}")
+        myPub.myPublish(json.dumps(out), pubTopic)
+            # Reset the Event list after publishing
 
-            # Salva l'indice corrente in caso di errore
-            start_index = index
-            time.sleep(0.1)
+        # Salva l'indice corrente in caso di errore
+        start_index = index
+            
     def get_current_values(self):
         pubTopic = f"IEQmidAndGUI/{self.apartment_id}"
         if not self.token:

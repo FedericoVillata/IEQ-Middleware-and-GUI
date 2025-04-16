@@ -215,7 +215,7 @@ class PlotService:
         x_vals = [tv[0] for tv in times_values]
         y_vals = [tv[1] for tv in times_values]
 
-        ax.plot(x_vals, y_vals, marker='o', linewidth=2, color='blue')
+        ax.plot(x_vals, y_vals, linewidth=2, color='blue')
         ax.set_title(f"{measure} (Line Chart)")
         ax.set_xlabel("Time")
         ax.set_ylabel(measure)
