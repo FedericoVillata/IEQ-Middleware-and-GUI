@@ -388,7 +388,12 @@ class MySubscriber:
 
     def checkBnNotAlive(self, bn):
         return bn not in ["updateCatalogDevice", "updateCatalogService"]
-
+    
+    def checkIfNotSuggestion(self, topic):
+        if len(topic.split("/")) > 2:
+            if topic.split("/")[2] == "suggestion":
+                return False
+        return True
     def myOnMessageReceived(self, paho_mqtt, userdata, msg):
         """Push received messages to the queue instead of processing immediately"""
         print("Message received on topic:", msg.topic)
@@ -400,30 +405,44 @@ class MySubscriber:
             msg = self.message_queue.get()
             if msg:
                 try:
-                    apartmentId = msg.topic.split("/")[1]
+                    topic_parts = msg.topic.split("/")
+                    apartmentId = topic_parts[1]
                     msgJson = json.loads(msg.payload)
-                    if self.checkApartmentPresence(apartmentId) and self.checkBnNotAlive(msgJson["bn"]):
+
+                    if (
+                        self.checkApartmentPresence(apartmentId) and
+                        self.checkBnNotAlive(msgJson.get("bn")) and
+                        self.checkIfNotSuggestion(msg.topic)
+                    ):
                         converted = senmlToInflux(msgJson)
-                        for c in converted:
-                            print("Writing to InfluxDB:", c)
-                            self.write_api.write(bucket=apartmentId, org=self.org, record=c)
-                        if len(msg.topic.split("/")) > 2:
-                            if msg.topic.split("/")[2] == "sensorData":
+
+                        if converted:
+                            print(f"Writing {len(converted)} points to InfluxDB for apartment {apartmentId}")
+                            # Batch write
+                            self.write_api.write(bucket=apartmentId, org=self.org, record=converted)
+
+                            # Update sensor registry if topic indicates sensor data
+                            if len(topic_parts) > 2 and topic_parts[2] == "sensorData":
                                 url = self.registry_url + "/update_sensors"
                                 headers = {"Content-Type": "application/json"}
-                                message = {"apartmentId": apartmentId, "points": converted}
+                                message = {
+                                    "apartmentId": apartmentId,
+                                    "points": converted
+                                }
                                 response = requests.put(url, headers=headers, data=json.dumps(message))
+
                                 if response.status_code == 200:
                                     print("Sensor update data sent to registry")
                                 else:
-                                    print("Failed to send data to registry")
+                                    print(f"Failed to send data to registry: {response.status_code}")
+                        else:
+                            print("No valid points converted from message.")
                     else:
-                        print("Invalid message")
+                        print("Invalid message or skipped based on filters.")
                 except Exception as e:
                     print("Error processing message:", e)
                 finally:
                     self.message_queue.task_done()
-
 
 # Threads
 class MQTTreciver(threading.Thread):
