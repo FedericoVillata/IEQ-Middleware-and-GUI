@@ -398,6 +398,14 @@ class MySubscriber:
         """Push received messages to the queue instead of processing immediately"""
         print("Message received on topic:", msg.topic)
         self.message_queue.put(msg)
+    def write_with_retry(self, bucket, record, retries=3, delay=1):
+        for attempt in range(retries):
+
+            response = self.write_api.write(bucket=bucket, org=self.org, record=record)
+            if response is None:
+                print(f"Write successful to bucket {bucket} on attempt {attempt + 1}")
+                return
+        print(f"[Error] Failed to write to InfluxDB after {retries} attempts.")
 
     def process_messages(self):
         """Worker thread to process messages from the queue"""
@@ -417,10 +425,7 @@ class MySubscriber:
                         converted = senmlToInflux(msgJson)
 
                         if converted:
-                            print(f"Writing {len(converted)} points to InfluxDB for apartment {apartmentId}")
-                            # Batch write
-                            self.write_api.write(bucket=apartmentId, org=self.org, record=converted)
-                            # Update sensor registry if topic indicates sensor data
+                            self.write_with_retry(apartmentId, converted)
                             if len(topic_parts) > 2 and topic_parts[2] == "sensorData":
                                 url = self.registry_url + "/update_sensors"
                                 headers = {"Content-Type": "application/json"}
