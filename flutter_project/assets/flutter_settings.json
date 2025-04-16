@@ -1,5 +1,8 @@
 {
     "REGISTRY_URL": "http://localhost:8081",
     "ADAPTOR_URL": "http://localhost:8080",
-    "PLOT_SERVICE_URL": "http://localhost:9090"
+    "PLOT_SERVICE_URL": "http://localhost:9090",
+    "MQTT_BROKER": "mqtt.eclipseprojects.io",
+    "MQTT_PORT": 1883,
+    "MQTT_TOPIC_BASE": "IEQmidAndGUI"
   }
