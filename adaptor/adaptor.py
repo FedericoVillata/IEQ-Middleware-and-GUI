@@ -391,7 +391,7 @@ class MySubscriber:
     
     def checkIfNotSuggestionorAlert(self, topic):
         if len(topic.split("/")) > 2:
-            if topic.split("/")[2] == "suggestion" or topic.split("/")[2] == "alert":
+            if "suggestion" in topic.split('/')[2] or topic.split("/")[2] == "alert":
                 return False
         return True
     def myOnMessageReceived(self, paho_mqtt, userdata, msg):
@@ -431,21 +431,22 @@ class MySubscriber:
                             converted = senmlToInflux(msgJson)
 
                             if converted:
+                                print(f"Converted message to InfluxDB format: {msg.topic}")
                                 self.write_with_retry(apartmentId, converted)
-                                # if len(topic_parts) > 2:
-                                #     if topic_parts[2] == "sensorData":
-                                #         url = self.registry_url + "/update_sensors"
-                                #         headers = {"Content-Type": "application/json"}
-                                #         message = {
-                                #             "apartmentId": apartmentId,
-                                #             "points": converted
-                                #         }
-                                #         response = requests.put(url, headers=headers, data=json.dumps(message))
+                                if len(topic_parts) > 2:
+                                    if topic_parts[2] == "sensorData":
+                                        url = self.registry_url + "/update_sensors"
+                                        headers = {"Content-Type": "application/json"}
+                                        message = {
+                                            "apartmentId": apartmentId,
+                                            "points": converted
+                                        }
+                                        response = requests.put(url, headers=headers, data=json.dumps(message))
 
-                                #         if response.status_code == 200:
-                                #             print("Sensor update data sent to registry")
-                                #         else:
-                                #             print(f"Failed to send data to registry: {response.status_code}")
+                                        if response.status_code == 200:
+                                            print("Sensor update data sent to registry")
+                                        else:
+                                            print(f"Failed to send data to registry: {response.status_code}")
                             else:
                                 print("No valid points converted from message.")
                         else:

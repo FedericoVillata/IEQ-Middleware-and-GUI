@@ -25,42 +25,60 @@ def get_request(url):
 
 class MyPublisher:
     def __init__(self, clientID, topic):
-        self.clientID = clientID  + "Temperature"
+        self.clientID = clientID + "Temperature"
         self.topic = topic
-		# create an instance of paho.mqtt.client
-        self._paho_mqtt = PahoMQTT.Client(self.clientID, False) 
-		# register the callback
+        self._paho_mqtt = PahoMQTT.Client(self.clientID, False)
         self._paho_mqtt.on_connect = self.myOnConnect
-        try:
-            with open(SETTINGS, "r") as fs:                
-                self.settings = json.loads(fs.read())            
-        except Exception:
-            print("Problem in loading settings")
-        self.messageBroker = self.settings["messageBroker"]
-        self.port = self.settings["brokerPort"]
-        self.qos = self.settings["qos"]
+        self.messageBroker = "mqtt.eclipseprojects.io"
+        self.port = 1883
+        self.qos = 2
+        self.connected = False  # Flag to track connection state
 
-    def start (self):
-		#manage connection to broker
+    def start(self, timeout=5):
         self._paho_mqtt.connect(self.messageBroker, self.port)
         self._paho_mqtt.loop_start()
 
-    def stop (self):
+        # Wait until connected or timeout
+        waited = 0
+        while not self.connected and waited < timeout:
+            time.sleep(0.1)
+            waited += 0.1
+
+        if not self.connected:
+            print("⚠️ MQTT client failed to connect within timeout.")
+
+    def stop(self):
         self._paho_mqtt.loop_stop()
         self._paho_mqtt.disconnect()
 
-    def myPublish(self, message, topic):
-		# publish a message with a certain topic
-        self._paho_mqtt.publish(topic, message, self.qos)
+    def myPublish(self, message, topic, retries=3, sleep_time=1):
+        while not self.connected:
+            print("Waiting for MQTT connection to restore...")
+            time.sleep(0.2)
 
-    def myOnConnect (self, paho_mqtt, userdata, flags, rc):
-        print ("Connected to %s with result code: %d" % (self.messageBroker, rc))
+        attempts = 0
+        # while attempts < retries:
+        info = self._paho_mqtt.publish(topic, message, self.qos)
+
+        if info.rc == PahoMQTT.MQTT_ERR_SUCCESS:
+
+            print(f"✅ Message with topic {topic} published successfully")
+
+        else:
+            print(f"⚠️ Publish failed with error code: {info.rc}")
+
+    def myOnConnect(self, paho_mqtt, userdata, flags, rc):
+        if rc == 0:
+            self.connected = True
+            print(f"✅ Connected to {self.messageBroker}")
+        else:
+            print(f"❌ Connection failed with result code: {rc}")
 
 
 if __name__ == '__main__':
 
     pubTopic = "IEQmidAndGUI/apartment0/sensorData"
-    pubTopic2 = "IEQmidAndGUI/apartment0"
+    pubTopic2 = "IEQmidAndGUI/apartment0/sensorData"
     print(pubTopic)
     myPub = MyPublisher("54234", pubTopic)
     myPub.start()

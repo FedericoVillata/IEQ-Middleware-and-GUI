@@ -102,3 +102,4 @@
 [14/Apr/2025:11:47:13 +0000] 400 - - http localhost "-" [Client 20.171.24.93] [Length 154] [Gzip -] "-" "-"
 [14/Apr/2025:11:55:08 +0000] 200 - GET http 93.51.16.192 "/" [Client 196.45.130.38] [Length 1033] [Gzip -] "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/601.7.7 (KHTML, like Gecko) Version/9.1.2 Safari/601.7.7" "-"
 [14/Apr/2025:11:57:03 +0000] 200 - GET http 93.51.16.192 "/" [Client 154.81.156.35] [Length 568] [Gzip 1.86] "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36 Edg/90.0.818.46" "-"
+[17/Apr/2025:13:58:31 +0000] 404 - GET http wpad.homenet.telecomitalia.it "/wpad.dat" [Client 172.19.0.1] [Length 150] [Gzip -] "WinHttp-Autoproxy-Service/5.1" "-"
