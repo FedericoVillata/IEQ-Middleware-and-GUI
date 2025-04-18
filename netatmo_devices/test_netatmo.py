@@ -68,7 +68,8 @@ class NetatmoAPI:
         date_start = int(date_start.timestamp())
         date_end = int(datetime.now().timestamp())
 
-        myPub = MyPublisher("54234")
+        pubTopic = f"IEQmidAndGUI/{apartment_id}/sensorData"
+        myPub = MyPublisher("54234",pubTopic)
         myPub.start()
         for module_name, module_id in self.modules.items():
             print(f"Getting measurements for {apartment_id}...")
@@ -132,14 +133,16 @@ class NetatmoAPI:
                         "v": float(val) if val is not None else 0
                     }
                     Event.append(event)
-                pubTopic = f"IEQmidAndGUI/{apartment_id}/sensorData"
+                
                 out = {"bn": pubTopic, "e": Event}
                 print(out)
                 myPub.myPublish(json.dumps(out), pubTopic)
                 time.sleep(1)  # Attendi 1 secondo tra le pubblicazioni
 
 class MyPublisher:
-    def __init__(self, clientID):
+    def __init__(self, clientID,topic):
+        self.connected = False
+        self.topic = topic
         self.clientID = clientID + "Temperature"
         self._paho_mqtt = PahoMQTT.Client(self.clientID, False)
         self._paho_mqtt.on_connect = self.myOnConnect
@@ -152,19 +155,44 @@ class MyPublisher:
         self.port = self.settings["brokerPort"]
         self.qos = self.settings["qos"]
 
-    def start(self):
+    def start(self, timeout=5):
         self._paho_mqtt.connect(self.messageBroker, self.port)
         self._paho_mqtt.loop_start()
+
+        # Wait until connected or timeout
+        waited = 0
+        while not self.connected and waited < timeout:
+            time.sleep(0.1)
+            waited += 0.1
+
+        if not self.connected:
+            print("⚠️ MQTT client failed to connect within timeout.")
 
     def stop(self):
         self._paho_mqtt.loop_stop()
         self._paho_mqtt.disconnect()
 
     def myPublish(self, message, topic):
-        self._paho_mqtt.publish(topic, message, self.qos)
+        while not self.connected:
+            print("Waiting for MQTT connection to restore...")
+            time.sleep(0.2)
+
+        attempts = 0
+        # while attempts < retries:
+        info = self._paho_mqtt.publish(topic, message, self.qos)
+
+        if info.rc == PahoMQTT.MQTT_ERR_SUCCESS:
+            print(f"✅ Message with topic {topic} published successfully")
+        else:
+            print(f"⚠️ Publish failed with error code: {info.rc}")
 
     def myOnConnect(self, paho_mqtt, userdata, flags, rc):
-        print("Connected to %s with result code: %d" % (self.messageBroker, rc))
+        if rc == 0:
+            self.connected = True
+            print(f"✅ Connected to {self.messageBroker}")
+        else:
+            print(f"❌ Connection failed with result code: {rc}")
+
 
 if __name__ == '__main__':
     with open('./netatmo_config.json') as config_file:
