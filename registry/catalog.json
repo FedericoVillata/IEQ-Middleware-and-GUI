@@ -1102,7 +1102,7 @@
           "suggestions": [
             {
               "suggestionId": "S0",
-              "state": 1
+              "state": 0
             },
             {
               "suggestionId": "S1",

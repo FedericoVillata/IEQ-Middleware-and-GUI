@@ -218,7 +218,7 @@ class _TechnicalDeletedSuggestionsPageState
 
     try {
       // Endpoint we call:
-      final url = AppConfig.registryUrl + "/deactivate_suggestion";
+      final url = AppConfig.registryUrl + "/activate_suggestion";
 
       // The body needed by registrySystem.py (based on the snippet provided):
       final body = {
@@ -235,7 +235,16 @@ class _TechnicalDeletedSuggestionsPageState
 
       if (resp.statusCode == 200) {
         // success => reload suggestions
-        await _loadDeletedForRoom(selectedRoom!);
+        setState(() {
+          deletedSuggestions.removeWhere((s) => s["suggestionId"] == suggestionId);
+        });
+
+         ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Suggestion restored successfully!"),
+            backgroundColor: Colors.green,
+          ),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
