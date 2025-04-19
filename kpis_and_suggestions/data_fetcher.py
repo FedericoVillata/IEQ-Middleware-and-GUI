@@ -2,18 +2,30 @@
 import time
 import requests
 
+from datetime import datetime
+
+def log(message, level="INFO", context=None):
+    # timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # prefix = f"[{timestamp}] [{level}]"
+    prefix = f"[{level}]"
+    if context:
+        prefix += f" [{context}]"
+    print(f"{prefix} {message}")
+
+
+
 
 def get_catalog(registry_url, retries=10, delay=3):
     for attempt in range(retries):
         try:
             response = requests.get(f"{registry_url}/catalog")
             response.raise_for_status()
-            print("Catalog fetched successfully.")
+            log("Catalog fetched successfully.")
             return response.json()
         except requests.RequestException as e:
-            print(f"[Attempt {attempt + 1}] Error fetching catalog: {e}")
+            log(f"Error fetching catalog: {e}", level="ERROR", context=f"Attempt {attempt + 1}")
             time.sleep(delay)
-    print("Failed to fetch catalog after several retries. Exiting.")
+    log("Failed to fetch catalog after several retries. Exiting.", level="ERROR")
     exit(1)
 
 
@@ -35,19 +47,19 @@ def fetch_data(adaptor_base, user_id, apartment_id, measure, start=None, end=Non
 
     for attempt in range(retries):
         try:
-            print(f"[Attempt {attempt+1}] Fetching {measure} data from: {url} with params: {params}")
+            log(f"Fetching {measure} data with params: {params}", level="DEBUG", context=f"Attempt {attempt + 1}")
             resp = requests.get(url, params=params, timeout=10)
             if resp.status_code == 200:
                 data = resp.json()
-                print(f"Fetched {len(data)} items for {measure}")
+                log(f"Fetched {len(data)} items for {measure}", level="INFO")
                 return data
             else:
-                print(f"ERROR: adaptor returned {resp.status_code}")
+                log(f"Adaptor returned status {resp.status_code}", level="ERROR")
         except Exception as e:
-            print(f"ERROR in fetch_data (attempt {attempt+1}): {e}")
+            log(f"Exception: {e}", level="ERROR", context=f"Attempt {attempt + 1}")
         time.sleep(delay)
 
-    print(f"Failed to fetch {measure} after {retries} attempts.")
+    log(f"Failed to fetch {measure} after {retries} attempts.", level="ERROR")
     return []
 
 
@@ -68,7 +80,7 @@ def fetch_feedback(adaptor_base, user_id, apartment_id, room_id, duration=168):
                     })
             return feedback_dict
         else:
-            print(f"[Feedback] Unexpected status code: {response.status_code}")
+            log(f"Unexpected status code: {response.status_code}", level="WARN", context="Feedback")
     except Exception as e:
-        print(f"[Feedback] Error fetching feedback: {e}")
+        log(f"Error fetching feedback: {e}", level="ERROR", context="Feedback")
     return {}

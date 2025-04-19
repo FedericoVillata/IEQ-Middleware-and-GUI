@@ -1,4 +1,13 @@
+#technical_suggestions.py
 from datetime import datetime
+
+def log(message, level="INFO", context=None):
+    # timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # prefix = f"[{timestamp}] [{level}]"
+    prefix = f"[{level}]"
+    if context:
+        prefix += f" [{context}]"
+    print(f"{prefix} {message}")
 
 def get_technical_suggestions(classifications, feedback, metrics, settings):
     suggestions = {}
@@ -116,4 +125,5 @@ def get_technical_suggestions(classifications, feedback, metrics, settings):
             "Suggestion: thermal comfort perceived is the opposite of calculated. Verify input parameters."
         )
 
-    return suggestions
+    log(f"Generated {len(suggestions)} technical suggestions", context="Technical")
+    return suggestions    

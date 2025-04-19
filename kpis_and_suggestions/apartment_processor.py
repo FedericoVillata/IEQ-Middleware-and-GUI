@@ -15,11 +15,17 @@ from kpis_classification import *
 import numpy as np
 from datetime import datetime
 
+def log(message, level="INFO", context=None):
+    prefix = f"[{level}]"
+    if context:
+        prefix += f" [{context}]"
+    print(f"{prefix} {message}")
+
 
 def process_apartment(apartment, catalog, weather_info, publisher,
                       base_topic, adaptor_base, base_settings=None):
     apartment_id = apartment['apartmentId']
-    print(f"\nProcessing Apartment: {apartment_id}")
+    log("Processing apartment", context=apartment_id)
 
     if base_settings is None:
         base_settings = catalog.get("base_settings")
@@ -28,7 +34,7 @@ def process_apartment(apartment, catalog, weather_info, publisher,
 
     for room in apartment["rooms"]:
         room_id = room["roomId"]
-        print(f"  Processing Room: {room_id}")
+        log("Processing room", context=f"{apartment_id}/{room_id}")
 
         user_id = apartment["users"][0]
         measures = ["Temperature", "Humidity", "CO2", "PM10", "VOC"]
@@ -37,13 +43,13 @@ def process_apartment(apartment, catalog, weather_info, publisher,
         for measure in measures:
             fetched = fetch_data(adaptor_base, user_id, apartment_id, measure, duration="168")
             if not fetched:
-                print(f"No data fetched for {measure}")
+                log(f"No data fetched for {measure}", level="WARN", context=f"{apartment_id}/{room_id}")
                 continue
             room_filtered = [e for e in fetched if e.get("room") == room_id]
             measure_data[measure] = room_filtered
 
         if any(not measure_data.get(m) for m in ["Temperature", "Humidity", "CO2"]):
-            print(f"Missing core data in {room_id}, skipping.")
+            log("Missing Temperature/Humidity/CO2 data, skipping room", level="WARN", context=f"{apartment_id}/{room_id}")
             continue
 
         # Compute averages
@@ -71,7 +77,7 @@ def process_apartment(apartment, catalog, weather_info, publisher,
         adaptive_range = adaptive_comfort["Acceptable Range"].get(cat_label) if adaptive_comfort else None
 
         if not adaptive_range:
-            print(f"Missing adaptive range for {cat_label}, skipping room.")
+            log(f"Missing adaptive range for {cat_label}, skipping room", level="WARN", context=f"{apartment_id}/{room_id}")
             continue
 
         temp_class = classify_temperature(avg_temp, season, t_ext, settings, adaptive_range)
@@ -135,7 +141,7 @@ def process_apartment(apartment, catalog, weather_info, publisher,
         )
 
         if tenant_suggestions:
-                print(f"Generated {len(tenant_suggestions)} suggestions for room {room_id}")
+                log(f"Generated {len(tenant_suggestions)} tenant suggestions", context=f"{apartment_id}/{room_id}")
 
         feedback = fetch_feedback(adaptor_base, user_id, apartment_id, room_id)
 
@@ -181,3 +187,5 @@ def process_apartment(apartment, catalog, weather_info, publisher,
         publish_alerts(publisher, base_topic, apartment_id, room_id, classifications)
         publish_tenant_suggestions(publisher, base_topic, apartment_id, room_id, tenant_suggestions)
         publish_technical_suggestions(publisher, base_topic, apartment_id, room_id, tech_suggestions)
+
+        log("Finished processing room", context=f"{apartment_id}/{room_id}")

@@ -1,6 +1,16 @@
 # publisher_service.py
 import time
 import json
+from datetime import datetime
+
+def log(message, level="INFO", context=None):
+    # timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # prefix = f"[{timestamp}] [{level}]"
+    prefix = f"[{level}]"
+    if context:
+        prefix += f" [{context}]"
+    print(f"{prefix} {message}")
+
 
 
 def publish_room_metrics(publisher, base_topic, apartment_id, room_id, metrics):
@@ -44,8 +54,8 @@ def publish_room_metrics(publisher, base_topic, apartment_id, room_id, metrics):
 
     for event in events:
         payload = {"bn": topic, "e": [event]}
-        print(f"\n Publishing event: {event['n']} to topic: {topic}")
-        print(json.dumps(payload, indent=2))
+        log(f"Publishing event: {event['n']}", level="DEBUG", context=f"{apartment_id}/{room_id}")
+        #print(json.dumps(payload, indent=2))
         publisher.myPublish(json.dumps(payload), topic)
 
 
@@ -66,7 +76,8 @@ def publish_tenant_suggestions(publisher, base_topic, apartment_id, room_id, sug
                 "v": tip
             }]
         }
-        print(f"\n Publishing tenant suggestion for {metric} in {room_id}: {tip}")
+        log(f"Tenant suggestion: {metric} = '{tip}'", level="DEBUG", context=f"{apartment_id}/{room_id}")
+        #print(json.dumps(payload, indent=2))
         publisher.myPublish(json.dumps(event), topic)
 
 
@@ -87,7 +98,8 @@ def publish_technical_suggestions(publisher, base_topic, apartment_id, room_id, 
                 "v": tip
             }]
         }
-        print(f"\n Publishing technical suggestion for {key} in {room_id}: {tip}")
+        log(f"Technical suggestion: {key} = '{tip}'", level="DEBUG", context=f"{apartment_id}/{room_id}")
+        #print(json.dumps(payload, indent=2))
         publisher.myPublish(json.dumps(event), topic)
 
 
@@ -107,7 +119,8 @@ def publish_alerts(publisher, base_topic, apartment_id, room_id, classifications
                     "v": f"{metric} classified as {label}"
                 }]
             }
-            print(f"\n Alert for {room_id} - {metric}: {label}")
+            log(f"ALERT: {metric} classified as {label}", level="WARN", context=f"{apartment_id}/{room_id}")
+            #print(json.dumps(payload, indent=2))
             publisher.myPublish(json.dumps(alert_event), topic)
 
 
@@ -137,14 +150,15 @@ class MyPublisher:
         try:
             self._paho_mqtt.connect(self.messageBroker, self.port)
             self._paho_mqtt.loop_start()
-            print(f"[{self.clientID}] Connecting to MQTT broker at {self.messageBroker}:{self.port}")
+            log(f"Connecting to MQTT broker at {self.messageBroker}:{self.port}", context=self.clientID)
         except Exception as e:
-            print(f"[{self.clientID}] Failed to connect to MQTT broker: {e}")
+            log(f"Failed to connect to MQTT broker: {e}", level="ERROR", context=self.clientID)
 
     def stop(self):
         self._paho_mqtt.loop_stop()
         self._paho_mqtt.disconnect()
-        print(f"[{self.clientID}] Disconnected from MQTT broker.")
+        log("Disconnected from MQTT broker.", context=self.clientID)
+
 
     def myPublish(self, message, topic):
         try:
@@ -153,21 +167,23 @@ class MyPublisher:
 
             # Log message size in bytes
             payload_size = len(message.encode("utf-8"))
-            print(f"[{self.clientID}] Publishing to topic '{clean_topic}' | Payload size: {payload_size} bytes")
+            log(f"Publishing to '{clean_topic}' | Size: {payload_size} bytes", level="DEBUG", context=self.clientID)
 
             result = self._paho_mqtt.publish(clean_topic, message, self.qos, retain=False)
 
             if result.rc != PahoMQTT.MQTT_ERR_SUCCESS:
-                print(f"[{self.clientID}] Publish failed with result code {result.rc}")
+                log(f"Publish failed with result code {result.rc}", level="ERROR", context=self.clientID)
         except Exception as e:
-            print(f"[{self.clientID}] Exception during publish: {e}")
+            log(f"Exception during publish: {e}", level="ERROR", context=self.clientID)
+
 
     def myOnConnect(self, client, userdata, flags, rc, properties=None):
         if rc == 0:
-            print(f"[{self.clientID}] Successfully connected to broker.")
+            log("Successfully connected to broker.", context=self.clientID)
         else:
-            print(f"[{self.clientID}] Connection failed with code {rc}")
+            log(f"Connection failed with code {rc}", level="ERROR", context=self.clientID)
 
     def myOnPublish(self, client, userdata, mid):
-        print(f"[{self.clientID}] Message published with mid: {mid}")
+        log(f"Message published (mid: {mid})", level="DEBUG", context=self.clientID)
+
 

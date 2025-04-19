@@ -1,4 +1,13 @@
+#tenant_suggetsions.py
 from datetime import datetime
+
+def log(message, level="INFO", context=None):
+    # timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # prefix = f"[{timestamp}] [{level}]"
+    prefix = f"[{level}]"
+    if context:
+        prefix += f" [{context}]"
+    print(f"{prefix} {message}")
 
 # --- Simple trend detection over a list of values ---
 def detect_trend(data, threshold=0.2):
@@ -180,8 +189,11 @@ def get_tenant_suggestions(classifications, temp=None, humidity=None, co2=None, 
         filtered = {k: v for k, v in all_suggestions.items() if k in enabled_suggestions}
         skipped = set(all_suggestions) - set(filtered)
         if skipped:
-            print(f"[Suggestions] Skipped disabled suggestions: {', '.join(skipped)}")
+            log(f"Skipped disabled suggestions: {', '.join(skipped)}", level="DEBUG", context="Suggestions")
+        if filtered:
+            log(f"Returning {len(filtered)} tenant suggestions", context="Suggestions")
         return filtered
 
+    log(f"Returning {len(all_suggestions)} tenant suggestions (no filtering applied)", context="Suggestions")
     return all_suggestions
 

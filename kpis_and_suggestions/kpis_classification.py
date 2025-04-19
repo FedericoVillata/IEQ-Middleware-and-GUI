@@ -1,4 +1,15 @@
+#kpis_classification.py
 import numpy as np
+from datetime import datetime
+
+
+def log(message, level="INFO", context=None):
+    # timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # prefix = f"[{timestamp}] [{level}]"
+    prefix = f"[{level}]"
+    if context:
+        prefix += f" [{context}]"
+    print(f"{prefix} {message}")
 
 # -----------------------------
 # Basic Classifications
@@ -9,12 +20,15 @@ def classify_temperature(temp, season, t_ext, settings, adaptive_range=None):
     ventilation = settings["values"].get("ventilation")
 
     if temp == -999:
+        log("Temperature is -999, cannot classify", level="WARN", context="classify_temperature")
         return "Unknown"
+    
 
     if ventilation == "nat":
         t_comf = 0.33 * t_ext + 18.8
 
         if adaptive_range is None:
+            log("Missing adaptive_range for natural ventilation", level="ERROR", context="classify_temperature")
             raise ValueError("adaptive_range must be provided for natural ventilation classification")
 
         cat_min, cat_max = adaptive_range
@@ -56,6 +70,7 @@ def classify_temperature(temp, season, t_ext, settings, adaptive_range=None):
 def classify_humidity(humidity, settings):
     thresholds = settings["thresholds"]["humidity"]
     if humidity == -999:
+        log("Humidity is -999, cannot classify", level="WARN", context="classify_humidity")
         return "Unknown"
 
     if isinstance(thresholds["G"], list):
@@ -84,6 +99,7 @@ def classify_co2(co2, settings):
     ventilation = settings["values"].get("ventilation")
 
     if co2 == -999:
+        log("CO2 is -999, cannot classify", level="WARN", context="classify_co2")
         return "Unknown"
 
     key = f"co2_{'mechanical' if ventilation == 'mech' else 'natural'}"
@@ -198,7 +214,9 @@ def classify_generic(metric, thresholds):
     elif "Extreme" in thresholds:
         return "Extreme"
     else:
+        log(f"Metric {metric} did not match thresholds", level="WARN", context="classify_generic")
         return "Unknown"
+
 
 def classify_pmv(pmv, settings):
     thresholds = settings["thresholds"]["pmv_classification"]
@@ -218,7 +236,9 @@ def classify_pmv(pmv, settings):
                 return label
             elif label == "Warm" and thresholds["Slightly Warm"] < pmv <= bound:
                 return label
+    log(f"PMV value {pmv} did not match any classification", level="WARN", context="classify_pmv")
     return "Unknown"
+
 
 def classify_ppd(ppd, settings):
     thresholds = settings["thresholds"]["ppd_classification"]
@@ -251,6 +271,8 @@ def overall_score(classifications, settings):
         score = label_to_score.get(label, 0)
         normalized_score = (score / 3) * weight  # scale to weighted percentage
         total_score += normalized_score
+
+    #log(f"{metric}: label={label}, score={score}, weight={weight}, normalized={normalized_score:.2f}", level="DEBUG", context="overall_score")
 
     return round(total_score)
 
