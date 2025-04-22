@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import socket
 import requests
 import json
 import time
@@ -7,17 +8,23 @@ import paho.mqtt.client as PahoMQTT
 
 def get_users(registry_url):
     users_url = f"{registry_url}/users"
-    response = requests.get(users_url)
-    if response.status_code != 200:
-        raise Exception(f"Failed to fetch users data: {response.status_code}")
-    return response.json()
+    try:
+        response = requests.get(users_url)
+        response.raise_for_status()  # Solleva un'eccezione per codici di stato HTTP non 200
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching users: {e}")
+        return []
 
 def get_apartments(registry_url):
     apartments_url = f"{registry_url}/apartments"
-    response = requests.get(apartments_url)
-    if response.status_code != 200:
-        raise Exception(f"Failed to fetch apartments data: {response.status_code}")
-    return response.json()
+    try:
+        response = requests.get(apartments_url)
+        response.raise_for_status()  
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching apartments: {e}")
+        return []
 
 def process_capetti_data(apartment_data):
     sensor_room_mapping = {}
@@ -44,17 +51,20 @@ class CapettiAPI:
     def get_user_token(self):
         url = f'{self.base_url}?action=getUserToken&Login={self.username}&RESTLicense={self.rest_license}'
         headers = {'Content-Type': 'application/json'}
-        response = requests.post(url=url, headers=headers, verify=True)
+        try:
+            response = requests.post(url=url, headers=headers, verify=True)
+            response.raise_for_status()  # Solleva un'eccezione per codici di stato HTTP non 200
 
-        if response.status_code == 200:
             self.token = response.json().get('UserToken')
             if self.token:
                 print("User token retrieved successfully.")
             else:
                 print("Error: Token not found in response.")
-        else:
-            print(f"Error retrieving user token: {response.status_code}")
-            print("Response Content:", response.content)
+        except requests.exceptions.RequestException as e:
+            print(f"Error retrieving user token: {e}")
+        except json.JSONDecodeError as e:
+            print(f"Error parsing token response: {e}")
+
 
     def get_sensor_list(self, first_request, user_id):
         if not self.token:
@@ -89,7 +99,7 @@ class CapettiAPI:
 
         if first_request:
             date_to = int(time.time())  # Timestamp current
-            date_from = date_to - int(timedelta(days=1).total_seconds())  
+            date_from = date_to - int(timedelta(days=30).total_seconds())  
             print(f"Fetching data for the last 24 hours from {datetime.fromtimestamp(date_from)} to {datetime.fromtimestamp(date_to)}")
 
             # one hour block
@@ -99,7 +109,7 @@ class CapettiAPI:
                 print(f"Fetching data from {datetime.fromtimestamp(current_start)} to {datetime.fromtimestamp(current_end)}")
                 self.get_history_values(date_from=current_start, date_to=current_end)
                 current_start = current_end
-                time.sleep(2)
+                time.sleep(3)
         else:
             self.get_current_values()
 
@@ -201,7 +211,7 @@ class CapettiAPI:
         }
 
         pubTopic = f"IEQmidAndGUI/{self.apartment_id}/sensorData"
-        myPub = MyPublisher("54234", pubTopic)
+        myPub = MyPublisher("54238", pubTopic)
         myPub.start()
 
         Event = []
@@ -269,8 +279,6 @@ class CapettiAPI:
             print(response.content)
             return
 
-        myPub = MyPublisher("54234")
-        myPub.start()
         channel_type_mapping = {
         1: ("Temperature", "Celsius"),
         2: ("Humidity", "%"),
@@ -334,7 +342,7 @@ class CapettiAPI:
         }
 
         pubTopic = f"IEQmidAndGUI/{self.apartment_id}"
-        myPub = MyPublisher("54234",pubTopic)
+        myPub = MyPublisher("54238",pubTopic)
         myPub.start()
 
         for item in data:
@@ -365,7 +373,7 @@ class CapettiAPI:
                 out = {"bn": pubTopic, "e": [event]}
                 print(f"Publishing message: {out}")
                 myPub.myPublish(json.dumps(out), pubTopic)
-            time.sleep(0.1)
+            
 
 class MyPublisher:
     def __init__(self, clientID,topic):
@@ -383,18 +391,23 @@ class MyPublisher:
         self.port = self.settings["brokerPort"]
         self.qos = self.settings["qos"]
 
-    def start(self, timeout=5):
-        self._paho_mqtt.connect(self.messageBroker, self.port)
-        self._paho_mqtt.loop_start()
+    def start(self, timeout=30):
+        try:
+            self._paho_mqtt.connect(self.messageBroker, self.port)
+            self._paho_mqtt.loop_start()
 
-        # Wait until connected or timeout
-        waited = 0
-        while not self.connected and waited < timeout:
-            time.sleep(0.1)
-            waited += 0.1
+            # Wait until connected or timeout
+            waited = 0
+            while not self.connected and waited < timeout:
+                time.sleep(0.1)
+                waited += 0.1
 
-        if not self.connected:
-            print("⚠️ MQTT client failed to connect within timeout.")
+            if not self.connected:
+                print("⚠️ MQTT client failed to connect within timeout.")
+        except socket.timeout:
+            print("❌ Connection to MQTT broker timed out.")
+        except Exception as e:
+            print(f"❌ Unexpected error during MQTT connection: {e}")
 
     def stop(self):
         self._paho_mqtt.loop_stop()
@@ -404,13 +417,24 @@ class MyPublisher:
         while not self.connected:
             print("Waiting for MQTT connection to restore...")
             time.sleep(0.2)
+            self.start()
 
-        attempts = 0
-        # while attempts < retries:
+        if not self.connected:
+            print("❌ Not connected to broker. Attempting to reconnect...")
+            try:
+                self.start()  
+            except Exception as e:
+                print(f"❌ Reconnection failed: {e}")
+                return
+
         info = self._paho_mqtt.publish(topic, message, self.qos)
 
         if info.rc == PahoMQTT.MQTT_ERR_SUCCESS:
             print(f"✅ Message with topic {topic} published successfully")
+        elif info.rc == PahoMQTT.MQTT_ERR_NO_CONN:
+            print("❌ Publish failed: No connection to broker.")
+        elif info.rc == PahoMQTT.MQTT_ERR_QUEUE_SIZE:
+            print("❌ Publish failed: Message queue is full.")
         else:
             print(f"⚠️ Publish failed with error code: {info.rc}")
 
@@ -425,37 +449,38 @@ if __name__ == '__main__':
     with open('./config_capetti.json') as config_file:
         config = json.load(config_file)
 
-    users = get_users(registry_url=config["registry_url"])
-    apartments = get_apartments(registry_url=config["registry_url"])
+    while True:  
+        users = get_users(registry_url=config["registry_url"])
+        apartments = get_apartments(registry_url=config["registry_url"])
 
-    for apartment in apartments:
-        try:
-            mac_address, sensor_room_mapping = process_capetti_data(apartment)
-        except Exception as e:
-            print(e)
-            continue
+        for apartment in apartments:
+            try:
+                mac_address, sensor_room_mapping = process_capetti_data(apartment)
+            except Exception as e:
+                print(e)
+                continue
 
-        apartment_id = apartment['apartmentId']
-        apartment_users = [
-            user for user in users if apartment_id in user.get('apartments', [])
-        ]
+            apartment_id = apartment['apartmentId']
+            apartment_users = [
+                user for user in users if apartment_id in user.get('apartments', [])
+            ]
 
-        for user in apartment_users:  # Itera sugli utenti associati all'appartamento
-            user_id = user['userId']
-            print(f"Processing user: {user_id} for apartment: {apartment_id}")
+            for user in apartment_users:  # Itera sugli utenti associati all'appartamento
+                user_id = user['userId']
+                print(f"Processing user: {user_id} for apartment: {apartment_id}")
 
-            capetti = CapettiAPI(
-                username=config["username"],  # Usa l'userId corretto
-                rest_license=config['rest_license'],
-                mac=mac_address,
-                capetti_url=config["capetti_url"],
-                apartment_id=apartment_id,
-                sensor_room_mapping=sensor_room_mapping
-            )
+                capetti = CapettiAPI(
+                    username=config["username"],  # Usa l'userId corretto
+                    rest_license=config['rest_license'],
+                    mac=mac_address,
+                    capetti_url=config["capetti_url"],
+                    apartment_id=apartment_id,
+                    sensor_room_mapping=sensor_room_mapping
+                )
 
-            capetti.get_user_token()
-
-            while True:
+                capetti.get_user_token()
                 capetti.get_sensor_list(capetti.first_request, user_id)
                 capetti.first_request = False
-                time.sleep(3600)  # 1 hours
+
+        print("Waiting for the next cycle...")
+        time.sleep(3600)  # 1 hour
