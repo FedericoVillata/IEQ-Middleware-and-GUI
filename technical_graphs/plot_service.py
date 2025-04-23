@@ -25,6 +25,35 @@ class PlotService:
     ADAPTOR_BASE = "http://adaptor:8080"
     REGISTRY_BASE = "http://registry:8081"  # If needed, though we no longer use it for color scales.
 
+    def _aggregate_every_15min(self, time_value_pairs):
+        """
+        Return a list of (bucket_start, average_value) tuples,
+        grouping raw samples into 15-minute buckets.
+
+        Args:
+            time_value_pairs (List[Tuple[datetime, float]]):
+                Assumes the list is already sorted by timestamp.
+
+        Returns:
+            List[Tuple[datetime, float]]: Aggregated 15-minute series.
+        """
+        bucket_stats = defaultdict(lambda: {"sum": 0.0, "count": 0})
+        for dt, val in time_value_pairs:
+            # Floor to the previous 15-minute slot (e.g. 13:07 → 13:00).
+            minute_slot = (dt.minute // 15) * 15
+            bucket_start = dt.replace(minute=minute_slot,
+                                      second=0,
+                                      microsecond=0)
+            stats = bucket_stats[bucket_start]
+            stats["sum"]   += val
+            stats["count"] += 1
+
+        aggregated = [
+            (t, s["sum"] / s["count"]) for t, s in bucket_stats.items()
+        ]
+        aggregated.sort(key=lambda x: x[0])
+        return aggregated
+    
     # Fixed ranges for each measure when generating the carpet plot
     # Any measure not listed here defaults to (0,100).
     CARPET_RANGES = {
@@ -194,6 +223,23 @@ class PlotService:
                 durationH = int(duration_str)
             except:
                 pass
+        
+        if durationH <= 168:
+    # 15-minute resolution
+            times_values = self._aggregate_every_15min(times_values)
+        else:
+            # Daily averages (legacy behaviour)
+            day_map = defaultdict(lambda: {"sum": 0.0, "count": 0})
+            for dt, val in times_values:
+                d_key = dt.strftime("%Y-%m-%d")
+                day_map[d_key]["sum"]   += val
+                day_map[d_key]["count"] += 1
+
+            times_values = [
+                (datetime.strptime(k, "%Y-%m-%d"), v["sum"] / v["count"])
+                for k, v in day_map.items()
+            ]
+            times_values.sort(key=lambda x: x[0])
 
         if durationH > 168:
             from collections import defaultdict
@@ -341,6 +387,7 @@ class PlotService:
         if download == "png":
             cherrypy.response.headers["Content-Disposition"] = 'attachment; filename="nodata.png"'
         return buf.getvalue()
+    
 
 def CORS():
     cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"

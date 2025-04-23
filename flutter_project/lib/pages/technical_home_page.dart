@@ -203,6 +203,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
             ],
           ),
 
+          const SizedBox(height: 20),
           // The main chart area
           Expanded(
             child: Center(
