@@ -80,7 +80,7 @@ if __name__ == '__main__':
     pubTopic = "IEQmidAndGUI/apartment0/sensorData"
     pubTopic2 = "IEQmidAndGUI/apartment0/sensorData"
     print(pubTopic)
-    myPub = MyPublisher("54234", pubTopic)
+    myPub = MyPublisher("542340032", pubTopic)
     myPub.start()
     while True:              
         event = {"n": "Temperature/room0/sensor0", "u": "Celsius", "t": str(time.time()), "v": 30}#VolumetricWaterContent
