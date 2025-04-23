@@ -63,7 +63,8 @@ def publish_tenant_suggestions(publisher, base_topic, apartment_id, room_id, sug
     if not suggestions:
         return
 
-    topic = f"{base_topic}/{apartment_id}/tenant_suggestion"
+    topic = f"{base_topic}/{apartment_id}/technical_suggestion"
+    #topic = f"{base_topic}/{apartment_id}/tenant_suggestion"
     timestamp = time.time()
 
     for metric, tip in suggestions.items():
@@ -76,7 +77,7 @@ def publish_tenant_suggestions(publisher, base_topic, apartment_id, room_id, sug
                 "v": tip
             }]
         }
-        log(f"Tenant suggestion: {metric} = '{tip}'", level="DEBUG", context=f"{apartment_id}/{room_id}")
+        log(f"Technical suggestion: {metric} = '{tip}'", level="DEBUG", context=f"{apartment_id}/{room_id}")
         #print(json.dumps(payload, indent=2))
         publisher.myPublish(json.dumps(event), topic)
 
@@ -168,6 +169,7 @@ class MyPublisher:
             # Log message size in bytes
             payload_size = len(message.encode("utf-8"))
             log(f"Publishing to '{clean_topic}' | Size: {payload_size} bytes", level="DEBUG", context=self.clientID)
+            print(message)
 
             result = self._paho_mqtt.publish(clean_topic, message, self.qos, retain=False)
 

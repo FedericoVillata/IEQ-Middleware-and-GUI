@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
      # wait_for_data()  # Commented out for debug purposes
 
-    INTERVAL_SECONDS = 30 * 60
+    INTERVAL_SECONDS = 0.5 * 60
 
     while True:
         print("Starting new KPI cycle...")
