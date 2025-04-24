@@ -1,5 +1,7 @@
 # apartment_processor.py
 
+from collections import defaultdict, Counter
+
 from publisher_service import (
     publish_room_metrics,
     publish_tenant_suggestions,
@@ -15,6 +17,61 @@ from kpis_classification import *
 import numpy as np
 from datetime import datetime
 
+# Map labels to scores for each classification category
+LABEL_SCORE_MAP = {
+    "temp_class": {
+        "Extreme": 0,
+        "R": 1,
+        "Y": 2,
+        "G": 4
+    },
+    "hum_class": {
+        "Extreme": 0,
+        "R": 1,
+        "Y": 2,
+        "G": 4
+    },
+    "co2_class": {
+        "Extreme": 0,
+        "R": 1,
+        "Y": 2,
+        "G": 3,
+        "Too Good": 4
+    },
+    "pmv_class": {
+        "Very Cold": 0,
+        "Cold": 1,
+        "Slightly Cold": 2,
+        "Neutral": 4,
+        "Slightly Warm": 2,
+        "Warm": 1,
+        "Very Warm": 0
+    },
+    "ppd_class": {
+        "Extreme": 0,
+        "R": 1,
+        "Y": 2,
+        "G": 4
+    },
+    "icone_class": {
+        "R": 1,
+        "Y": 2,
+        "G": 4
+    },
+    "ieqi_class": {
+        "R": 1,
+        "Y": 2,
+        "G": 4
+    },
+    "env_score": {
+        "R": 1,
+        "Y": 2,
+        "G": 4
+    }
+}
+
+
+
 def log(message, level="INFO", context=None):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     prefix = f"[{timestamp}] [{level}]"
@@ -26,6 +83,7 @@ def log(message, level="INFO", context=None):
 def process_apartment(apartment, catalog, weather_info, publisher,
                       base_topic, adaptor_base, base_settings=None):
     apartment_id = apartment['apartmentId']
+
     log("Processing apartment", context=apartment_id)
 
     if base_settings is None:
@@ -33,29 +91,58 @@ def process_apartment(apartment, catalog, weather_info, publisher,
     settings = apartment.get("settings", base_settings)
 
     season = "warm" if 4 <= datetime.now().month <= 9 else "cold"
-    user_id = apartment["users"][0]
+    user_list = apartment.get("users", [])
+    if not user_list:
+        log("No user associated with apartment, skipping", level="ERROR", context=apartment.get("apartmentId"))
+        return
+    user_id = user_list[0]
+
     feedback = fetch_feedback(adaptor_base, user_id, apartment_id)
 
-    apartment_classifications = {}
-    apartment_metrics = {
-        "temperature": [],
-        "humidity": [],
-        "t_ext": []
-    }
+    # ROOM DATA AGGREGATION BY APARTMENT
+    # Dictionary to collect all room classifications grouped by category (e.g., temp_class, co2_class, etc.)
+    apartment_classifications = defaultdict(list)
 
+    # Dictionary to store numeric metrics (e.g., temperature, humidity) for the apartment
+    apartment_metrics = defaultdict(list)
+
+    # Dictionary to count how many times each classification label (G, Y, R, etc.) appears per category
+    label_counter = defaultdict(Counter)
+
+    # Loop through each room in the apartment
     for room in apartment["rooms"]:
-        result = process_room(room, apartment_id, user_id, adaptor_base, catalog,
-                              settings, season, weather_info, publisher, base_topic)
+        result = process_room(
+            room,
+            apartment_id,
+            user_id,
+            adaptor_base,
+            catalog,
+            settings,
+            season,
+            weather_info,
+            publisher,
+            base_topic
+        )
+
+        # If the room returned valid results
         if result:
             classif, metrics = result
-            for k, v in classif.items():
-                apartment_classifications.setdefault(k, []).append(v)
-            for k, v in metrics.items():
-                apartment_metrics[k].append(v)
+
+            # Aggregate classification labels and count their occurrences
+            for category, label in classif.items():
+                apartment_classifications[category].append(label)
+                label_counter[category][label] += 1
+
+            # Collect only valid (non-None) numeric values for averaging later
+            for metric_name, value in metrics.items():
+                if value is not None:
+                    apartment_metrics[metric_name].append(value)
+
+
 
     generate_technical_suggestions(
         apartment_id, apartment_classifications,
-        apartment_metrics, feedback, settings,
+        apartment_metrics, label_counter, feedback, settings,
         weather_info, publisher, base_topic
     )
 
@@ -71,11 +158,11 @@ def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
 
     avg_values, trends = compute_room_averages(data)
     classifications, t_ext, icone, ieqi, adaptive_comfort = classify_room_conditions(
-        avg_values, trends, data, settings, season
+        avg_values, trends, data, settings, season, weather_info
     )
 
 
-    if not classifications:
+    if not classifications or not isinstance(classifications, dict):
         return None
 
     suggestions = generate_room_suggestions(
@@ -139,6 +226,9 @@ def compute_room_averages(measure_data):
     def average(measurements):
         return np.mean([d["v"] for d in measurements]) if measurements else None
 
+    def last_n(data, n=3):
+        return data[-n:] if len(data) >= n else data
+
     avg_temp = average(measure_data.get("Temperature", []))
     avg_humidity = average(measure_data.get("Humidity", []))
     avg_co2 = average(measure_data.get("CO2", []))
@@ -146,11 +236,11 @@ def compute_room_averages(measure_data):
     avg_tvoc = average(measure_data.get("VOC", []))
 
     trends = {
-        "temperature": detect_trend([d["v"] for d in measure_data["Temperature"]][-3:]),
-        "humidity": detect_trend([d["v"] for d in measure_data["Humidity"]][-3:]),
-        "co2": detect_trend([d["v"] for d in measure_data["CO2"]][-3:]),
-        "voc": detect_trend([d["v"] for d in measure_data.get("VOC", [])][-3:] if measure_data.get("VOC") else []),
-        "pm10": detect_trend([d["v"] for d in measure_data.get("PM10", [])][-3:] if measure_data.get("PM10") else [])
+        "temperature": detect_trend(last_n([d["v"] for d in measure_data.get("Temperature", [])])),
+        "humidity": detect_trend(last_n([d["v"] for d in measure_data.get("Humidity", [])])),
+        "co2": detect_trend(last_n([d["v"] for d in measure_data.get("CO2", [])])),
+        "voc": detect_trend(last_n([d["v"] for d in measure_data.get("VOC", [])])),
+        "pm10": detect_trend(last_n([d["v"] for d in measure_data.get("PM10", [])])),
     }
 
     avg_values = {
@@ -163,7 +253,7 @@ def compute_room_averages(measure_data):
 
     return avg_values, trends
 
-def classify_room_conditions(avg_values, trends, measure_data, settings, season):
+def classify_room_conditions(avg_values, trends, measure_data, settings, season, weather_info):
     avg_temp = avg_values["avg_temp"]
     avg_humidity = avg_values["avg_humidity"]
     avg_co2 = avg_values["avg_co2"]
@@ -171,21 +261,38 @@ def classify_room_conditions(avg_values, trends, measure_data, settings, season)
     avg_tvoc = avg_values["avg_tvoc"]
 
     if avg_temp is None or avg_humidity is None or avg_co2 is None:
-        return None, None
+        return None, None, None, None, None
 
-    # Determine adaptive comfort
-    outdoor_temps = [d.get("outdoor_temp", avg_temp) for d in measure_data["Temperature"]][-7:]
+    # Get fallback temperature from weather_info
+    external_temp_fallback = weather_info.get("temperature", avg_temp)
+
+    # Build outdoor temperature series using fallback if necessary
+    temp_series = [
+        d.get("outdoor_temp") if d.get("outdoor_temp") is not None else external_temp_fallback
+        for d in measure_data.get("Temperature", [])
+    ]
+
+    if len(temp_series) < 7:
+        log(f"Only {len(temp_series)} external temp values found, filling with fallback where needed", level="WARN", context="adaptive_comfort")
+
+    # Use last 7 or fill missing values with fallback if list is empty
+    if not temp_series:
+        temp_series = [external_temp_fallback] * 7
+
+    outdoor_temps = temp_series[-7:] if len(temp_series) >= 7 else temp_series
+    log(f"Outdoor temps used for adaptive comfort: {outdoor_temps}", level="DEBUG", context="adaptive_comfort")
+
     adaptive_comfort = adaptive_thermal_comfort(outdoor_temps)
+
     if not adaptive_comfort:
-        return None, None
+        return None, None, None, None, None
 
     running_mean_temp = adaptive_comfort.get("Running Mean Temperature", avg_temp)
     cat_num = settings["thresholds"].get("adaptive_temp_category", 2)
     cat_label = f"Cat {'I' if cat_num == 1 else 'II' if cat_num == 2 else 'III'}"
     adaptive_range = adaptive_comfort["Acceptable Range"].get(cat_label)
     if not adaptive_range:
-        return None, None
-
+        return None, None, None, None, None
     # Classifications
     temp_class = classify_temperature(avg_temp, season, running_mean_temp, settings, adaptive_range)
     hum_class = classify_humidity(avg_humidity, settings)
@@ -248,7 +355,12 @@ def generate_room_suggestions(room, catalog, classifications, avg_values, t_ext,
     suggestion_settings["values"] = context_values
 
     # Get enabled tenant suggestion names for this room
-    enabled_ids = {s["suggestionId"] for s in room.get("suggestions", []) if s.get("state", 0) == 1}
+    suggestions_list = room.get("suggestions", [])
+    if not isinstance(suggestions_list, list):
+        log("Invalid 'suggestions' structure", level="WARN", context=room.get("roomId"))
+        suggestions_list = []
+
+    enabled_ids = {s["suggestionId"] for s in suggestions_list if s.get("state", 0) == 1}
     id_to_name = {s["suggestionId"]: s["suggestionName"] for s in catalog.get("tenant_suggestions", [])}
     enabled_names = {id_to_name.get(sid) for sid in enabled_ids if id_to_name.get(sid)}
 
@@ -272,25 +384,68 @@ def generate_room_suggestions(room, catalog, classifications, avg_values, t_ext,
     return tenant_suggestions
 
 def generate_technical_suggestions(apartment_id, apartment_classifications,
-                                   apartment_metrics, feedback, settings,
-                                   weather_info, publisher, base_topic):
-    def reduce_class(class_list):
-        # Higher number means more critical
-        priority = {
-            "G": 1, "Y": 2, "R": 3,
-            "Neutral": 1, "Cold": 2, "Hot": 2,
-            "Very Cold": 4, "Very Warm": 4, "Extreme": 4
-        }
-        return max(set(class_list), key=lambda c: priority.get(c, 0))
+                                   apartment_metrics, label_counter, feedback, 
+                                   settings, weather_info, publisher, base_topic):
+    
+    def safe_mean(values):
+        valid = [v for v in values if v is not None]
+        return np.mean(valid) if valid else None
+    
+    def reduce_class(label_count: Counter, category,
+                    guard_ratio: float = 0.45) -> str:
+        """
+        Hybrid reducer:
+        1. Compute severity score (G=4 … Extreme=0) based on LABEL_SCORE_MAP.
+        2. Map average score back to a label.
+        3. Guard-rail: if >= guard_ratio of rooms are 'R'
+        or any room is 'Extreme', override result.
+        """
+        if not label_count:
+            return "Unknown"
+
+        # --- numeric score ------------------------------------------
+        label_to_score = LABEL_SCORE_MAP.get(category)
+
+        if not label_to_score:
+            return "Unknown"  
+
+        total = sum(label_count.values())
+        critical_ratio = label_count.get("R", 0) / total
+        if label_count.get("Extreme", 0) > 0:
+            return "Extreme"
+        if critical_ratio >= guard_ratio:
+            return "R"
+        severity_sum = sum(label_to_score.get(label, 0) * count for label, count in label_count.items())
+        avg_score = severity_sum / total
+
+        # Define score thresholds dynamically if needed, or use static rules
+        if category == "pmv_class":
+            if   avg_score <= 0.5: return "Very Cold"
+            elif avg_score <= 1.5: return "Cold"
+            elif avg_score <= 2.5: return "Slightly Cold"
+            elif avg_score <= 3.5: return "Neutral"
+            elif avg_score <= 3.9: return "Slightly Warm"
+            elif avg_score <= 4.1: return "Warm"
+            else:                  return "Very Warm"
+        else:
+            if   avg_score >= 2.5: return "G"
+            elif avg_score >= 1.5: return "Y"
+            elif avg_score >= 0.5: return "R"
+            else: return "Extreme"
+
+
 
     reduced_classifications = {
-        k: reduce_class(v)
-        for k, v in apartment_classifications.items()
+        k: reduce_class(label_counter[k], category=k)
+        for k in apartment_classifications
     }
 
-    avg_temp = np.mean(apartment_metrics["temperature"]) if apartment_metrics["temperature"] else None
-    avg_hum = np.mean(apartment_metrics["humidity"]) if apartment_metrics["humidity"] else None
-    avg_t_ext = np.mean(apartment_metrics["t_ext"]) if apartment_metrics["t_ext"] else None
+
+
+    avg_temp = safe_mean(apartment_metrics["temperature"])
+    avg_hum = safe_mean(apartment_metrics["humidity"])
+    avg_t_ext = safe_mean(apartment_metrics["t_ext"])
+
 
 
     tech_suggestions = get_technical_suggestions(
