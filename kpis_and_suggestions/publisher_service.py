@@ -81,7 +81,7 @@ def publish_tenant_suggestions(publisher, base_topic, apartment_id, room_id, sug
         publisher.myPublish(json.dumps(event), topic)
 
 
-def publish_technical_suggestions(publisher, base_topic, apartment_id, room_id, suggestions):
+def publish_technical_suggestions(publisher, base_topic, apartment_id, suggestions):
     if not suggestions:
         return
 
@@ -92,13 +92,13 @@ def publish_technical_suggestions(publisher, base_topic, apartment_id, room_id, 
         event = {
             "bn": topic,
             "e": [{
-                "n": f"{room_id}/{key}",
+                "n": f"{key}",
                 "t": timestamp,
                 "u": "string",
                 "v": tip
             }]
         }
-        log(f"Technical suggestion: {key} = '{tip}'", level="DEBUG", context=f"{apartment_id}/{room_id}")
+        log(f"Technical suggestion: {key} = '{tip}'", level="DEBUG", context=apartment_id)
         #print(json.dumps(payload, indent=2))
         publisher.myPublish(json.dumps(event), topic)
 
