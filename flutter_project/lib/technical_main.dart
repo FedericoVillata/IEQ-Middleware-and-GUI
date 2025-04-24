@@ -74,14 +74,6 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Technical Interface - $selectedLocation"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              // Potential user profile logic
-            },
-          )
-        ],
       ),
       body: Row(
         children: [
