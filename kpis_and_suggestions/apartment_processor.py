@@ -440,21 +440,24 @@ def generate_technical_suggestions(apartment_id, apartment_classifications,
         for k in apartment_classifications
     }
 
-
-
     avg_temp = safe_mean(apartment_metrics["temperature"])
-    avg_hum = safe_mean(apartment_metrics["humidity"])
     avg_t_ext = safe_mean(apartment_metrics["t_ext"])
 
-
+    t_int = avg_temp
+    t_ext = (
+        avg_t_ext
+        if avg_t_ext is not None
+        else weather_info.get("temperature")
+        if weather_info else
+        t_int                                     
+    )
 
     tech_suggestions = get_technical_suggestions(
         classifications=reduced_classifications,
         feedback=feedback,
         metrics={
-            "temperature": avg_temp,
-            "humidity": avg_hum,
-            "t_ext": avg_t_ext
+            "temperature": t_int,
+            "t_ext": t_ext
         },
         settings=settings
     )
