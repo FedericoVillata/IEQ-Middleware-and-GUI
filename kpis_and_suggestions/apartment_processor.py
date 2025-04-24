@@ -288,9 +288,10 @@ def generate_technical_suggestions(apartment_id, apartment_classifications,
         for k, v in apartment_classifications.items()
     }
 
-    avg_temp = np.mean(apartment_metrics["temperature"])
-    avg_hum = np.mean(apartment_metrics["humidity"])
-    avg_t_ext = np.mean(apartment_metrics["t_ext"])
+    avg_temp = np.mean(apartment_metrics["temperature"]) if apartment_metrics["temperature"] else None
+    avg_hum = np.mean(apartment_metrics["humidity"]) if apartment_metrics["humidity"] else None
+    avg_t_ext = np.mean(apartment_metrics["t_ext"]) if apartment_metrics["t_ext"] else None
+
 
     tech_suggestions = get_technical_suggestions(
         classifications=reduced_classifications,

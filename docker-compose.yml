@@ -107,8 +107,9 @@ services:
       - registry
       - adaptor
     networks:
-      net:
-        ipv4_address: 192.68.0.30
+      - net
+      #net:
+        #ipv4_address: 192.68.0.30
     restart: on-failure
 
 

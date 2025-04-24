@@ -62,10 +62,9 @@ def fetch_data(adaptor_base, user_id, apartment_id, measure, start=None, end=Non
     log(f"Failed to fetch {measure} after {retries} attempts.", level="ERROR")
     return []
 
-
-def fetch_feedback(adaptor_base, user_id, apartment_id, room_id, duration=168):
+def fetch_feedback(adaptor_base, user_id, apartment_id, duration=168):
     try:
-        url = f"{adaptor_base}/getRoomData/{user_id}/{apartment_id}/{room_id}?measurement=feedback&duration={duration}"
+        url = f"{adaptor_base}/getApartmentData/{user_id}/{apartment_id}?measurement=feedback&duration={duration}"
         response = requests.get(url)
         if response.status_code == 200:
             raw_data = response.json()
