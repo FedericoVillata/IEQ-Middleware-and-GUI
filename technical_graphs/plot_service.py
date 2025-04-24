@@ -1,3 +1,4 @@
+import time
 import cherrypy
 import json
 from matplotlib import dates
@@ -11,6 +12,16 @@ from io import BytesIO, StringIO
 import csv
 from collections import defaultdict
 from matplotlib.colors import Normalize
+import os
+
+
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'plot_config.json')
+with open(CONFIG_PATH, 'r') as f:
+    config = json.load(f)
+
+ADAPTOR_BASE = config["adaptor_url"]
+REGISTRY_BASE = config["registry_url"]
+SERVICE_PORT = int(config["port"])
 
 class PlotService:
     """
@@ -20,10 +31,11 @@ class PlotService:
 
     Also exportCsv -> returns CSV data of a chosen measure.
     """
-
-    # The internal services – adjust these if needed in docker-compose.
-    ADAPTOR_BASE = "http://adaptor:8080"
-    REGISTRY_BASE = "http://registry:8081"  # If needed, though we no longer use it for color scales.
+    def __init__(self):
+        self.ADAPTOR_BASE  = ADAPTOR_BASE
+        self.REGISTRY_BASE = REGISTRY_BASE
+        self.DEFAULT_TIMEOUT = config.get("request_timeout", 30)
+        self.MAX_RETRIES     = config.get("max_retries", 3)
 
     def _aggregate_every_15min(self, time_value_pairs):
         """
@@ -53,21 +65,6 @@ class PlotService:
         ]
         aggregated.sort(key=lambda x: x[0])
         return aggregated
-    
-    # Fixed ranges for each measure when generating the carpet plot
-    # Any measure not listed here defaults to (0,100).
-    CARPET_RANGES = {
-        "temperature":   (-20, 50),
-        "humidity":      (0, 100),
-        "co2":           (0, 12000),
-        "pm10.0":        (0, 200),
-        "voc":           (0, 1000),
-        "overall_score": (0, 100),
-        "ieqi":          (0, 5),
-        "icone":         (0, 5),
-        "ppd":           (0, 100),
-        "pmv":           (-3, 3)
-    }
 
     @cherrypy.expose
     def generateCarpetPlot(self, **kwargs):
@@ -91,8 +88,8 @@ class PlotService:
         download = kwargs.get("download", None)
 
         # 1) Fetch data from the adaptor
-        data = self._fetch_data(userId, apartmentId, measure, start, end, duration)
-        if room:
+        data = self._fetch_data(userId, apartmentId, measure, start, end, duration, room)
+        if room and any("room" in d for d in data):
             data = [d for d in data if d.get("room") == room]
         if not data:
             return self._no_data_image(download)
@@ -129,8 +126,8 @@ class PlotService:
         # 4) Determine color scale
         #    We simply do a linear normalization from a fixed range.
         measure_lc = measure.lower()
-        if measure_lc in self.CARPET_RANGES:
-            vmin_val, vmax_val = self.CARPET_RANGES[measure_lc]
+        if measure_lc in config["carpet_ranges"]:
+            vmin_val, vmax_val = config["carpet_ranges"][measure_lc]
         else:
             # Fallback range
             vmin_val, vmax_val = (0, 100)
@@ -201,8 +198,8 @@ class PlotService:
         end = kwargs.get("end", None)
         download = kwargs.get("download", None)
 
-        data = self._fetch_data(userId, apartmentId, measure, start, end, duration_str)
-        if room:
+        data = self._fetch_data(userId, apartmentId, measure, start, end, duration_str, room)
+        if room and any("room" in d for d in data):
             data = [d for d in data if d.get("room") == room]
         if not data:
             return self._no_data_image(download)
@@ -315,7 +312,7 @@ class PlotService:
         cherrypy.response.headers["Content-Disposition"] = f'attachment; filename="{measure}_data.csv"'
 
         output = StringIO()
-        writer = csv.writer(output, delimiter=',', lineterminator='\n')
+        writer = csv.writer(output, delimiter=';', lineterminator='\n')
         writer.writerow(["timestamp", measure])
         for item in data:
             dt = self._parse_time(item["t"])
@@ -327,7 +324,7 @@ class PlotService:
     # ------------------------------------------------
     # Internal Helper Methods
     # ------------------------------------------------
-    def _fetch_data(self, userId, apartmentId, measure, start, end, duration):
+    def _fetch_data(self, userId, apartmentId, measure, start, end, duration, room=None):
         """
         If start/end => /getDatainPeriod
         else => /getApartmentData
@@ -340,20 +337,31 @@ class PlotService:
                 "stop":  f"{end}T23:59:59Z"
             }
         else:
-            url = f"{self.ADAPTOR_BASE}/getApartmentData/{userId}/{apartmentId}"
+            if room: 
+                url = f"{self.ADAPTOR_BASE}/getRoomData/{userId}/{apartmentId}/{room}"
+            else:
+                url = f"{self.ADAPTOR_BASE}/getApartmentData/{userId}/{apartmentId}"
             dur = duration if duration else "168"
             params = {"measurement": measure, "duration": dur}
 
-        results = []
-        try:
-            resp = requests.get(url, params=params, timeout=10)
-            if resp.status_code == 200:
-                results = resp.json()
-            else:
-                print("ERROR: adaptor returned status", resp.status_code)
-        except Exception as e:
-            print("ERROR in _fetch_data:", e)
-        return results
+        timeout  = self.DEFAULT_TIMEOUT
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                resp = requests.get(url, params=params, timeout=timeout)
+                if resp.status_code == 200:
+                    return resp.json()
+                print(f"[fetch_data] adaptor status {resp.status_code} – retry {attempt+1}")
+            except requests.exceptions.ReadTimeout:
+                print(f"[fetch_data] timeout after {timeout}s – retry {attempt+1}")
+            except Exception as e:
+                print("[fetch_data] other error:", e)
+                break          # per ConnectionError, ecc.
+
+            # back-off progressivo
+            timeout *= 2
+            time.sleep(1)
+
+        return []  
 
     def _parse_time(self, tstring):
         """
@@ -402,7 +410,7 @@ def CORS():
 def main():
     cherrypy.config.update({
         "server.socket_host": "0.0.0.0",
-        "server.socket_port": 9090
+        "server.socket_port": SERVICE_PORT
     })
 
     cherrypy.tools.CORS = cherrypy.Tool('before_handler', CORS)

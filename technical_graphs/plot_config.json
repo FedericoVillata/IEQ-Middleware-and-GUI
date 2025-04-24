@@ -1,0 +1,19 @@
+{
+  "adaptor_url": "http://adaptor:8080",
+  "registry_url": "http://registry:8081",
+  "port": 9090,
+  "request_timeout": 30,
+  "max_retries": 3,
+  "carpet_ranges": {
+    "temperature": [-20, 50],
+    "humidity": [0, 100],
+    "co2": [0, 12000],
+    "pm10.0": [0, 200],
+    "voc": [0, 1000],
+    "overall_score": [0, 100],
+    "ieqi": [0, 5],
+    "icone": [0, 5],
+    "ppd": [0, 100],
+    "pmv": [-3, 3]
+  }
+}
