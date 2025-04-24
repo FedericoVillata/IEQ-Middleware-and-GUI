@@ -396,7 +396,7 @@ class MySubscriber:
         return True
     def myOnMessageReceived(self, paho_mqtt, userdata, msg):
         """Push received messages to the queue instead of processing immediately"""
-        print("Message received on topic:", msg.topic, msg.payload)
+        print("Message received on topic:", msg.topic)
         self.message_queue.put(msg)
     def write_with_retry(self, bucket, record, retries=3, delay=1):
         for attempt in range(retries):
@@ -415,11 +415,11 @@ class MySubscriber:
                 try:
                     topic_parts = msg.topic.split("/")
                     if len(topic_parts) < 2:
-                        print(f"[Warning] Unexpected topic format: {msg.topic} with payload {msg.payload}")
+                        print(f"[Warning] Unexpected topic format: {msg.topic}")
                         self.message_queue.task_done()
                         continue  # skip this message
                     else:
-                        print(f"Processing message: {msg.topic} with payload {msg.payload}")
+                        print(f"Processing message: {msg.topic}")
                         apartmentId = topic_parts[1]
                         msgJson = json.loads(msg.payload)
 

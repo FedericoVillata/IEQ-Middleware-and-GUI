@@ -222,6 +222,7 @@ class _TechnicalAdvancePageState extends State<TechnicalAdvancePage> {
             ],
           ),
 
+          const SizedBox(height: 20),
           // The main chart area
           Expanded(
             child: Center(

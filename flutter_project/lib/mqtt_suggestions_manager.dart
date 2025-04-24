@@ -1,127 +1,192 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:mqtt_client/mqtt_client.dart';
-import 'package:mqtt_client/mqtt_server_client.dart';
 
-/// Simple model representing a technical suggestion.
+import 'package:mqtt_client/mqtt_browser_client.dart';
+import 'package:mqtt_client/mqtt_server_client.dart';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'package:flutter/foundation.dart' show debugPrint, ChangeNotifier, kIsWeb;
+
+/// ---------------------------------------------------------------------------
+/// Model that represents a single technical suggestion coming through MQTT
+/// ---------------------------------------------------------------------------
 class TechnicalSuggestion {
+  final String apartmentId;
   final String roomId;
-  final String code;    // e.g., "T3" or "PMV_COLD_WARM_PERCEPTION"
-  final String message; // The suggestion text
+  final String code;
+  final String message;
   final DateTime timestamp;
 
   TechnicalSuggestion({
+    required this.apartmentId,
     required this.roomId,
     required this.code,
     required this.message,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TechnicalSuggestion &&
+          runtimeType == other.runtimeType &&
+          apartmentId == other.apartmentId &&
+          roomId == other.roomId &&
+          code == other.code &&
+          message == other.message &&
+          timestamp.millisecondsSinceEpoch ==
+              other.timestamp.millisecondsSinceEpoch;
+
+  @override
+  int get hashCode => Object.hash(
+      apartmentId, roomId, code, message, timestamp.millisecondsSinceEpoch);
 }
 
+/// ---------------------------------------------------------------------------
+/// `ChangeNotifier` that maintains a live list of suggestions pushed via MQTT.
+/// It works **both** on mobile/desktop (raw TCP :1883) and web (WS :80/443).
+/// ---------------------------------------------------------------------------
 class MqttSuggestionsManager extends ChangeNotifier {
-  // Internal list of all suggestions received.
-  final List<TechnicalSuggestion> _allSuggestions = [];
-  // Public, read-only access to the suggestions.
-  List<TechnicalSuggestion> get allSuggestions => List.unmodifiable(_allSuggestions);
+  final List<TechnicalSuggestion> _all = [];
+  List<TechnicalSuggestion> get allSuggestions => List.unmodifiable(_all);
 
-  late MqttServerClient _client;
-  bool _initialized = false;
+  late final MqttClient _client;
+  bool _initialised = false;
 
-  /// Call this once (e.g. in main.dart) to connect to MQTT and subscribe.
+  /// Avoid duplicate subscriptions
+  final Set<String> _subscribedTopics = {};
+
+  // -------------------------------------------------------------------------
+  // Public helpers ----------------------------------------------------------
+  // -------------------------------------------------------------------------
+  void addSuggestion(TechnicalSuggestion s) {
+    if (!_all.contains(s)) {
+      _all.add(s);
+      notifyListeners();
+    }
+  }
+
+  void removeSuggestion(TechnicalSuggestion s) {
+    _all.remove(s);
+    notifyListeners();
+  }
+
+  // -------------------------------------------------------------------------
+  // MQTT set‑up -------------------------------------------------------------
+  // -------------------------------------------------------------------------
   Future<void> initMqtt({
     required String brokerHost,
     required int brokerPort,
     required String topicBase,
     required List<String> apartmentsToListen,
   }) async {
-    // If we've already initialized, don't re-init.
-    if (_initialized) return;
-    _initialized = true;
+    if (!_initialised) {
+      _initialised = true;
 
-    _client = MqttServerClient(brokerHost, 'techSuggestions_${DateTime.now().millisecondsSinceEpoch}');
-    _client.port = brokerPort;
-    _client.logging(on: false);
-    _client.keepAlivePeriod = 20;
+      const String clientId =
+          'techSuggestions_\${DateTime.now().millisecondsSinceEpoch}';
 
-    // Optional: set up a connect message
-    _client.connectionMessage = MqttConnectMessage()
-        .withClientIdentifier('TechSuggestions_${DateTime.now().millisecondsSinceEpoch}')
-        .startClean()
-        .withWillQos(MqttQos.atLeastOnce);
+      // ── Choose the correct client depending on platform ──────────────────
+      if (kIsWeb) {
+        //   Web → WebSocket transport
+        final String scheme = brokerPort == 443 ? 'wss' : 'ws';
+        final String url = '$scheme://$brokerHost:$brokerPort/mqtt';
 
-    _client.onConnected = _onConnected;
-    _client.onDisconnected = _onDisconnected;
-
-    // Attempt connecting
-    try {
-      await _client.connect();
-    } catch (e) {
-      debugPrint("MQTT connect error: $e");
-      return;
-    }
-
-    // If successfully connected, subscribe to relevant topics
-    if (_client.connectionStatus?.state == MqttConnectionState.connected) {
-      for (final aptId in apartmentsToListen) {
-        final fullTopic = "$topicBase/$aptId";
-        debugPrint("Subscribing to $fullTopic ...");
-        _client.subscribe(fullTopic, MqttQos.exactlyOnce);
+        _client = MqttBrowserClient(url, clientId)
+          ..port = brokerPort
+          ..websocketProtocols = const <String>['mqtt']
+          ..keepAlivePeriod = 20
+          ..logging(on: false)
+          ..connectionMessage = MqttConnectMessage()
+              .withClientIdentifier(clientId)
+              .startClean()
+              .withWillQos(MqttQos.atLeastOnce);
+      } else {
+        //   Mobile / Desktop → raw TCP
+        _client = MqttServerClient(brokerHost, clientId)
+          ..port = brokerPort
+          ..keepAlivePeriod = 20
+          ..logging(on: false)
+          ..connectionMessage = MqttConnectMessage()
+              .withClientIdentifier(clientId)
+              .startClean()
+              .withWillQos(MqttQos.atLeastOnce);
       }
 
-      // Listen for incoming updates
-      _client.updates?.listen((List<MqttReceivedMessage<MqttMessage>> c) {
-        final recMsg = c[0].payload as MqttPublishMessage;
-        final payload = MqttPublishPayload.bytesToStringAsString(recMsg.payload.message);
+      // Optional logging for troubleshooting
+      _client.onConnected = () {
+        debugPrint('[MQTT] connected');
+      };
+      _client.onDisconnected = () {
+        debugPrint('[MQTT] disconnected – reason: \${_client.connectionStatus?.reasonCode}');
+      };
+      _client.onSubscribed = (topic) => debugPrint('[MQTT] subscribed → $topic');
+
+      try {
+        await _client.connect();
+      } catch (e) {
+        debugPrint('[MQTT] connection error → \$e');
+        return;
+      }
+
+      if (_client.connectionStatus?.state != MqttConnectionState.connected) {
+        debugPrint('[MQTT] failed connection – state: \${_client.connectionStatus?.state}');
+        debugPrint('[MQTT] ready to subscribe!');
+        return;
+      }
+
+      // Stream listener -----------------------------------------------------
+      _client.updates?.listen((List<MqttReceivedMessage<MqttMessage>> messages) {
+        final rec = messages.first;
+        final topic = rec.topic;
+        final apartmentId = topic.split('/')[1];
+        final msg = rec.payload as MqttPublishMessage;
+
+        final payload =
+            MqttPublishPayload.bytesToStringAsString(msg.payload.message);
+        debugPrint('[MQTT] raw payload: $payload'); // 👈 METTILO QUI
 
         try {
           final Map<String, dynamic> data = jsonDecode(payload);
-          if (data.containsKey("e")) {
-            for (var evt in data["e"]) {
-              _processEvent(evt);
-            }
+          final List<dynamic>? events = data['e'] as List<dynamic>?;
+          if (events == null) return;
+          for (final evt in events) {
+            _processEvent(evt, apartmentId);
           }
         } catch (e) {
-          debugPrint("MQTT parse error: $e");
+          debugPrint('[MQTT] parse error → $e');
         }
       });
-    } else {
-      debugPrint("MQTT not connected. Status: ${_client.connectionStatus}");
+    }
+
+    // (Re)subscribe ---------------------------------------------------------
+    for (final apt in apartmentsToListen) {
+      final String topic = '$topicBase/$apt/technical_suggestion';
+      if (_subscribedTopics.add(topic)) {
+        _client.subscribe(topic, MqttQos.exactlyOnce);
+      }
     }
   }
 
-  void _onConnected() {
-    debugPrint("MQTT connected");
-  }
-
-  void _onDisconnected() {
-    debugPrint("MQTT disconnected");
-  }
-
-  void _processEvent(dynamic evt) {
-    // We expect structure: { "n": "technical_suggestion/<roomId>/<code>", "v": "text..." }
+  // -------------------------------------------------------------------------
+  // Internal helpers --------------------------------------------------------
+  // -------------------------------------------------------------------------
+    void _processEvent(dynamic evt, String apartmentId) {
     if (evt is! Map<String, dynamic>) return;
 
-    final name = evt["n"]?.toString() ?? "";
-    final value = evt["v"]?.toString() ?? "";
+    final String name = evt['n']?.toString() ?? '';
+    final String value = evt['v']?.toString() ?? '';
 
-    // Check if it's a technical suggestion
-    if (!name.startsWith("technical_suggestion/")) return;
+    // NEW: allow n like "roomId/suggestionCode"
+    final parts = name.split('/');
+    if (parts.length != 2) return;
 
-    // "technical_suggestion/roomId/code"
-    final parts = name.split("/");
-    if (parts.length < 3) return;
+    final String roomId = parts[0];
+    final String code = parts[1];
 
-    final roomId = parts[1];
-    final code = parts[2];
-
-    // Create and store the suggestion
-    final newItem = TechnicalSuggestion(
+    addSuggestion(TechnicalSuggestion(
+      apartmentId: apartmentId,
       roomId: roomId,
       code: code,
       message: value,
-    );
-    _allSuggestions.add(newItem);
-
-    notifyListeners();
+    ));
   }
 }

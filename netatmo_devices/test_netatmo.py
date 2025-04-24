@@ -5,13 +5,6 @@ import json
 import time
 import paho.mqtt.client as PahoMQTT
 
-def get_users(registry_url):
-    users_url = f"{registry_url}/users"
-    response = requests.get(users_url)
-    if response.status_code != 200:
-        raise Exception(f"Failed to fetch users data: {response.status_code}")
-    return response.json()
-
 def get_apartments(registry_url):
     apartments_url = f"{registry_url}/apartments"
     response = requests.get(apartments_url)
@@ -36,20 +29,17 @@ def process_netatmo_data(apartment_data):
     raise Exception("No MAC entry with name 'netatmo' found.")
 
 class NetatmoAPI:
-    def __init__(self, clientId, clientSecret, username, password,netatmo_url, accessToken, mac, modules, scope='read_station'):
+    def __init__(self, clientId, clientSecret, username, password,netatmo_url, scope='read_station'):
         self.clientId = clientId
         self.clientSecret = clientSecret
         self.username = username
         self.password = password
-        self.mac = mac
-        self.modules = modules
         self.scope = scope
         self.base_url = netatmo_url
-        self.data = {module: None for module in modules}
-        self._accessToken = accessToken
         self.expiration = 0
         #self.manual_refresh()
         self.first_request = True
+        self.publisher = MyPublisher("NetatmoPublisher")
 
     @property
     def accessToken(self):
@@ -57,7 +47,8 @@ class NetatmoAPI:
             self.manual_refresh()
         return self._accessToken
 
-    def get_measurements(self, apartment_id, user_id):
+    def get_measurements(self, apartment_id, mac, accessToken, modules):
+        self.data = {module: None for module in modules}
         if self.first_request:
             date_start = datetime.now() - timedelta(days=1)  # Ultime 24 ore
             self.first_request = False
@@ -69,13 +60,11 @@ class NetatmoAPI:
         date_end = int(datetime.now().timestamp())
 
         pubTopic = f"IEQmidAndGUI/{apartment_id}/sensorData"
-        myPub = MyPublisher("54234",pubTopic)
-        myPub.start()
-        for module_name, module_id in self.modules.items():
+        for module_name, module_id in modules.items():
             print(f"Getting measurements for {apartment_id}...")
             url = f'{self.base_url}/api/getmeasure'
             params = {
-                'device_id': self.mac,
+                'device_id': mac,
                 'module_id': module_id,
                 'scale': '30min',
                 'type': 'Temperature,Humidity,CO2,Pressure,Noise',
@@ -87,7 +76,7 @@ class NetatmoAPI:
             }
             headers = {
                 "accept": "application/json",
-                "Authorization": f"Bearer {self.accessToken}"
+                "Authorization": f"Bearer {accessToken}"
             }
 
             response = requests.get(url=url, params=params, headers=headers)
@@ -136,14 +125,13 @@ class NetatmoAPI:
                 
                 out = {"bn": pubTopic, "e": Event}
                 print(out)
-                myPub.myPublish(json.dumps(out), pubTopic)
+                self.publisher.myPublish(json.dumps(out), pubTopic)
                 time.sleep(1)  # Attendi 1 secondo tra le pubblicazioni
 
 class MyPublisher:
-    def __init__(self, clientID,topic):
+    def __init__(self, clientID):
         self.connected = False
-        self.topic = topic
-        self.clientID = clientID + "Temperature"
+        self.clientID = clientID 
         self._paho_mqtt = PahoMQTT.Client(self.clientID, False)
         self._paho_mqtt.on_connect = self.myOnConnect
         try:
@@ -197,33 +185,27 @@ class MyPublisher:
 if __name__ == '__main__':
     with open('./netatmo_config.json') as config_file:
         config = json.load(config_file)
-    
-    users = get_users(registry_url = config['registry_url'])
-    apartments = get_apartments(registry_url = config['registry_url'])
-    for apartment in apartments:
-        try:
-            mac_address, access_token, refresh_token, sensors = process_netatmo_data(apartment)
-            apartment_id = apartment['apartmentId']
-            apartment_users = [
-            user for user in users if apartment_id in user.get('apartments', [])
-            ]
-
-            for user in apartment_users:  # Itera sugli utenti associati all'appartamento
-                user_id = user['userId']
-                netatmo = NetatmoAPI(
+    netatmo = NetatmoAPI(
                     clientId=config['client_id'],
                     clientSecret=config['client_secret'],
                     username=config['email'],
                     password=config['password'],
                     netatmo_url=config['netatmo_url'],
-                    accessToken=access_token,
-                    mac=mac_address,
-                    modules=sensors,
                     scope='read_station'
                 )
-                while True:
-                    netatmo.get_measurements(apartment_id,user_id)
-                    time.sleep(1800)  # 30 min
-        except Exception as e:
-            print(f"Error processing apartment {apartment.get('apartmentId', 'unknown')}: {e}")
-            continue
+    while True:
+        netatmo.publisher.start()
+        apartments = get_apartments(registry_url = config['registry_url'])
+        for apartment in apartments:
+            try:
+                mac_address, access_token, refresh_token, sensors = process_netatmo_data(apartment)
+                apartment_id = apartment['apartmentId']      
+                netatmo.get_measurements(apartment_id, mac_address, access_token, sensors)
+            except Exception as e:
+                print(f"Error processing apartment {apartment.get('apartmentId', 'unknown')}: {e}")
+                continue
+
+        netatmo.publisher.stop()
+        print("Sleeping for 30 minutes...")
+        time.sleep(1800)  # 30 min
+            
