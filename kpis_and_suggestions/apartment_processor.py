@@ -69,9 +69,10 @@ def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
         return None
 
     avg_values, trends = compute_room_averages(data)
-    classifications, t_ext = classify_room_conditions(
+    classifications, t_ext, icone, ieqi, adaptive_comfort = classify_room_conditions(
         avg_values, trends, data, settings, season
     )
+
 
     if not classifications:
         return None
@@ -81,9 +82,27 @@ def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
         season, weather_info
     )
 
-    publish_room_metrics(publisher, base_topic, apartment_id, room_id, {
-        **avg_values, **classifications, "t_ext": t_ext
-    })
+    pmv = calculate_pmv(season, avg_values["avg_temp"], avg_values["avg_temp"], 0.1, avg_values["avg_humidity"], settings)
+    ppd = calculate_ppd(pmv)
+    env_score = overall_score(classifications, settings)
+    env_class = classify_overall_score(env_score, settings)
+
+    publish_detailed_room_metrics(
+        publisher,
+        base_topic,
+        apartment_id,
+        room_id,
+        avg_values=avg_values,
+        classifications=classifications,
+        pmv=pmv,
+        ppd=ppd,
+        icone=icone if 'icone_class' in classifications else None,
+        ieqi=ieqi if 'ieqi_class' in classifications else None,
+        adaptive_comfort=adaptive_comfort if 'Acceptable Range' in adaptive_comfort else None,
+        env_score=env_score,
+        env_class=env_class
+    )
+
 
     publish_alerts(publisher, base_topic, apartment_id, room_id, classifications)
     publish_tenant_suggestions(publisher, base_topic, apartment_id, room_id, suggestions)
@@ -204,7 +223,8 @@ def classify_room_conditions(avg_values, trends, measure_data, settings, season)
     if ieqi_class:
         classifications["ieqi_class"] = ieqi_class
 
-    return classifications, running_mean_temp
+    return classifications, running_mean_temp, icone, ieqi, adaptive_comfort
+
 
 def generate_room_suggestions(room, catalog, classifications, avg_values, t_ext,
                               settings, season, weather_info):
@@ -288,6 +308,33 @@ def generate_technical_suggestions(apartment_id, apartment_classifications,
     )
 
     log(f"Published {len(tech_suggestions)} technical suggestions at apartment level", context=apartment_id)
+
+def publish_detailed_room_metrics(publisher, base_topic, apartment_id, room_id,
+                                avg_values, classifications, pmv, ppd,
+                                icone=None, ieqi=None, adaptive_comfort=None, env_score=None, env_class=None):
+    metrics_payload = {
+        "avg_temp": avg_values.get("avg_temp"),
+        "avg_humidity": avg_values.get("avg_humidity"),
+        "avg_co2": avg_values.get("avg_co2"),
+        "avg_pm10": avg_values.get("avg_pm10"),
+        "avg_tvoc": avg_values.get("avg_tvoc"),
+        "pmv": pmv,
+        "ppd": ppd,
+        "icone": icone,
+        "ieqi": ieqi,
+        "temp_class": classifications.get("temp_class"),
+        "hum_class": classifications.get("hum_class"),
+        "co2_class": classifications.get("co2_class"),
+        "pmv_class": classifications.get("pmv_class"),
+        "ppd_class": classifications.get("ppd_class"),
+        "icone_class": classifications.get("icone_class"),
+        "ieqi_class": classifications.get("ieqi_class"),
+        "adaptive_comfort": adaptive_comfort,
+        "env_score": env_score,
+        "env_classification": env_class
+    }
+    publish_room_metrics(publisher, base_topic, apartment_id, room_id, metrics_payload)
+
 
 
 
