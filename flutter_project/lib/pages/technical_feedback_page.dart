@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
 import '../app_config.dart';
+import '../widgets/suggestions_bell.dart';
 
 class TechnicalFeedbackPage extends StatefulWidget {
   final String username;    // The technical user's ID
@@ -132,77 +133,109 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        children: [
-          // Duration selection
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: ListTile(
-                title: const Text("Select Duration"),
-                trailing: DropdownButton<String>(
-                  value: selectedDuration,
-                  onChanged: (val) async {
-                    if (val != null) {
-                      setState(() => selectedDuration = val);
-                      await _fetchFeedbackData();
-                    }
-                  },
-                  items: durationOptions.entries.map((entry) {
-                    return DropdownMenuItem<String>(
-                      value: entry.value,
-                      child: Text(entry.key),
-                    );
-                  }).toList(),
-                ),
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: Column(
+      children: [
+        // ──────────────────────────────────────────────────────────
+        //  Duration selector
+        // ──────────────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListTile(
+              title: const Text('Select Duration'),
+              trailing: DropdownButton<String>(
+                value: selectedDuration,
+                onChanged: (val) async {
+                  if (val != null) {
+                    setState(() => selectedDuration = val);
+                    await _fetchFeedbackData();
+                  }
+                },
+                items: durationOptions.entries
+                    .map(
+                      (entry) => DropdownMenuItem<String>(
+                        value: entry.value,
+                        child: Text(entry.key),
+                      ),
+                    )
+                    .toList(),
               ),
             ),
           ),
+        ),
 
-          // Feedback type selection
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: feedbackTypes.map((f) {
-                final bool sel = (f == selectedFeedback);
-                return Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: sel ? Colors.indigo : Colors.blueGrey,
-                    ),
-                    onPressed: () async {
-                      setState(() => selectedFeedback = f);
-                      await _fetchFeedbackData();
-                    },
-                    child: Text(
-                      f,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-
-          // Chart or loading/error
-          Expanded(
-            child: Center(
-              child: isLoading
-                  ? const CircularProgressIndicator()
-                  : (errorMessage != null
-                      ? Text(errorMessage!, style: const TextStyle(color: Colors.red))
-                      : _buildBarChart()),
-            ),
-          ),
-        ],
+        // ──────────────────────────────────────────────────────────
+        //  Feedback-type selector  +  bell aligned right
+        // ──────────────────────────────────────────────────────────
+        // ──────────────────────────────────────────────────────────
+//  Feedback-type buttons centred   +   bell on the far right
+// ──────────────────────────────────────────────────────────
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+  child: Row(
+    children: [
+      /// ① centred buttons ─────────────────────────────────────
+      Expanded(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: feedbackTypes.map((type) {
+            final bool isSelected = type == selectedFeedback;
+            return Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      isSelected ? Colors.indigo : Colors.blueGrey,
+                ),
+                onPressed: () async {
+                  setState(() => selectedFeedback = type);
+                  await _fetchFeedbackData();
+                },
+                child: Text(type, style: const TextStyle(color: Colors.white)),
+              ),
+            );
+          }).toList(),
+        ),
       ),
-    );
-  }
+
+      const SizedBox(width: 8),
+
+      /// ② bell aligned to the right ───────────────────────────
+      SuggestionsBell(
+        location: widget.location,
+        username: widget.username,
+      ),
+    ],
+  ),
+),
+
+
+        // ──────────────────────────────────────────────────────────
+        //  Chart area / loading / error
+        // ──────────────────────────────────────────────────────────
+        Expanded(
+          child: Center(
+            child: isLoading
+                ? const CircularProgressIndicator()
+                : (errorMessage != null
+                    ? Text(
+                        errorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                      )
+                    : _buildBarChart()),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildBarChart() {
     // If no data (sum==0), show a simple text

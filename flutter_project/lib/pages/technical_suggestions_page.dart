@@ -74,10 +74,9 @@ class _SuggestionCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         title: Text(
-          '[Room: ${suggestion.roomId}] ${suggestion.message}',
+          '${suggestion.message}',
           style: const TextStyle(fontWeight: FontWeight.w500),
         ),
-        subtitle: Text('Code: ${suggestion.code}'),
         trailing: ElevatedButton.icon(
           onPressed: () => manager.removeSuggestion(suggestion),
           icon: const Icon(Icons.check),

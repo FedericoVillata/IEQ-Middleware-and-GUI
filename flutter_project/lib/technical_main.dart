@@ -16,6 +16,9 @@ class TechnicalMainPage extends StatefulWidget {
     required this.username,
   }) : super(key: key);
 
+  static _TechnicalMainPageState? of(BuildContext ctx) =>
+      ctx.findAncestorStateOfType<_TechnicalMainPageState>();
+
   @override
   State<TechnicalMainPage> createState() => _TechnicalMainPageState();
 }
@@ -23,6 +26,10 @@ class TechnicalMainPage extends StatefulWidget {
 class _TechnicalMainPageState extends State<TechnicalMainPage> {
   String? selectedLocation;
   int _currentIndex = 0;
+
+  void goToSuggestions() {
+    setState(() => _currentIndex = 5);
+  }
 
   late List<Widget> pages;
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../app_config.dart';
+import '../widgets/suggestions_bell.dart';
 
 class TechnicalDeletedSuggestionsPage extends StatefulWidget {
   final String username;
@@ -282,80 +283,92 @@ class _TechnicalDeletedSuggestionsPageState
     }
 
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Title
-            Text(
-              "Deleted Tenant Suggestions for ${widget.location} (user: ${widget.username})",
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Room selection dropdown
-            if (availableRooms.isNotEmpty)
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Title
+                Text(
+                  "Deleted Tenant Suggestions for ${widget.location} (user: ${widget.username})",
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
-                child: ListTile(
-                  title: const Text("Select Room"),
-                  trailing: DropdownButton<String>(
-                    value: selectedRoom,
-                    items: availableRooms.map((r) {
-                      return DropdownMenuItem(value: r, child: Text(r));
-                    }).toList(),
-                    onChanged: _onRoomChanged,
-                  ),
-                ),
-              ),
 
-            const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-            // List of "deleted" suggestions (state=0)
-            Expanded(
-              child: deletedSuggestions.isEmpty
-                  ? const Center(
-                      child: Text("No deleted suggestions found."),
-                    )
-                  : ListView.builder(
-                      itemCount: deletedSuggestions.length,
-                      itemBuilder: (context, index) {
-                        final item = deletedSuggestions[index];
-                        return Card(
-                          elevation: 2,
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ListTile(
-                            title: Text(
-                              item["text"] ?? "",
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w500),
-                            ),
-                            trailing: ElevatedButton.icon(
-                              onPressed: () => _restoreSuggestion(item),
-                              icon: const Icon(Icons.refresh),
-                              label: const Text("Restore"),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                // Room selection dropdown
+                if (availableRooms.isNotEmpty)
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    child: ListTile(
+                      title: const Text("Select Room"),
+                      trailing: DropdownButton<String>(
+                        value: selectedRoom,
+                        items: availableRooms.map((r) {
+                          return DropdownMenuItem(value: r, child: Text(r));
+                        }).toList(),
+                        onChanged: _onRoomChanged,
+                      ),
+                    ),
+                  ),
+
+                const SizedBox(height: 16),
+
+                // List of "deleted" suggestions (state=0)
+                Expanded(
+                  child: deletedSuggestions.isEmpty
+                      ? const Center(
+                          child: Text("No deleted suggestions found."),
+                        )
+                      : ListView.builder(
+                          itemCount: deletedSuggestions.length,
+                          itemBuilder: (context, index) {
+                            final item = deletedSuggestions[index];
+                            return Card(
+                              elevation: 2,
+                              margin: const EdgeInsets.symmetric(vertical: 6),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: ListTile(
+                                title: Text(
+                                  item["text"] ?? "",
+                                  style:
+                                      const TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                                trailing: ElevatedButton.icon(
+                                  onPressed: () => _restoreSuggestion(item),
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text("Restore"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
-          ],
+          ),
+          Positioned(
+          top: 12,
+          right: 12,
+          child: SuggestionsBell(
+            location: widget.location,
+            username: widget.username,
+          ),
         ),
-      ),
-    );
+      ],
+    ),
+  );
   }
 }

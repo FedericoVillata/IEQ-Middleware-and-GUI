@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
 import '../app_config.dart';
+import '../widgets/suggestions_bell.dart';
 
 class TechnicalHomePage extends StatefulWidget {
   final String username;
@@ -109,115 +110,128 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          // Metric selection
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: metrics.map((m) {
-                final sel = (m == selectedMetric);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: sel ? Colors.indigo : Colors.blueGrey,
-                    ),
-                    onPressed: () {
-                      setState(() => selectedMetric = m);
-                    },
-                    child: Text(m, style: const TextStyle(color: Colors.white)),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-
-          // Chart type: Line vs. Carpet (swapped order)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Column(
             children: [
-              _buildChartTypeButton("Line Chart", "line"),
-              const SizedBox(width: 16),
-              _buildChartTypeButton("Carpet Plot", "carpet"),
-            ],
-          ),
-
-          // Room selection
-          if (availableRooms.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: Card(
-                elevation: 2,
-                child: ListTile(
-                  title: const Text("Select Room"),
-                  trailing: DropdownButton<String>(
-                    value: selectedRoom,
-                    items: availableRooms.map((r) {
-                      return DropdownMenuItem(value: r, child: Text(r));
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() => selectedRoom = val);
-                    },
-                  ),
-                ),
-              ),
-            ),
-
-          // Duration selection
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Card(
-              elevation: 2,
-              child: ListTile(
-                title: const Text("Select Duration"),
-                trailing: DropdownButton<String>(
-                  value: selectedDuration,
-                  items: durationOptions.entries.map((e) {
-                    return DropdownMenuItem(value: e.value, child: Text(e.key));
+              // Metric selection
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: metrics.map((m) {
+                    final sel = (m == selectedMetric);
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: sel ? Colors.indigo : Colors.blueGrey,
+                        ),
+                        onPressed: () {
+                          setState(() => selectedMetric = m);
+                        },
+                        child: Text(m, style: const TextStyle(color: Colors.white)),
+                      ),
+                    );
                   }).toList(),
-                  onChanged: (val) {
-                    if (val == null) return;
-                    setState(() => selectedDuration = val);
-                  },
                 ),
               ),
-            ),
-          ),
 
-          // Buttons for "Download Chart" and "Export CSV"
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton.icon(
-                onPressed: _downloadChart,
-                icon: const Icon(Icons.download),
-                label: const Text("Download Chart"),
+              // Chart type: Line vs. Carpet (swapped order)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildChartTypeButton("Line Chart", "line"),
+                  const SizedBox(width: 16),
+                  _buildChartTypeButton("Carpet Plot", "carpet"),
+                ],
               ),
-              const SizedBox(width: 24),
-              ElevatedButton.icon(
-                onPressed: _exportCsv,
-                icon: const Icon(Icons.table_view),
-                label: const Text("Export CSV"),
+
+              // Room selection
+              if (availableRooms.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Card(
+                    elevation: 2,
+                    child: ListTile(
+                      title: const Text("Select Room"),
+                      trailing: DropdownButton<String>(
+                        value: selectedRoom,
+                        items: availableRooms.map((r) {
+                          return DropdownMenuItem(value: r, child: Text(r));
+                        }).toList(),
+                        onChanged: (val) {
+                          setState(() => selectedRoom = val);
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Duration selection
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: Card(
+                  elevation: 2,
+                  child: ListTile(
+                    title: const Text("Select Duration"),
+                    trailing: DropdownButton<String>(
+                      value: selectedDuration,
+                      items: durationOptions.entries.map((e) {
+                        return DropdownMenuItem(value: e.value, child: Text(e.key));
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val == null) return;
+                        setState(() => selectedDuration = val);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+
+              // Buttons for "Download Chart" and "Export CSV"
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _downloadChart,
+                    icon: const Icon(Icons.download),
+                    label: const Text("Download Chart"),
+                  ),
+                  const SizedBox(width: 24),
+                  ElevatedButton.icon(
+                    onPressed: _exportCsv,
+                    icon: const Icon(Icons.table_view),
+                    label: const Text("Export CSV"),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+              // The main chart area
+              Expanded(
+                child: Center(
+                  child: isLoadingRooms
+                      ? const CircularProgressIndicator()
+                      : (errorMessage != null
+                          ? Text(errorMessage!, style: const TextStyle(color: Colors.red))
+                          : _buildChartImage()),
+                ),
               ),
             ],
-          ),
+        ),
 
-          const SizedBox(height: 20),
-          // The main chart area
-          Expanded(
-            child: Center(
-              child: isLoadingRooms
-                  ? const CircularProgressIndicator()
-                  : (errorMessage != null
-                      ? Text(errorMessage!, style: const TextStyle(color: Colors.red))
-                      : _buildChartImage()),
-            ),
+         Positioned(
+          top: 12,
+          right: 12,
+          child: SuggestionsBell(
+            location: widget.location,
+            username: widget.username,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   // ---------------------------------------------
   //   Chart Type Button

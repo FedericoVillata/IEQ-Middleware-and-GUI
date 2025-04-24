@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../app_config.dart';
+import '../widgets/suggestions_bell.dart';
 
 class TechnicalThresholdPage extends StatefulWidget {
   final String username;
@@ -976,7 +977,20 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: _buildBodyContent(),
+      body: Stack(
+        children: [
+          _buildBodyContent(),                        
+
+          Positioned(                                
+            top: 12,
+            right: 12,
+            child: SuggestionsBell(
+              location: widget.location,
+              username: widget.username,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
