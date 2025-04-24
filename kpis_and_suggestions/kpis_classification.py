@@ -4,9 +4,9 @@ from datetime import datetime
 
 
 def log(message, level="INFO", context=None):
-    # timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # prefix = f"[{timestamp}] [{level}]"
-    prefix = f"[{level}]"
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    prefix = f"[{timestamp}] [{level}]"
+    # prefix = f"[{level}]"
     if context:
         prefix += f" [{context}]"
     print(f"{prefix} {message}")
