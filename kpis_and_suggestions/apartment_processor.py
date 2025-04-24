@@ -79,8 +79,9 @@ def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
 
     suggestions = generate_room_suggestions(
         room, catalog, classifications, avg_values, t_ext, settings,
-        season, weather_info
+        season, weather_info, trends
     )
+
 
     pmv = calculate_pmv(season, avg_values["avg_temp"], avg_values["avg_temp"], 0.1, avg_values["avg_humidity"], settings)
     ppd = calculate_ppd(pmv)
@@ -227,7 +228,8 @@ def classify_room_conditions(avg_values, trends, measure_data, settings, season)
 
 
 def generate_room_suggestions(room, catalog, classifications, avg_values, t_ext,
-                              settings, season, weather_info):
+                              settings, season, weather_info, trends):
+
     hour_now = datetime.now().hour
 
     context_values = dict(settings.get("values", {}))
@@ -258,7 +260,7 @@ def generate_room_suggestions(room, catalog, classifications, avg_values, t_ext,
         hour=hour_now,
         pmv=calculate_pmv(season, avg_values["avg_temp"], avg_values["avg_temp"], 0.1,
                           avg_values["avg_humidity"], settings),
-        trends={},  # Already factored in classification logic, optional here
+        trends=trends,
         settings=suggestion_settings,
         enabled_suggestions=enabled_names
     )
