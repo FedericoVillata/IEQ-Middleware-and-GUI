@@ -124,6 +124,12 @@ def get_technical_suggestions(classifications, feedback, metrics, settings):
             "PMV = Very Warm, but perception = Cold or Very Cold. "
             "Suggestion: thermal comfort perceived is the opposite of calculated. Verify input parameters."
         )
+        
+    # DEBUG: test suggestion, always triggered. Comment out if not needed.
+    suggestions["_DEBUG_TEST_ALWAYS_TRIGGERED"] = (
+        "Debug: this is a fake suggestion always included. Useful for testing suggestion generation and display pipelines."
+    )
 
     log(f"Generated {len(suggestions)} technical suggestions", context="Technical")
-    return suggestions    
+    return suggestions
+
