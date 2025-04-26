@@ -1,9 +1,11 @@
-// tenant_home_page.dart
-import 'package:flutter/material.dart';
-import 'dart:convert';
+// pages/tenant_home_page.dart
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import '../login_page.dart';
+
+import '../widgets/suggestions_bell.dart';
 
 class HomePage extends StatefulWidget {
   final String username;
@@ -30,65 +32,33 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
+  // ─────────────────────────────── state vars
   late String selectedApartment;
   late String selectedRoom;
-  bool showDropdown = false;
+  bool  showDropdown = false;
   Timer? _refreshTimer;
 
-  String indoorTemp = "Loading...";
-  String humidity = "Loading...";
-  String co2 = "Loading...";
-  String tempStatus = "";
-  String humidityStatus = "";
-  String co2Status = "";
+  String indoorTemp     = 'Loading...';
+  String humidity       = 'Loading...';
+  String co2            = 'Loading...';
+  String tempStatus     = '';
+  String humidityStatus = '';
+  String co2Status      = '';
 
-  // Meteo
-  String externalTemp = "20°C"; // Valore predefinito
-  int weatherCode = 0;
-  final String adaptorUrl = "http://10.0.2.2:8080";
+  // meteo
+  String externalTemp = '20°C';
+  int    weatherCode  = 0;
+  final  String adaptorUrl = 'http://localhost:8080';
 
+  // ─────────────────────────────── lifecycle
   @override
   void initState() {
     super.initState();
     selectedApartment = widget.selectedApartment;
-    selectedRoom = widget.rooms[selectedApartment]?.first ?? "Unknown";
+    selectedRoom      = widget.rooms[selectedApartment]?.first ?? 'Unknown';
     _fetchRoomData();
-    _fetchExternalWeatherData(); // Chiamata immediata per il meteo
-    _startExternalWeatherRefresh(); // Start the weather update here
-  }
-
-  // Chiamata immediata per recuperare il meteo
-  void _fetchExternalWeatherData() async {
-    final meteoUrl = Uri.parse(
-      "https://api.open-meteo.com/v1/forecast?latitude=45.0705&longitude=7.6868&hourly=temperature_2m,weather_code&timezone=auto&forecast_days=1",
-    );
-
-    try {
-      final meteoResponse = await http.get(meteoUrl);
-      if (meteoResponse.statusCode == 200) {
-        final meteoData = jsonDecode(meteoResponse.body);
-        final List<dynamic> temperatures = meteoData['hourly']['temperature_2m'];
-        final List<dynamic> weatherCodes = meteoData['hourly']['weather_code'];
-        final now = DateTime.now().hour;
-
-        final String updatedTemp = "${(temperatures[now] as num).toStringAsFixed(1)}°C";
-        final int updatedCode = weatherCodes[now];
-
-        setState(() {
-          externalTemp = updatedTemp; // Aggiorna la temperatura esterna
-          weatherCode = updatedCode;  // Aggiorna il codice meteo
-        });
-      }
-    } catch (e) {
-      print("Errore aggiornamento meteo: $e");
-    }
-  }
-
-  // Periodicamente recupera i dati del meteo
-  void _startExternalWeatherRefresh() {
-    _refreshTimer = Timer.periodic(const Duration(minutes: 10), (timer) async {
-      _fetchExternalWeatherData(); // Chiamata ripetuta ogni 10 minuti
-    });
+    _fetchExternalWeatherData();
+    _startExternalWeatherRefresh();
   }
 
   @override
@@ -97,40 +67,76 @@ class HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  // ─────────────────────────────── HTTP helpers
+  void _fetchExternalWeatherData() async {
+    final url = Uri.parse(
+      'https://api.open-meteo.com/v1/forecast'
+      '?latitude=45.0705&longitude=7.6868'
+      '&hourly=temperature_2m,weather_code'
+      '&timezone=auto&forecast_days=1',
+    );
+
+    try {
+      final r = await http.get(url);
+      if (r.statusCode == 200) {
+        final d     = jsonDecode(r.body);
+        final temps = d['hourly']['temperature_2m'] as List<dynamic>;
+        final codes = d['hourly']['weather_code']   as List<dynamic>;
+        final h     = DateTime.now().hour;
+
+        setState(() {
+          externalTemp = '${(temps[h] as num).toStringAsFixed(1)}°C';
+          weatherCode  = codes[h];
+        });
+      }
+    } catch (e) {
+      debugPrint('meteo error: $e');
+    }
+  }
+
+  void _startExternalWeatherRefresh() {
+    _refreshTimer =
+        Timer.periodic(const Duration(minutes: 10), (_) => _fetchExternalWeatherData());
+  }
+
   Future<void> _fetchRoomData() async {
     try {
-      final url = Uri.parse("$adaptorUrl/getLastRoomData/${widget.username}/$selectedApartment/$selectedRoom");
+      final url = Uri.parse(
+        '$adaptorUrl/getLastRoomData/'
+        '${widget.username}/$selectedApartment/$selectedRoom',
+      );
       final res = await http.get(url);
       if (res.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(res.body);
-        for (var d in data) {
-          switch (d["measurament"]) {
-            case "Temperature":
-              double tempVal = d["v"];
-              indoorTemp = "${tempVal.toStringAsFixed(1)}°C";
-              tempStatus = tempVal < 18 ? "poor" : tempVal <= 26 ? "good" : "medium";
+        final data = jsonDecode(res.body) as List<dynamic>;
+        for (final d in data) {
+          switch (d['measurement']) {
+            case 'Temperature':
+              final v = d['v'] as num;
+              indoorTemp = '${v.toStringAsFixed(1)}°C';
+              tempStatus = v < 18 ? 'poor' : v <= 26 ? 'good' : 'medium';
               break;
-            case "Humidity":
-              double humVal = d["v"];
-              humidity = "${humVal.toStringAsFixed(1)}%";
-              humidityStatus = humVal < 30 ? "poor" : humVal <= 60 ? "good" : "medium";
+            case 'Humidity':
+              final v = d['v'] as num;
+              humidity = '${v.toStringAsFixed(1)}%';
+              humidityStatus = v < 30 ? 'poor' : v <= 60 ? 'good' : 'medium';
               break;
-            case "CO2":
-              double co2Val = d["v"];
-              co2 = "${co2Val.toInt()} ppm";
-              co2Status = co2Val < 800 ? "good" : co2Val <= 1200 ? "medium" : "poor";
+            case 'CO2':
+              final v = d['v'] as num;
+              co2 = '${v.toInt()} ppm';
+              co2Status = v < 800 ? 'good' : v <= 1200 ? 'medium' : 'poor';
               break;
           }
         }
       } else {
-        indoorTemp = humidity = co2 = "Error";
+        indoorTemp = humidity = co2 = 'Error';
       }
     } catch (e) {
-      indoorTemp = humidity = co2 = "Error";
+      indoorTemp = humidity = co2 = 'Error';
     }
     if (mounted) setState(() {});
   }
 
+  // ─────────────────────────────── UI helpers
   IconData _getWeatherIcon(int code) {
     if (code == 0) return Icons.wb_sunny;
     if (code == 1 || code == 2) return Icons.cloud;
@@ -159,23 +165,19 @@ class HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         color: const Color(0xFF236FC6),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8, spreadRadius: 2)],
+        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Welcome, ${widget.username}!",
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
+          Text('Welcome, ${widget.username}!',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "$selectedApartment - $selectedRoom",
-                style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w500),
-              ),
+              Text('$selectedApartment - $selectedRoom',
+                  style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w500)),
               GestureDetector(
                 onTap: () => setState(() => showDropdown = !showDropdown),
                 child: Container(
@@ -191,37 +193,12 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildDropdownSelection() {
-    return Column(
-      children: [
-        _buildDropdown("Select Apartment", selectedApartment, widget.apartments, (value) {
-          if (value != null) {
-            setState(() {
-              selectedApartment = value;
-              selectedRoom = widget.rooms[selectedApartment]?.first ?? "Unknown";
-              widget.onApartmentChanged(value);
-              widget.onRoomChanged(selectedRoom);
-              showDropdown = false;
-              _fetchRoomData();
-            });
-          }
-        }),
-        const SizedBox(height: 10),
-        _buildDropdown("Select Room", selectedRoom, widget.rooms[selectedApartment] ?? ["Unknown"], (value) {
-          if (value != null) {
-            setState(() {
-              selectedRoom = value;
-              widget.onRoomChanged(value);
-              showDropdown = false;
-              _fetchRoomData();
-            });
-          }
-        }),
-      ],
-    );
-  }
-
-  Widget _buildDropdown(String label, String selectedValue, List<String> options, Function(String?) onChanged) {
+  Widget _buildDropdown(
+    String label,
+    String selectedValue,
+    List<String> options,
+    void Function(String?) onChanged,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -237,15 +214,15 @@ class HomePageState extends State<HomePage> {
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: selectedValue,
-              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.blueGrey),
               isExpanded: true,
+              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.blueGrey),
               onChanged: onChanged,
-              items: options.map((String item) {
-                return DropdownMenuItem<String>(
-                  value: item,
-                  child: Text(item, style: const TextStyle(fontSize: 16)),
-                );
-              }).toList(),
+              items: options
+                  .map((e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(e, style: const TextStyle(fontSize: 16)),
+                      ))
+                  .toList(),
             ),
           ),
         ),
@@ -253,20 +230,18 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildInfoCard(String title, String value, IconData icon, Color defaultColor, {String? status}) {
-    Color iconColor = defaultColor;
+  Widget _buildInfoCard(
+    String title,
+    String value,
+    IconData icon,
+    Color defaultColor, {
+    String? status,
+  }) {
+    Color c = defaultColor;
     if (status != null) {
-      switch (status.toLowerCase()) {
-        case 'good':
-          iconColor = Colors.green;
-          break;
-        case 'medium':
-          iconColor = Colors.amber;
-          break;
-        case 'poor':
-          iconColor = Colors.red;
-          break;
-      }
+      if (status == 'good')   c = Colors.green;
+      if (status == 'medium') c = Colors.amber;
+      if (status == 'poor')   c = Colors.red;
     }
 
     return Card(
@@ -277,15 +252,18 @@ class HomePageState extends State<HomePage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 5),
-              Text(value, style: const TextStyle(fontSize: 14, color: Colors.black54)),
-            ]),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 5),
+                Text(value, style: const TextStyle(fontSize: 14, color: Colors.black54)),
+              ],
+            ),
             Container(
-              decoration: BoxDecoration(color: iconColor.withOpacity(0.1), shape: BoxShape.circle),
               padding: const EdgeInsets.all(12),
-              child: Icon(icon, color: iconColor, size: 40),
+              decoration: BoxDecoration(color: c.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(icon, color: c, size: 40),
             ),
           ],
         ),
@@ -293,16 +271,15 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  Color _getColorForScore(int percentage) {
-    if (percentage < 30) return Colors.red;
-    if (percentage < 60) return Colors.orange;
-    if (percentage < 80) return Colors.amber;
-    if (percentage < 100) return Colors.lightGreen;
-    return Colors.green;
-  }
+  Color _colorForScore(int p) =>
+      p < 30 ? Colors.red :
+      p < 60 ? Colors.orange :
+      p < 80 ? Colors.amber :
+      p < 100 ? Colors.lightGreen :
+      Colors.green;
 
-  Widget _buildOverallScoreCard(int percentage) {
-    final color = _getColorForScore(percentage);
+  Widget _buildOverallScoreCard(int p) {
+    final c = _colorForScore(p);
     return Center(
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -311,7 +288,7 @@ class HomePageState extends State<HomePage> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              const Text("Overall Score", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Overall Score', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               Stack(
                 alignment: Alignment.center,
@@ -320,13 +297,13 @@ class HomePageState extends State<HomePage> {
                     width: 80,
                     height: 80,
                     child: CircularProgressIndicator(
-                      value: percentage / 100,
-                      backgroundColor: Colors.grey[300],
-                      color: color,
+                      value: p / 100,
                       strokeWidth: 8,
+                      backgroundColor: Colors.grey[300],
+                      color: c,
                     ),
                   ),
-                  Text("$percentage%", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
+                  Text('$p%', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: c)),
                 ],
               ),
             ],
@@ -336,6 +313,7 @@ class HomePageState extends State<HomePage> {
     );
   }
 
+  // ─────────────────────────────── build
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -345,15 +323,13 @@ class HomePageState extends State<HomePage> {
         elevation: 2,
         title: null,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.black87),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginPage()),
-              );
-            },
+          SuggestionsBell(
+            username: widget.username,
+            apartmentId: selectedApartment,
+            roomId: selectedRoom,
+            isTechnical: false,
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(
@@ -362,20 +338,73 @@ class HomePageState extends State<HomePage> {
           children: [
             _buildHeader(),
             const SizedBox(height: 20),
-            if (showDropdown) _buildDropdownSelection(),
-            const SizedBox(height: 20),
+
+            // dropdown se visibile
+            if (showDropdown) ...[
+              _buildDropdown(
+                'Select Apartment',
+                selectedApartment,
+                widget.apartments,
+                (v) {
+                  if (v == null) return;
+                  setState(() {
+                    selectedApartment = v;
+                    selectedRoom      = widget.rooms[v]?.first ?? 'Unknown';
+                    widget.onApartmentChanged(v);
+                    widget.onRoomChanged(selectedRoom);
+                    showDropdown = false;
+                    _fetchRoomData();
+                  });
+                },
+              ),
+              const SizedBox(height: 10),
+              _buildDropdown(
+                'Select Room',
+                selectedRoom,
+                widget.rooms[selectedApartment] ?? ['Unknown'],
+                (v) {
+                  if (v == null) return;
+                  setState(() {
+                    selectedRoom = v;
+                    widget.onRoomChanged(v);
+                    showDropdown = false;
+                    _fetchRoomData();
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+
             _buildInfoCard(
-              "External Temperature",
+              'External Temperature',
               externalTemp,
               _getWeatherIcon(weatherCode),
               _getWeatherColor(weatherCode),
             ),
             const SizedBox(height: 12),
-            _buildInfoCard("Indoor Temperature", indoorTemp, Icons.thermostat, Colors.red, status: tempStatus),
+            _buildInfoCard(
+              'Indoor Temperature',
+              indoorTemp,
+              Icons.thermostat,
+              Colors.red,
+              status: tempStatus,
+            ),
             const SizedBox(height: 12),
-            _buildInfoCard("Humidity Level", humidity, Icons.water_drop, Colors.blue, status: humidityStatus),
+            _buildInfoCard(
+              'Humidity Level',
+              humidity,
+              Icons.water_drop,
+              Colors.blue,
+              status: humidityStatus,
+            ),
             const SizedBox(height: 12),
-            _buildInfoCard("Air Quality", co2, Icons.air, Colors.green, status: co2Status),
+            _buildInfoCard(
+              'Air Quality',
+              co2,
+              Icons.air,
+              Colors.green,
+              status: co2Status,
+            ),
             const SizedBox(height: 30),
             _buildOverallScoreCard(widget.overallScores[selectedApartment] ?? 0),
           ],
