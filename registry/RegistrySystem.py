@@ -737,14 +737,14 @@ class Webserver(object):
                 result = {"status": "OK", "code": 200, "message": "Data processed"}
                 return json.dumps(result)
         elif uri[0] == 'del_suggestion':
-            #Delete suggestion
-            body = json.loads(cherrypy.request.body.read())
-            out = self.cat.remove_suggestion(body["suggestionId"])
+            suggestionId = uri[1] 
+            out = self.cat.remove_suggestion(suggestionId)
             if out == "Suggestion not found":
                 response = {"status": "NOT_OK", "code": 400, "message": "Invalid suggestion ID"}
-            else:   
+            else:
                 response = {"status": "OK", "code": 200, "message": "Data deleted successfully"}
             return json.dumps(response)
+
 
 class MySubscriber:
         def __init__(self, clientID, topic, broker, port):

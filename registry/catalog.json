@@ -45,7 +45,7 @@
           "sensors": [
             {
               "sensorId": "sensor0",
-              "lastUpdate": "2025-04-26T17:53:34.734087Z"
+              "lastUpdate": "2025-04-26T21:21:09.729743Z"
             }
           ],
           "suggestions": [
@@ -114,10 +114,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S16",
-              "state": 1
-            },
-            {
               "suggestionId": "S17",
               "state": 1
             },
@@ -170,10 +166,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S30",
-              "state": 1
-            },
-            {
               "suggestionId": "S31",
               "state": 1
             },
@@ -187,6 +179,18 @@
             },
             {
               "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
               "state": 1
             }
           ]
@@ -196,7 +200,7 @@
           "sensors": [
             {
               "sensorId": "sensor1",
-              "lastUpdate": "2025-04-26T17:53:34.734342Z"
+              "lastUpdate": "2025-04-26T21:21:09.730400Z"
             }
           ],
           "suggestions": [
@@ -265,10 +269,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S16",
-              "state": 1
-            },
-            {
               "suggestionId": "S17",
               "state": 1
             },
@@ -321,10 +321,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S30",
-              "state": 1
-            },
-            {
               "suggestionId": "S31",
               "state": 1
             },
@@ -338,6 +334,18 @@
             },
             {
               "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
               "state": 1
             }
           ]
@@ -439,10 +447,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S16",
-              "state": 1
-            },
-            {
               "suggestionId": "S17",
               "state": 1
             },
@@ -495,10 +499,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S30",
-              "state": 1
-            },
-            {
               "suggestionId": "S31",
               "state": 1
             },
@@ -512,6 +512,18 @@
             },
             {
               "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
               "state": 1
             }
           ]
@@ -590,10 +602,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S16",
-              "state": 1
-            },
-            {
               "suggestionId": "S17",
               "state": 1
             },
@@ -646,10 +654,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S30",
-              "state": 1
-            },
-            {
               "suggestionId": "S31",
               "state": 1
             },
@@ -663,6 +667,18 @@
             },
             {
               "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
               "state": 1
             }
           ]
@@ -741,10 +757,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S16",
-              "state": 1
-            },
-            {
               "suggestionId": "S17",
               "state": 1
             },
@@ -797,10 +809,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S30",
-              "state": 1
-            },
-            {
               "suggestionId": "S31",
               "state": 1
             },
@@ -814,6 +822,18 @@
             },
             {
               "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
               "state": 1
             }
           ]
@@ -892,10 +912,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S16",
-              "state": 1
-            },
-            {
               "suggestionId": "S17",
               "state": 1
             },
@@ -948,10 +964,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S30",
-              "state": 1
-            },
-            {
               "suggestionId": "S31",
               "state": 1
             },
@@ -965,6 +977,18 @@
             },
             {
               "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
               "state": 1
             }
           ]
@@ -1120,7 +1144,7 @@
           "sensors": [
             {
               "sensorId": "0000F269",
-              "lastUpdate": "2025-04-24T20:40:57Z"
+              "lastUpdate": "2025-04-25T03:15:57Z"
             }
           ],
           "suggestions": [
@@ -1189,10 +1213,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S16",
-              "state": 1
-            },
-            {
               "suggestionId": "S17",
               "state": 1
             },
@@ -1245,10 +1265,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S30",
-              "state": 1
-            },
-            {
               "suggestionId": "S31",
               "state": 1
             },
@@ -1262,6 +1278,18 @@
             },
             {
               "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
               "state": 1
             }
           ]
@@ -1271,11 +1299,11 @@
           "sensors": [
             {
               "sensorId": "0000B323",
-              "lastUpdate": "2025-04-24T20:42:55Z"
+              "lastUpdate": "2025-04-25T03:17:55Z"
             },
             {
               "sensorId": "0000F258",
-              "lastUpdate": "2025-04-24T20:44:55Z"
+              "lastUpdate": "2025-04-25T03:14:55Z"
             }
           ],
           "suggestions": [
@@ -1344,10 +1372,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S16",
-              "state": 1
-            },
-            {
               "suggestionId": "S17",
               "state": 1
             },
@@ -1400,10 +1424,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S30",
-              "state": 1
-            },
-            {
               "suggestionId": "S31",
               "state": 1
             },
@@ -1417,6 +1437,18 @@
             },
             {
               "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
               "state": 1
             }
           ]
@@ -1426,7 +1458,7 @@
           "sensors": [
             {
               "sensorId": "0000F26B",
-              "lastUpdate": "2025-04-24T20:40:32Z"
+              "lastUpdate": "2025-04-25T03:20:32Z"
             }
           ],
           "suggestions": [
@@ -1495,10 +1527,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S16",
-              "state": 1
-            },
-            {
               "suggestionId": "S17",
               "state": 1
             },
@@ -1551,10 +1579,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S30",
-              "state": 1
-            },
-            {
               "suggestionId": "S31",
               "state": 1
             },
@@ -1568,6 +1592,18 @@
             },
             {
               "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
               "state": 1
             }
           ]
@@ -1577,7 +1613,7 @@
           "sensors": [
             {
               "sensorId": "0000F26C",
-              "lastUpdate": "2025-04-24T20:41:33Z"
+              "lastUpdate": "2025-04-25T03:16:33Z"
             }
           ],
           "suggestions": [
@@ -1646,10 +1682,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S16",
-              "state": 1
-            },
-            {
               "suggestionId": "S17",
               "state": 1
             },
@@ -1702,10 +1734,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S30",
-              "state": 1
-            },
-            {
               "suggestionId": "S31",
               "state": 1
             },
@@ -1719,6 +1747,18 @@
             },
             {
               "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
               "state": 1
             }
           ]
@@ -1728,11 +1768,11 @@
           "sensors": [
             {
               "sensorId": "0000F26A",
-              "lastUpdate": "2025-04-24T20:44:14Z"
+              "lastUpdate": "2025-04-25T03:19:14Z"
             },
             {
               "sensorId": "0000F264",
-              "lastUpdate": "2025-04-24T20:37:37Z"
+              "lastUpdate": "2025-04-25T03:17:37Z"
             }
           ],
           "suggestions": [
@@ -1801,10 +1841,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S16",
-              "state": 1
-            },
-            {
               "suggestionId": "S17",
               "state": 1
             },
@@ -1857,10 +1893,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S30",
-              "state": 1
-            },
-            {
               "suggestionId": "S31",
               "state": 1
             },
@@ -1874,6 +1906,18 @@
             },
             {
               "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
               "state": 1
             }
           ]
@@ -1883,7 +1927,7 @@
           "sensors": [
             {
               "sensorId": "0000F257",
-              "lastUpdate": "2025-04-24T20:44:45Z"
+              "lastUpdate": "2025-04-25T03:14:45Z"
             }
           ],
           "suggestions": [
@@ -1952,10 +1996,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S16",
-              "state": 1
-            },
-            {
               "suggestionId": "S17",
               "state": 1
             },
@@ -2008,10 +2048,6 @@
               "state": 1
             },
             {
-              "suggestionId": "S30",
-              "state": 1
-            },
-            {
               "suggestionId": "S31",
               "state": 1
             },
@@ -2025,6 +2061,18 @@
             },
             {
               "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
               "state": 1
             }
           ]
@@ -2298,7 +2346,7 @@
     {
       "suggestionId": "S2",
       "suggestionName": "co2_night",
-      "text": "High CO₂ at night: ventilate early in the morning."
+      "text": "High CO₂ levels detected at night. Remember to ventilate early in the morning to refresh the air."
     },
     {
       "suggestionId": "S3",
@@ -2313,12 +2361,12 @@
     {
       "suggestionId": "S5",
       "suggestionName": "temp_trend_heat",
-      "text": "Temperature is rising and borderline: risk of overheating."
+      "text": "Temperature is borderline and rising: monitor the environment to prevent overheating."
     },
     {
       "suggestionId": "S6",
       "suggestionName": "temp_trend_cold",
-      "text": "Temperature is dropping and borderline: risk of overcooling."
+      "text": "Temperature is borderline and dropping: monitor to avoid excessive cooling."
     },
     {
       "suggestionId": "S7",
@@ -2348,12 +2396,12 @@
     {
       "suggestionId": "S12",
       "suggestionName": "pmv_heat_border",
-      "text": "Comfort zone at risk due to warming: intervene early."
+      "text": "It is starting to get warmer. Adjust the temperature early to stay comfortable."
     },
     {
       "suggestionId": "S13",
       "suggestionName": "pmv_cold_border",
-      "text": "Comfort zone at risk due to cooling: increase heating if needed."
+      "text": "It is starting to get cooler. Turn up the heating if needed to stay comfortable."
     },
     {
       "suggestionId": "S14",
@@ -2366,11 +2414,6 @@
       "text": "Thermal comfort not ideal: check clothing or airflow."
     },
     {
-      "suggestionId": "S16",
-      "suggestionName": "pmv_extreme",
-      "text": "Severe thermal discomfort: act on temperature and insulation."
-    },
-    {
       "suggestionId": "S17",
       "suggestionName": "ppd",
       "text": "High discomfort perception: check all parameters (T, RH, airflow)."
@@ -2378,27 +2421,27 @@
     {
       "suggestionId": "S18",
       "suggestionName": "humidity",
-      "text": "Air is too dry: use humidifier or add plants."
+      "text": "The air is very dry: consider using a humidifier or adding some plants."
     },
     {
       "suggestionId": "S19",
       "suggestionName": "humidity_weather",
-      "text": "Rain outside: natural ventilation less effective, use VMC."
+      "text": "It is raining and the air is already humid: avoid opening windows and use mechanical ventilation or a dehumidifier."
     },
     {
       "suggestionId": "S20",
       "suggestionName": "voc",
-      "text": "High VOCs: avoid chemical sources and ventilate."
+      "text": "High VOC levels detected: reduce the use of chemicals and ventilate the space well."
     },
     {
       "suggestionId": "S21",
       "suggestionName": "pm10",
-      "text": "High PM10: avoid opening windows, consider air purification."
+      "text": "High PM10 levels: keep windows closed and use an air purifier if possible."
     },
     {
       "suggestionId": "S22",
       "suggestionName": "pm10_trend",
-      "text": "PM10 is increasing: prepare to purify air."
+      "text": "PM10 levels are rising: get ready to close windows or use a purifier."
     },
     {
       "suggestionId": "S23",
@@ -2408,37 +2451,32 @@
     {
       "suggestionId": "S24",
       "suggestionName": "iaq_persist",
-      "text": "Persistent poor IAQ expected: consider structural solutions."
+      "text": "Poor air quality is expected to persist: consider long-term solutions like ventilation systems or purifiers."
     },
     {
       "suggestionId": "S25",
       "suggestionName": "draft",
-      "text": "Cold + dry + natural ventilation: reduce drafts or humidify."
+      "text": "Cold and dry air detected with natural ventilation: try reducing drafts and adding humidity."
     },
     {
       "suggestionId": "S26",
       "suggestionName": "score_metric_temperature",
-      "text": "Environment is good overall, but temperature is critical: take action."
+      "text": "Overall conditions are good, but attention needed: {metric} is critical. Please act accordingly."
     },
     {
       "suggestionId": "S27",
       "suggestionName": "voc_score",
-      "text": "VOC levels are high and forecast is bad: purify or ventilate now."
+      "text": "Air pollution is high and will persist. Purify the air or ventilate well as soon as possible."
     },
     {
       "suggestionId": "S28",
       "suggestionName": "score_improving",
-      "text": "Conditions are improving: maintain current settings."
+      "text": "Conditions are improving: keep current actions or settings."
     },
     {
       "suggestionId": "S29",
       "suggestionName": "score_co2_night",
       "text": "CO_2 is high at night despite good score: ventilate in the morning."
-    },
-    {
-      "suggestionId": "S30",
-      "suggestionName": "score_discomfort",
-      "text": "Environment score is bad but air is fine: check temperature or thermal comfort."
     },
     {
       "suggestionId": "S31",
@@ -2448,7 +2486,7 @@
     {
       "suggestionId": "S32",
       "suggestionName": "score_pollutants",
-      "text": "Air seems fine but pollutants are rising: act before they become critical."
+      "text": "Air seems fine, but pollutants are rising: act before they become critical."
     },
     {
       "suggestionId": "S33",
@@ -2459,6 +2497,21 @@
       "suggestionId": "S34",
       "suggestionName": "co2_norm",
       "text": "Open windows to improve air quality, or adjust your mechanical system if available."
+    },
+    {
+      "suggestionId": "S35",
+      "suggestionName": "temperature_cold",
+      "text": "Cold discomfort detected: increase indoor temperature."
+    },
+    {
+      "suggestionId": "S36",
+      "suggestionName": "temperature_hot",
+      "text": "Heat discomfort detected: lower temperature or improve airflow."
+    },
+    {
+      "suggestionId": "S16",
+      "suggestionName": "humidity_high",
+      "text": "The air is too humid: use a dehumidifier or ventilate more."
     }
   ],
   "technical_suggestions": [
