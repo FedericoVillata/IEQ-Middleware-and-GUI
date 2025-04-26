@@ -1,9 +1,14 @@
-import 'dart:convert';
+// lib/mqtt_suggestions_manager.dart
+//
+// Manages all incoming MQTT suggestions (both technical and tenant) using ChangeNotifier.
+// • Deduplicates technical suggestions by apartmentId|code.
+// • Supports tolerant parsing of SenML `n` field in formats: "code", "room/code", or "room/.../code".
 
-import 'package:mqtt_client/mqtt_browser_client.dart';
-import 'package:mqtt_client/mqtt_server_client.dart';
-import 'package:mqtt_client/mqtt_client.dart';
+import 'dart:convert';
 import 'package:flutter/foundation.dart' show ChangeNotifier, debugPrint, kIsWeb;
+import 'package:mqtt_client/mqtt_browser_client.dart';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'package:mqtt_client/mqtt_server_client.dart';
 
 /// ---------------------------------------------------------------------------
 ///  Model that represents a single *technical* suggestion received via MQTT
@@ -40,172 +45,234 @@ class TechnicalSuggestion {
 }
 
 /// ---------------------------------------------------------------------------
-/// `ChangeNotifier` that manages the live list of suggestions pushed by MQTT.
+///  Model that represents a single *tenant* suggestion received via MQTT
+/// ---------------------------------------------------------------------------
+class TenantSuggestion {
+  final String apartmentId;
+  final String roomId;
+  final String code;
+  final String message;
+  final DateTime timestamp;
+
+  TenantSuggestion({
+    required this.apartmentId,
+    required this.roomId,
+    required this.code,
+    required this.message,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+}
+
+/// ---------------------------------------------------------------------------
+/// `ChangeNotifier` that manages the live lists of suggestions pushed by MQTT.
 ///  * Works both on *mobile / desktop* (raw TCP – :1883) and on *web* (WS).
-///  * It now prevents duplicates based on the `n` field of the SenML payload.
+///  * Prevents duplicates of technical suggestions based on apartmentId|code.
+///  * Tolerant parsing of SenML `n`: "code", "room/code", or "room/.../code".
 /// ---------------------------------------------------------------------------
 class MqttSuggestionsManager extends ChangeNotifier {
   // ──────────────────────────────────────────────────────────────────────────
-  //  Public, read‑only list exposed to the UI
+  //  Public, read-only lists exposed to the UI
   // ──────────────────────────────────────────────────────────────────────────
-  final List<TechnicalSuggestion> _all = [];
-  List<TechnicalSuggestion> get allSuggestions => List.unmodifiable(_all);
+  final List<TechnicalSuggestion> _technical = [];
+  final List<TenantSuggestion>     _tenant    = [];
 
-  // Keys in the form `apartmentId|suggestionCode` currently shown to the user.
-  // Used to avoid showing the same code twice until it is *acknowledged*.
-  final Set<String> _activeKeys = {};
+  List<TechnicalSuggestion> get allTechnicalSuggestions =>
+      List.unmodifiable(_technical);
+  List<TenantSuggestion> get allTenantSuggestions =>
+      List.unmodifiable(_tenant);
 
-  // MQTT internals -----------------------------------------------------------
+  // ──────────────────────────────────────────────────────────────────────────
+  //  Read/unread tracking & deduplication
+  // ──────────────────────────────────────────────────────────────────────────
+  final Set<String> _techRead       = {}; // keys = "apt|code"
+  final Set<String> _tenRead        = {}; // keys = "apt|room|code"
+  final Set<String> _activeTechKeys = {}; // for deduplicating technical
+
+  String _tKey(TenantSuggestion s)   => '${s.apartmentId}|${s.roomId}|${s.code}';
+  String _cKey(TechnicalSuggestion s)=> '${s.apartmentId}|${s.code}';
+
+  /// Count unread technical suggestions for a given apartment.
+  int unreadTechnicalCount(String apartment) =>
+      _technical.where((s) =>
+        s.apartmentId == apartment && !_techRead.contains(_cKey(s))
+      ).length;
+
+  /// Count unread tenant suggestions for a given apartment and room.
+  int unreadTenantCount(String apartment, String room) =>
+      _tenant.where((s) =>
+        s.apartmentId == apartment &&
+        s.roomId      == room &&
+        !_tenRead.contains(_tKey(s))
+      ).length;
+
+  /// Mark all technical suggestions in an apartment as read.
+  void markTechnicalRead(String apartment) {
+    for (final s in _technical.where((t) => t.apartmentId == apartment)) {
+      _techRead.add(_cKey(s));
+    }
+    notifyListeners();
+  }
+
+  /// Mark all tenant suggestions for apartment+room as read.
+  void markTenantRead(String apartment, String room) {
+    for (final s in _tenant.where((t) =>
+        t.apartmentId == apartment && t.roomId == room)) {
+      _tenRead.add(_tKey(s));
+    }
+    notifyListeners();
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  //  Add / remove suggestions
+  // ──────────────────────────────────────────────────────────────────────────
+  /// Add a new technical suggestion, ignoring duplicates by key.
+  void addTechnicalSuggestion(TechnicalSuggestion suggestion) {
+    final key = _cKey(suggestion);
+    if (_activeTechKeys.contains(key)) return;
+    _technical.add(suggestion);
+    _activeTechKeys.add(key);
+    _techRead.remove(key); // new → unread
+    notifyListeners();
+  }
+
+  /// Add a new tenant suggestion.
+  void addTenantSuggestion(TenantSuggestion suggestion) {
+    _tenant.add(suggestion);
+    _tenRead.remove(_tKey(suggestion)); // new → unread
+    notifyListeners();
+  }
+
+  /// Remove (acknowledge) a technical suggestion.
+  void removeTechnicalSuggestion(TechnicalSuggestion suggestion) {
+    _technical.remove(suggestion);
+    final key = _cKey(suggestion);
+    _activeTechKeys.remove(key);
+    _techRead.remove(key);
+    notifyListeners();
+  }
+
+  /// Remove (acknowledge) a tenant suggestion.
+  void removeTenantSuggestion(TenantSuggestion suggestion) {
+    _tenant.remove(suggestion);
+    _tenRead.remove(_tKey(suggestion));
+    notifyListeners();
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  //  MQTT connection & stream handling
+  // ──────────────────────────────────────────────────────────────────────────
   late final MqttClient _client;
   bool _initialised = false;
-
-  /// Avoid duplicate subscriptions to the same topic.
   final Set<String> _subscribedTopics = {};
 
-  // -------------------------------------------------------------------------
-  //  Public helpers (called from the UI) ------------------------------------
-  // -------------------------------------------------------------------------
-  void addSuggestion(TechnicalSuggestion s) {
-    final String key = '${s.apartmentId}|${s.code}';
-
-    //  If the *code* is already active for this apartment, we do nothing.
-    if (_activeKeys.contains(key)) return;
-
-    _all.add(s);
-    _activeKeys.add(key);
-    notifyListeners();
-  }
-
-  void removeSuggestion(TechnicalSuggestion s) {
-    _all.remove(s);
-    _activeKeys.remove('${s.apartmentId}|${s.code}');
-    notifyListeners();
-  }
-
-  // -------------------------------------------------------------------------
-  //  MQTT set‑up -------------------------------------------------------------
-  // -------------------------------------------------------------------------
+  /// Initialize MQTT client, connect, and subscribe to topics.
   Future<void> initMqtt({
     required String brokerHost,
     required int brokerPort,
     required String topicBase,
     required List<String> apartmentsToListen,
   }) async {
-    if (!_initialised) {
-      _initialised = true;
+    if (_initialised) return;
+    _initialised = true;
 
-      final String clientId =
-          'techSuggestions_${DateTime.now().millisecondsSinceEpoch}';
+    final clientId = 'suggestions_${DateTime.now().millisecondsSinceEpoch}';
 
-      // ── Choose the correct client depending on the platform ──────────────
-      if (kIsWeb) {
-        // → WebSocket transport
-        final String scheme = brokerPort == 443 ? 'wss' : 'ws';
-        final String url = '$scheme://$brokerHost:$brokerPort/mqtt';
-
-        _client = MqttBrowserClient(url, clientId)
-          ..port = brokerPort
-          ..websocketProtocols = const <String>['mqtt']
-          ..keepAlivePeriod = 20
-          ..logging(on: false)
-          ..connectionMessage = MqttConnectMessage()
-              .withClientIdentifier(clientId)
-              .startClean()
-              .withWillQos(MqttQos.atLeastOnce);
-      } else {
-        // → Native TCP transport
-        _client = MqttServerClient(brokerHost, clientId)
-          ..port = brokerPort
-          ..keepAlivePeriod = 20
-          ..logging(on: false)
-          ..connectionMessage = MqttConnectMessage()
-              .withClientIdentifier(clientId)
-              .startClean()
-              .withWillQos(MqttQos.atLeastOnce);
-      }
-
-      // Optional logging ---------------------------------------------------
-      _client.onConnected = () => debugPrint('[MQTT] connected');
-      _client.onSubscribed = (topic) => debugPrint('[MQTT] subscribed → $topic');
-
-      try {
-        await _client.connect();
-      } catch (e) {
-        debugPrint('[MQTT] connection error → $e');
-        return;
-      }
-
-      if (_client.connectionStatus?.state != MqttConnectionState.connected) {
-        debugPrint('[MQTT] failed connection – state: ${_client.connectionStatus?.state}');
-        return;
-      }
-
-      // Stream listener -----------------------------------------------------
-      _client.updates?.listen(
-        (List<MqttReceivedMessage<MqttMessage>> messages) {
-          final rec = messages.first;
-          final topic = rec.topic;
-          final apartmentId = topic.split('/').elementAtOrNull(1) ?? '';
-
-          final msg = rec.payload as MqttPublishMessage;
-          final payload =
-              MqttPublishPayload.bytesToStringAsString(msg.payload.message);
-          debugPrint('[MQTT] raw payload: $payload');
-
-          try {
-            final Map<String, dynamic> data = jsonDecode(payload);
-            final List<dynamic>? events = data['e'] as List<dynamic>?;
-            if (events == null) return;
-            for (final evt in events) {
-              _processEvent(evt, apartmentId);
-            }
-          } catch (e) {
-            debugPrint('[MQTT] parse error → $e');
-          }
-        },
-      );
+    // Select transport based on platform
+    if (kIsWeb) {
+      final scheme = brokerPort == 443 ? 'wss' : 'ws';
+      _client = MqttBrowserClient('$scheme://$brokerHost:$brokerPort/mqtt', clientId);
+    } else {
+      _client = MqttServerClient(brokerHost, clientId);
     }
 
-    // (Re)subscribe ---------------------------------------------------------
+    _client
+      ..port = brokerPort
+      ..keepAlivePeriod = 20
+      ..logging(on: false)
+      ..connectionMessage = MqttConnectMessage()
+          .withClientIdentifier(clientId)
+          .startClean()
+          .withWillQos(MqttQos.atLeastOnce);
+
+    _client.onConnected  = () => debugPrint('[MQTT] connected');
+    _client.onSubscribed = (t) => debugPrint('[MQTT] subscribed → $t');
+
+    try {
+      await _client.connect();
+    } catch (e) {
+      debugPrint('[MQTT] connection error → $e');
+      return;
+    }
+
+    // Listen for publications
+    _client.updates?.listen((messages) {
+      final rec         = messages.first;
+      final topic       = rec.topic;
+      final apartmentId = topic.split('/').elementAtOrNull(1) ?? '';
+      final payload     = MqttPublishPayload.bytesToStringAsString(
+        (rec.payload as MqttPublishMessage).payload.message
+      );
+
+      try {
+        final data   = jsonDecode(payload) as Map<String, dynamic>;
+        final events = data['e'] as List<dynamic>?;
+        if (events == null) return;
+        final isTech = topic.contains('technical_suggestion');
+        for (final evt in events) {
+          _processEvent(evt, apartmentId, isTech);
+        }
+      } catch (e) {
+        debugPrint('[MQTT] parse error → $e');
+      }
+    });
+
+    // Subscribe to each apartment's topics
     for (final apt in apartmentsToListen) {
-      final String topic = '$topicBase/$apt/technical_suggestion';
-      if (_subscribedTopics.add(topic)) {
-        _client.subscribe(topic, MqttQos.exactlyOnce);
+      final techTopic   = '$topicBase/$apt/technical_suggestion';
+      final tenantTopic = '$topicBase/$apt/tenant_suggestion';
+      if (_subscribedTopics.add(techTopic)) {
+        _client.subscribe(techTopic, MqttQos.exactlyOnce);
+      }
+      if (_subscribedTopics.add(tenantTopic)) {
+        _client.subscribe(tenantTopic, MqttQos.exactlyOnce);
       }
     }
   }
 
-  // -------------------------------------------------------------------------
-  //  Internal helpers --------------------------------------------------------
-  // -------------------------------------------------------------------------
-  void _processEvent(dynamic evt, String apartmentId) {
+  /// Parse a single SenML event and dispatch to the proper list.
+  void _processEvent(dynamic evt, String apartmentId, bool isTech) {
     if (evt is! Map<String, dynamic>) return;
 
-    final String name = evt['n']?.toString() ?? '';
-    final String value = evt['v']?.toString() ?? '';
+    final name    = evt['n']?.toString() ?? '';
+    final message = evt['v']?.toString() ?? '';
+    final parts   = name.split('/');
 
-    String roomId = '';
+    String room = '';
     String code = '';
 
-    // Accept both "roomId/suggestionCode" and plain "suggestionCode"
-    final parts = name.split('/');
-    if (parts.length == 2) {
-      roomId = parts[0];
-      code = parts[1];
+    if (parts.length >= 2) {
+      room = parts.first;
+      code = parts.last;
     } else if (parts.length == 1) {
       code = parts[0];
     } else {
-      // Unexpected format → skip
-      return;
+      return; // unexpected format
     }
 
-    addSuggestion(
-      TechnicalSuggestion(
+    if (isTech) {
+      addTechnicalSuggestion(TechnicalSuggestion(
         apartmentId: apartmentId,
-        roomId: roomId,
+        roomId: room,
         code: code,
-        message: value,
-      ),
-    );
+        message: message,
+      ));
+    } else {
+      addTenantSuggestion(TenantSuggestion(
+        apartmentId: apartmentId,
+        roomId: room,
+        code: code,
+        message: message,
+      ));
+    }
   }
 }
