@@ -1,7 +1,12 @@
-import 'package:flutter/material.dart';
+// pages/tenant_feedback_page.dart
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
+import 'package:mqtt_client/mqtt_browser_client.dart';
+
+import '../widgets/suggestions_bell.dart';
 
 class FeedbackPage extends StatefulWidget {
   final String username;
@@ -20,9 +25,9 @@ class FeedbackPage extends StatefulWidget {
 }
 
 class _FeedbackPageState extends State<FeedbackPage> {
-  int tempRating = 0;
-  int humRating = 0;
-  int envRating = 0;
+  int tempRating    = 0;
+  int humRating     = 0;
+  int envRating     = 0;
   int serviceRating = 0;
 
   final List<Color> ratingColors = [
@@ -33,66 +38,88 @@ class _FeedbackPageState extends State<FeedbackPage> {
     Colors.green,
   ];
 
+  // ───────────────────────────────── MQTT helper
   Future<void> _submitFeedback(String category, int rating) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Feedback'),
-        content: Text('Do you confirm a "$rating" rating for "$category"?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirm')),
-        ],
+    // 1. Conferma
+    final confirmed = await showDialog<bool>(
+  context: context,
+  builder: (dialogCtx) => AlertDialog(
+    title: const Text('Confirm Feedback'),
+    content: Text('Do you confirm a "$rating" rating for "$category"?'),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(dialogCtx, false),
+        child: const Text('Cancel'),
       ),
-    );
+      TextButton(
+        onPressed: () => Navigator.pop(dialogCtx, true), // <-- dialogCtx
+        child: const Text('Confirm'),
+      ),
+    ],
+  ),
+);
+    if (confirmed != true || !mounted) return;
 
-    if (confirm != true) return;
+    // 2. Topic & Payload SenML
+    final topic     = 'IEQmidAndGUI/${widget.apartmentId}';
+    final ts        = DateTime.now().millisecondsSinceEpoch / 1000.0;
+    final parts     = category.split(' ');
+    final nPart     = parts.isNotEmpty ? parts.first : 'Unknown';
+    final uPart     = parts.length > 1 ? parts.sublist(1).join(' ') : 'Feedback';
 
-    final topic = 'IEQmidAndGUI/${widget.apartmentId}';
-    final timestamp = DateTime.now().millisecondsSinceEpoch / 1000.0;
-
-    final parts = category.split(' ');
-    final nPart = parts.isNotEmpty ? parts[0] : 'Unknown';
-    final uPart = parts.length > 1 ? parts.sublist(1).join(' ') : 'Feedback';
-
-    // ✅ Structured payload with "bn" and "e"
     final payload = jsonEncode({
       'bn': topic,
-      'e': [
+      'e' : [
         {
           'n': '$nPart/Feedback/${widget.username}',
           'u': uPart,
-          't': timestamp.toString(),
+          't': ts,            // numerico, non stringa
           'v': rating,
         }
       ]
     });
 
-    final clientId = 'flutter_client_${DateTime.now().millisecondsSinceEpoch}';
-    final client = MqttServerClient('mqtt.eclipseprojects.io', clientId);
-    client.logging(on: false);
-    client.port = 1883;
-    client.keepAlivePeriod = 20;
-    client.onDisconnected = () => debugPrint('MQTT Disconnected');
+    // 3. Client WS su Web, TCP su mobile/desktop
+    const brokerHost = 'mqtt.eclipseprojects.io';
+    const tcpPort    = 1883;
+    const wsUrl      = 'wss://mqtt.eclipseprojects.io/mqtt';
+
+    final clientId = 'feedback_${DateTime.now().millisecondsSinceEpoch}';
+    late final MqttClient client;
+
+    if (kIsWeb) {
+      client = MqttBrowserClient(wsUrl, clientId)
+        ..websocketProtocols = const ['mqtt'];
+    } else {
+      client = MqttServerClient(brokerHost, clientId)..port = tcpPort;
+    }
+
+    client
+      ..keepAlivePeriod = 20
+      ..logging(on: false)
+      ..onDisconnected = () => debugPrint('[MQTT] disconnected');
 
     try {
       await client.connect();
-      final builder = MqttClientPayloadBuilder();
-      builder.addString(payload);
+      final builder = MqttClientPayloadBuilder()..addString(payload);
       client.publishMessage(topic, MqttQos.atLeastOnce, builder.payload!);
-      await Future.delayed(const Duration(seconds: 1));
+      await Future.delayed(const Duration(milliseconds: 600));
       client.disconnect();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Feedback sent!')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Feedback sent!')),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ MQTT error: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ MQTT error: $e')),
+        );
+      }
     }
   }
 
+  // ───────────────────────────────── build
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,100 +127,101 @@ class _FeedbackPageState extends State<FeedbackPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 2,
-        centerTitle: true,
-        title: const Text(
-          "Give Your Daily Feedback",
-          style: TextStyle(color: Colors.black),
-        ),
+        title: const Text('Give Your Daily Feedback', style: TextStyle(color: Colors.black)),
+        actions: [
+          SuggestionsBell(
+            username   : widget.username,
+            apartmentId: widget.apartmentId,
+            roomId     : widget.roomId,
+            isTechnical: false,
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildRatingSection(
-              "Temperature Perception",
-              tempRating,
-              (rating) => setState(() {
-                tempRating = rating;
-                _submitFeedback("Temperature Perception", rating);
-              }),
-              icons: List.filled(5, Icons.device_thermostat),
-            ),
-            const SizedBox(height: 16),
-            _buildRatingSection(
-              "Humidity Perception",
-              humRating,
-              (rating) => setState(() {
-                humRating = rating;
-                _submitFeedback("Humidity Perception", rating);
-              }),
-              icons: List.filled(5, Icons.water_drop),
-            ),
-            const SizedBox(height: 16),
-            _buildRatingSection(
-              "Environment Satisfaction",
-              envRating,
-              (rating) => setState(() {
-                envRating = rating;
-                _submitFeedback("Environment Satisfaction", rating);
-              }),
-              icons: const [
-                Icons.sentiment_very_dissatisfied,
-                Icons.sentiment_dissatisfied,
-                Icons.sentiment_neutral,
-                Icons.sentiment_satisfied,
-                Icons.sentiment_very_satisfied,
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildRatingSection(
-              "Service Rating",
-              serviceRating,
-              (rating) => setState(() {
-                serviceRating = rating;
-                _submitFeedback("Service Rating", rating);
-              }),
-              icons: const [
-                Icons.thumb_down,
-                Icons.thumb_down_alt,
-                Icons.thumbs_up_down,
-                Icons.thumb_up_alt,
-                Icons.thumb_up,
-              ],
-            ),
-          ],
-        ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildRatingSection(
+            'Temperature Perception',
+            tempRating,
+            (r) {
+              setState(() => tempRating = r);
+              _submitFeedback('Temperature Perception', r);
+            },
+            icons: List.filled(5, Icons.device_thermostat),
+          ),
+          const SizedBox(height: 16),
+          _buildRatingSection(
+            'Humidity Perception',
+            humRating,
+            (r) {
+              setState(() => humRating = r);
+              _submitFeedback('Humidity Perception', r);
+            },
+            icons: List.filled(5, Icons.water_drop),
+          ),
+          const SizedBox(height: 16),
+          _buildRatingSection(
+            'Environment Satisfaction',
+            envRating,
+            (r) {
+              setState(() => envRating = r);
+              _submitFeedback('Environment Satisfaction', r);
+            },
+            icons: const [
+              Icons.sentiment_very_dissatisfied,
+              Icons.sentiment_dissatisfied,
+              Icons.sentiment_neutral,
+              Icons.sentiment_satisfied,
+              Icons.sentiment_very_satisfied,
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildRatingSection(
+            'Service Rating',
+            serviceRating,
+            (r) {
+              setState(() => serviceRating = r);
+              _submitFeedback('Service Rating', r);
+            },
+            icons: const [
+              Icons.thumb_down,
+              Icons.thumb_down_alt,
+              Icons.thumbs_up_down,
+              Icons.thumb_up_alt,
+              Icons.thumb_up,
+            ],
+          ),
+        ],
       ),
     );
   }
 
+  // ───────────────────────────────── helper widget
   Widget _buildRatingSection(
     String title,
     int rating,
-    Function(int) onRatingChanged, {
+    ValueChanged<int> onRatingChanged, {
     required List<IconData> icons,
   }) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(icons.length, (index) {
-                final iconColor =
-                    index < rating ? ratingColors[rating - 1] : Colors.grey;
+              children: List.generate(icons.length, (i) {
+                final selected = i < rating;
+                final color    = selected ? ratingColors[rating - 1] : Colors.grey;
                 return IconButton(
                   iconSize: 30,
-                  icon: Icon(icons[index], color: iconColor),
-                  onPressed: () => onRatingChanged(index + 1),
+                  icon: Icon(icons[i], color: color),
+                  onPressed: () => onRatingChanged(i + 1),
                 );
               }),
             ),
