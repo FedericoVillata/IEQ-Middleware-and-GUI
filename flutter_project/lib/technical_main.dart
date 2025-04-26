@@ -5,16 +5,12 @@ import 'pages/technical_feedback_page.dart';
 import 'pages/technical_threshold_page.dart';
 import 'pages/technical_deleted_suggestions.dart';
 import 'pages/technical_suggestions_page.dart';
-// Import the new page
 import 'pages/technical_advanced_page.dart';
+import 'login_page.dart';
 
 class TechnicalMainPage extends StatefulWidget {
   final String username;
-
-  const TechnicalMainPage({
-    Key? key,
-    required this.username,
-  }) : super(key: key);
+  const TechnicalMainPage({super.key, required this.username});
 
   static _TechnicalMainPageState? of(BuildContext ctx) =>
       ctx.findAncestorStateOfType<_TechnicalMainPageState>();
@@ -27,208 +23,142 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
   String? selectedLocation;
   int _currentIndex = 0;
 
-  void goToSuggestions() {
-    setState(() => _currentIndex = 5);
-  }
+  void goToSuggestions() => setState(() => _currentIndex = 5);
 
-  late List<Widget> pages;
+  late List<Widget> pages = List.filled(6, const Placeholder());
 
-  @override
-  void initState() {
-    super.initState();
-    // Placeholder pages if no location selected
+  /* ---------- location handling ---------- */
+  void _buildPagesFor(String loc) {
     pages = [
-      const Placeholder(),
-      const Placeholder(),
-      const Placeholder(),
-      const Placeholder(),
-      const Placeholder(),
-      const Placeholder(),
+      TechnicalHomePage(username: widget.username, location: loc),
+      TechnicalAdvancePage(username: widget.username, location: loc),
+      TechnicalFeedbackPage(username: widget.username, location: loc),
+      TechnicalThresholdPage(username: widget.username, location: loc),
+      TechnicalDeletedSuggestionsPage(username: widget.username, location: loc),
+      TechnicalSuggestionsPage(username: widget.username, location: loc),
     ];
   }
 
-  void onLocationSelected(String loc) {
+  void _onLocationSelected(String loc) {
     setState(() {
       selectedLocation = loc;
-      pages = [
-        // index 0
-        TechnicalHomePage(username: widget.username, location: selectedLocation),
-        // index 1
-        TechnicalAdvancePage(username: widget.username, location: selectedLocation),
-        // index 2
-        TechnicalFeedbackPage(username: widget.username, location: selectedLocation),
-        // index 3
-        TechnicalThresholdPage(username: widget.username, location: selectedLocation),
-        // index 4
-        TechnicalDeletedSuggestionsPage(username: widget.username, location: selectedLocation),
-        // index 5
-        TechnicalSuggestionsPage(username: widget.username, location: selectedLocation),
-      ];
+      _currentIndex = 0;
+      _buildPagesFor(loc);
     });
   }
 
+  /* ---------------- build ---------------- */
   @override
   Widget build(BuildContext context) {
-    // If no location selected, show the location selection page
+    // Se non è ancora stato scelto l’appartamento → pagina di selezione
     if (selectedLocation == null) {
       return LocationSelectionPage(
         username: widget.username,
-        onLocationSelected: onLocationSelected,
+        onLocationSelected: _onLocationSelected,
       );
     }
 
-    // Otherwise, show the main interface
     return Scaffold(
       appBar: AppBar(
-        title: Text("Technical Interface - $selectedLocation"),
+        title: Text('Technical Interface – $selectedLocation'),
+        // ← freccia indietro che riporta alla scelta appartamento
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => setState(() {
+            selectedLocation = null;
+            _currentIndex = 0;
+          }),
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Logout',
+            icon: const Icon(Icons.logout),
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginPage()),
+            ),
+          ),
+        ],
       ),
       body: Row(
         children: [
-          // Sidebar
-          Container(
-            width: 240,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF1A73E8),
-                  Color(0xFF1669C1),
-                ],
-              ),
-            ),
-            child: SafeArea(
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  CircleAvatar(
-                    radius: 35,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.engineering_rounded,
-                      size: 40,
-                      color: Colors.blueAccent,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Technical Menu",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Divider(
-                    color: Colors.white54,
-                    thickness: 1,
-                    indent: 16,
-                    endIndent: 16,
-                  ),
-                  const SizedBox(height: 4),
-
-                  // index=0: Detailed Metrics
-                  _buildSidebarItem(
-                    icon: Icons.home,
-                    label: "Detailed Metrics",
-                    index: 0,
-                  ),
-
-                  // index=1: Advanced Metrics (NEW)
-                  _buildSidebarItem(
-                    icon: Icons.construction, // or any relevant icon
-                    label: "Advanced Metrics",
-                    index: 1,
-                  ),
-
-                  // index=2: Tenant Feedback
-                  _buildSidebarItem(
-                    icon: Icons.bar_chart,
-                    label: "Tenant Feedback",
-                    index: 2,
-                  ),
-                  // index=3: Threshold Adjustments
-                  _buildSidebarItem(
-                    icon: Icons.settings,
-                    label: "Threshold Adjust.",
-                    index: 3,
-                  ),
-                  // index=4: Deleted Suggestions
-                  _buildSidebarItem(
-                    icon: Icons.delete_forever,
-                    label: "Deleted Suggs.",
-                    index: 4,
-                  ),
-                  // index=5: Technical Suggestions
-                  _buildSidebarItem(
-                    icon: Icons.lightbulb,
-                    label: "Tech. Suggestions",
-                    index: 5,
-                  ),
-
-                  const Spacer(),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.blue,
-                        minimumSize: const Size(double.infinity, 48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      icon: const Icon(Icons.logout),
-                      label: const Text("Change Location"),
-                      onPressed: () {
-                        setState(() {
-                          selectedLocation = null;
-                          _currentIndex = 0;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
+          _Sidebar(
+            currentIndex: _currentIndex,
+            onChangeTab: (i) => setState(() => _currentIndex = i),
           ),
-
-          // Main content
-          Expanded(
-            child: pages[_currentIndex],
-          ),
+          Expanded(child: pages[_currentIndex]),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSidebarItem({
-    required IconData icon,
-    required String label,
-    required int index,
-  }) {
-    final bool selected = _currentIndex == index;
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _currentIndex = index;
-        });
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: selected ? Colors.white.withOpacity(0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: ListTile(
-          leading: Icon(icon, color: Colors.white),
-          title: Text(
-            label,
-            style: const TextStyle(color: Colors.white),
+/* ---------------- Sidebar widget (staccato per chiarezza) -------------- */
+class _Sidebar extends StatelessWidget {
+  final int currentIndex;
+  final void Function(int) onChangeTab;
+
+  const _Sidebar({required this.currentIndex, required this.onChangeTab});
+
+  Widget _item(IconData icon, String label, int idx) => InkWell(
+        onTap: () => onChangeTab(idx),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: currentIndex == idx
+                ? Colors.white.withOpacity(0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
           ),
+          child: ListTile(
+            leading: Icon(icon, color: Colors.white),
+            title: Text(label, style: const TextStyle(color: Colors.white)),
+          ),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 240,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1A73E8), Color(0xFF1669C1)],
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            const CircleAvatar(
+              radius: 35,
+              backgroundColor: Colors.white,
+              child: Icon(Icons.engineering_rounded,
+                  size: 40, color: Colors.blueAccent),
+            ),
+            const SizedBox(height: 8),
+            const Text('Technical Menu',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            const Divider(
+              color: Colors.white54,
+              thickness: 1,
+              indent: 16,
+              endIndent: 16,
+            ),
+            _item(Icons.home,           'Detailed Metrics', 0),
+            _item(Icons.construction,   'Advanced Metrics', 1),
+            _item(Icons.bar_chart,      'Tenant Feedback',  2),
+            _item(Icons.settings,       'Threshold Adjust.',3),
+            _item(Icons.delete_forever, 'Deleted Suggs.',   4),
+            _item(Icons.lightbulb,      'Tech. Suggestions',5),
+            const Spacer(),
+          ],
         ),
       ),
     );
