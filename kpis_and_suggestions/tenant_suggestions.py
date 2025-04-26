@@ -30,6 +30,12 @@ def smart_suggestions(classifications, values, settings, trends=None):
     humidity = values.get("humidity")
     pmv = values.get("pmv")
     t_ext = values.get("t_ext")
+    if t_ext is None:
+        forecast = settings.get("values", {}).get("forecast", {})
+        t_ext = forecast.get("current_temp")
+    if t_ext is not None:
+        log(f"t_ext was missing, recovered from forecast: {t_ext}", level="DEBUG", context="Suggestions")
+
     hour = values.get("hour", datetime.now().hour)
 
     ventilation = settings["values"].get("ventilation", "nat")
@@ -41,16 +47,13 @@ def smart_suggestions(classifications, values, settings, trends=None):
     if classifications.get("co2") in ["Y", "R"]:
         if t_ext is not None and t_ext < 5:
             suggestions["co2"] = (
-                "Avoid prolonged ventilation: it's too cold outside. Open briefly or use mechanical ventilation."
-                if ventilation == "nat" else
-                "Increase mechanical ventilation to improve air quality."
+                "Avoid prolonged ventilation: it's too cold outside. Open briefly or use your mechanical system to improve air exchange."
             )
         else:
-            suggestions["co2"] = (
-                "Open windows to improve air quality."
-                if ventilation == "nat" else
-                "Increase VMC flow rate to reduce CO₂."
+            suggestions["co2_norm"] = (
+                "Open windows to improve air quality, or adjust your mechanical system if available."
             )
+
 
     if classifications.get("co2") == "Y" and trends and trends.get("co2") == "rising":
         suggestions["co2_trend"] = "CO₂ is rising: consider preventive ventilation."

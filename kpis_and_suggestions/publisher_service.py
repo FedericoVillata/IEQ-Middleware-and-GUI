@@ -24,7 +24,7 @@ def publish_room_metrics(publisher, base_topic, apartment_id, room_id, metrics):
         {"n": f"humidity_class/{room_id}/class", "u": "class", "t": timestamp, "v": metrics.get("hum_class")},
         {"n": f"avg_co2/{room_id}/value", "u": "ppm", "t": timestamp, "v": metrics.get("avg_co2")},
         {"n": f"co2_class/{room_id}/class", "u": "class", "t": timestamp, "v": metrics.get("co2_class")},
-        {"n": f"pmv_kpis/{room_id}/value", "u": "arb", "t": timestamp, "v": metrics.get("pmv")},
+        {"n": f"pmv/{room_id}/value", "u": "arb", "t": timestamp, "v": metrics.get("pmv")},
         {"n": f"pmv_class/{room_id}/class", "u": "class", "t": timestamp, "v": metrics.get("pmv_class")},
         {"n": f"ppd/{room_id}/value", "u": "%", "t": timestamp, "v": metrics.get("ppd")},
         {"n": f"ppd_class/{room_id}/class", "u": "class", "t": timestamp, "v": metrics.get("ppd_class")},

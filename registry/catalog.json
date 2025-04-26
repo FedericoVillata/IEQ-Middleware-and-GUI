@@ -45,7 +45,7 @@
           "sensors": [
             {
               "sensorId": "sensor0",
-              "lastUpdate": "2025-04-14T16:49:22.154054Z"
+              "lastUpdate": "2025-04-26T17:53:34.734087Z"
             }
           ],
           "suggestions": [
@@ -183,6 +183,10 @@
             },
             {
               "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
               "state": 1
             }
           ]
@@ -192,7 +196,7 @@
           "sensors": [
             {
               "sensorId": "sensor1",
-              "lastUpdate": 0
+              "lastUpdate": "2025-04-26T17:53:34.734342Z"
             }
           ],
           "suggestions": [
@@ -330,6 +334,10 @@
             },
             {
               "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
               "state": 1
             }
           ]
@@ -501,6 +509,10 @@
             {
               "suggestionId": "S33",
               "state": 1
+            },
+            {
+              "suggestionId": "S34",
+              "state": 1
             }
           ]
         },
@@ -647,6 +659,10 @@
             },
             {
               "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
               "state": 1
             }
           ]
@@ -795,6 +811,10 @@
             {
               "suggestionId": "S33",
               "state": 1
+            },
+            {
+              "suggestionId": "S34",
+              "state": 1
             }
           ]
         },
@@ -941,6 +961,10 @@
             },
             {
               "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
               "state": 1
             }
           ]
@@ -1096,7 +1120,7 @@
           "sensors": [
             {
               "sensorId": "0000F269",
-              "lastUpdate": "2025-03-16T02:33:33Z"
+              "lastUpdate": "2025-04-24T20:40:57Z"
             }
           ],
           "suggestions": [
@@ -1235,6 +1259,10 @@
             {
               "suggestionId": "S33",
               "state": 1
+            },
+            {
+              "suggestionId": "S34",
+              "state": 1
             }
           ]
         },
@@ -1243,11 +1271,11 @@
           "sensors": [
             {
               "sensorId": "0000B323",
-              "lastUpdate": "2025-03-16T02:44:56Z"
+              "lastUpdate": "2025-04-24T20:42:55Z"
             },
             {
               "sensorId": "0000F258",
-              "lastUpdate": "2025-03-16T02:07:19Z"
+              "lastUpdate": "2025-04-24T20:44:55Z"
             }
           ],
           "suggestions": [
@@ -1385,6 +1413,10 @@
             },
             {
               "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
               "state": 1
             }
           ]
@@ -1394,7 +1426,7 @@
           "sensors": [
             {
               "sensorId": "0000F26B",
-              "lastUpdate": "2025-03-16T02:33:10Z"
+              "lastUpdate": "2025-04-24T20:40:32Z"
             }
           ],
           "suggestions": [
@@ -1532,6 +1564,10 @@
             },
             {
               "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
               "state": 1
             }
           ]
@@ -1541,7 +1577,7 @@
           "sensors": [
             {
               "sensorId": "0000F26C",
-              "lastUpdate": "2025-03-16T02:33:09Z"
+              "lastUpdate": "2025-04-24T20:41:33Z"
             }
           ],
           "suggestions": [
@@ -1679,6 +1715,10 @@
             },
             {
               "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
               "state": 1
             }
           ]
@@ -1688,11 +1728,11 @@
           "sensors": [
             {
               "sensorId": "0000F26A",
-              "lastUpdate": "2025-03-16T02:31:58Z"
+              "lastUpdate": "2025-04-24T20:44:14Z"
             },
             {
               "sensorId": "0000F264",
-              "lastUpdate": "2025-03-16T02:44:04Z"
+              "lastUpdate": "2025-04-24T20:37:37Z"
             }
           ],
           "suggestions": [
@@ -1830,6 +1870,10 @@
             },
             {
               "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
               "state": 1
             }
           ]
@@ -1839,7 +1883,7 @@
           "sensors": [
             {
               "sensorId": "0000F257",
-              "lastUpdate": "2025-03-16T02:07:19Z"
+              "lastUpdate": "2025-04-24T20:44:45Z"
             }
           ],
           "suggestions": [
@@ -1977,6 +2021,10 @@
             },
             {
               "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
               "state": 1
             }
           ]
@@ -2406,6 +2454,11 @@
       "suggestionId": "S33",
       "suggestionName": "voc_trend",
       "text": "VOCs are rising: ventilate early or remove sources."
+    },
+    {
+      "suggestionId": "S34",
+      "suggestionName": "co2_norm",
+      "text": "Open windows to improve air quality, or adjust your mechanical system if available."
     }
   ],
   "technical_suggestions": [
