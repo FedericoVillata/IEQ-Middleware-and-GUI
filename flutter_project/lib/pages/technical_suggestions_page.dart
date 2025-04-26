@@ -1,89 +1,112 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../mqtt_suggestions_manager.dart' show MqttSuggestionsManager, TechnicalSuggestion;
+import '../mqtt_suggestions_manager.dart'
+    show MqttSuggestionsManager, TechnicalSuggestion;
 
-/// Page that visualises *technical* suggestions coming from MQTT for the
-/// currently‑selected apartment. It relies on the global [MqttSuggestionsManager]
-/// registered in **main.dart** with a `ChangeNotifierProvider`.
-class TechnicalSuggestionsPage extends StatelessWidget {
+/// Displays the *technical suggestions* received via MQTT.
+///
+/// You can instantiate with **apartmentId:** (preferred)
+/// or with the legacy **location:** – one is required.
+class TechnicalSuggestionsPage extends StatefulWidget {
   final String username;
-  final String? location;
+  final String? apartmentId; // new parameter name
+  final String? location;    // legacy alias
 
   const TechnicalSuggestionsPage({
     super.key,
     required this.username,
-    required this.location,
-  });
+    this.apartmentId,
+    this.location,
+  }) : assert(apartmentId != null || location != null,
+          'You must specify apartmentId: or location:');
+
+  @override
+  State<TechnicalSuggestionsPage> createState() =>
+      _TechnicalSuggestionsPageState();
+}
+
+class _TechnicalSuggestionsPageState extends State<TechnicalSuggestionsPage> {
+  late final String apt; // chosen apartment
+
+  @override
+  void initState() {
+    super.initState();
+    apt = widget.apartmentId ?? widget.location!;
+
+    // mark all suggestions as read immediately
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => context.read<MqttSuggestionsManager>().markTechnicalRead(apt),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (location == null) {
-      return const Scaffold(
-        body: Center(
-          child: Text('No apartment selected.', style: TextStyle(color: Colors.red)),
-        ),
-      );
-    }
+    final mgr = context.watch<MqttSuggestionsManager>();
 
-    final manager = context.watch<MqttSuggestionsManager>();
-    final suggestions = manager.allSuggestions
-        .where((s) => s.apartmentId == location)
+    final suggestions = mgr.allTechnicalSuggestions
+        .where((s) => s.apartmentId == apt)
         .toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              'Technical Suggestions for $location – user: $username',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: suggestions.isEmpty
-                  ? const Center(child: Text('No technical suggestions received yet.'))
-                  : ListView.builder(
-                      itemCount: suggestions.length,
-                      itemBuilder: (_, i) => _SuggestionCard(suggestions[i], manager),
-                    ),
-            ),
-          ],
+      backgroundColor: Colors.grey[200],
+      appBar: AppBar(
+        automaticallyImplyLeading: false, // no back button in embedded view
+        title: Text(
+          'Technical Suggestions – $apt',
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
+      body: suggestions.isEmpty
+          ? const Center(child: Text('No technical suggestions received yet.'))
+          : ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: suggestions.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (_, i) =>
+                  _SuggestionCard(suggestion: suggestions[i], mgr: mgr),
+            ),
     );
   }
 }
 
-// -----------------------------------------------------------------------------
-// Small Card widget to render each suggestion
-// -----------------------------------------------------------------------------
+// ───────────────────────────────────────── Card widget ─────────────────────────────────────────
 class _SuggestionCard extends StatelessWidget {
   final TechnicalSuggestion suggestion;
-  final MqttSuggestionsManager manager;
+  final MqttSuggestionsManager mgr;
 
-  const _SuggestionCard(this.suggestion, this.manager);
+  const _SuggestionCard({
+    required this.suggestion,
+    required this.mgr,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      elevation: 2,
+      elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         title: Text(
-          '${suggestion.message}',
-          style: const TextStyle(fontWeight: FontWeight.w500),
+          suggestion.message,
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+        ),
+        subtitle: Text(
+          '\${suggestion.roomId.isEmpty ? "—" : suggestion.roomId}  •  '
+          '\${suggestion.code}  •  '
+          '\${suggestion.timestamp.toLocal().toString().substring(0, 16)}',
+          style: const TextStyle(fontSize: 13, color: Colors.grey),
         ),
         trailing: ElevatedButton.icon(
-          onPressed: () => manager.removeSuggestion(suggestion),
+          onPressed: () => mgr.removeTechnicalSuggestion(suggestion),
           icon: const Icon(Icons.check),
           label: const Text('Ack'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blueAccent,
             foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
         ),
       ),
