@@ -1,10 +1,12 @@
 // tenant_main.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+import 'login_page.dart';                         // ← aggiunto
 import 'pages/tenant_home_page.dart';
 import 'pages/tenant_feedback_page.dart' as feedback;
 import 'pages/tenant_suggestions_page.dart' as suggestions;
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class MyAppTenant extends StatelessWidget {
   final String username;
@@ -21,17 +23,15 @@ class MyAppTenant extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'IEQ Tenant Interface',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: TenantMainPage(
-        username: username,
-        apartments: apartments,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: TenantMainPage(username: username, apartments: apartments),
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+//                   MAIN PAGE – TENANT
+// ─────────────────────────────────────────────────────────────
 class TenantMainPage extends StatefulWidget {
   final String username;
   final List<String> apartments;
@@ -42,19 +42,26 @@ class TenantMainPage extends StatefulWidget {
     required this.apartments,
   });
 
+  static _TenantMainPageState? of(BuildContext ctx) =>
+      ctx.findAncestorStateOfType<_TenantMainPageState>();
+
   @override
   State<TenantMainPage> createState() => _TenantMainPageState();
 }
 
 class _TenantMainPageState extends State<TenantMainPage> {
+  // ---------------- state vars ----------------
   int _currentIndex = 0;
   late List<Widget> pages;
+
   late String selectedApartment;
   late String selectedRoom;
-  Map<String, List<String>> apartmentRooms = {};
-  Map<String, int> overallScores = {};
+  final Map<String, List<String>> apartmentRooms = {};
+  final Map<String, int> overallScores = {};
+
   bool loading = true;
 
+  // ---------------- lifecycle ----------------
   @override
   void initState() {
     super.initState();
@@ -63,39 +70,39 @@ class _TenantMainPageState extends State<TenantMainPage> {
     fetchApartmentData();
   }
 
+  // ---------------- public helper for SuggestionsBell -------
+  void goToSuggestionsTab() => setState(() => _currentIndex = 1);
+
+  // ---------------- data fetch ----------------
   Future<void> fetchApartmentData() async {
     try {
-      // final response = await http.get(Uri.parse("http://10.0.2.2:8081/apartments"));
-      final response = await http.get(Uri.parse("http://localhost:8081/apartments"));
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
+      final resp =
+          await http.get(Uri.parse('http://localhost:8081/apartments'));
+      if (resp.statusCode != 200) return;
 
-        for (var apt in data) {
-          if (widget.apartments.contains(apt['apartmentId'])) {
-            final aptId = apt['apartmentId'];
-            final List<String> rooms = List<String>.from(
-              (apt['rooms'] as List<dynamic>).map((r) => r['roomId']),
-            );
-            apartmentRooms[aptId] = rooms;
+      final data = jsonDecode(resp.body) as List<dynamic>;
+      for (final apt in data) {
+        if (widget.apartments.contains(apt['apartmentId'])) {
+          final aptId = apt['apartmentId'];
+          final rooms = List<String>.from(
+              (apt['rooms'] as List<dynamic>).map((r) => r['roomId']));
+          apartmentRooms[aptId] = rooms;
 
-            if (selectedRoom.isEmpty && rooms.isNotEmpty) {
-              selectedRoom = rooms.first;
-            }
-
-            overallScores[aptId] = 85;
+          if (selectedRoom.isEmpty && rooms.isNotEmpty) {
+            selectedRoom = rooms.first;
           }
+          overallScores[aptId] = 85; // placeholder
         }
-
-        _updatePages();
-        setState(() {
-          loading = false;
-        });
       }
+
+      _updatePages();
+      setState(() => loading = false);
     } catch (e) {
-      print("Errore fetch apartment data: $e");
+      debugPrint('fetchApartmentData error: $e');
     }
   }
 
+  // ---------------- callbacks from child ----------------
   void updateSelectedRoom(String room) {
     setState(() {
       selectedRoom = room;
@@ -106,11 +113,12 @@ class _TenantMainPageState extends State<TenantMainPage> {
   void updateSelectedApartment(String apartment) {
     setState(() {
       selectedApartment = apartment;
-      selectedRoom = apartmentRooms[apartment]?.first ?? "";
+      selectedRoom = apartmentRooms[apartment]?.first ?? '';
       _updatePages();
     });
   }
 
+  // ---------------- build pages list ----------------
   void _updatePages() {
     pages = [
       HomePage(
@@ -122,7 +130,11 @@ class _TenantMainPageState extends State<TenantMainPage> {
         onRoomChanged: updateSelectedRoom,
         onApartmentChanged: updateSelectedApartment,
       ),
-      suggestions.SuggestionsPage(),
+      suggestions.TenantSuggestionsPage(
+        username: widget.username,
+        apartmentId: selectedApartment,
+        roomId: selectedRoom,
+      ),
       feedback.FeedbackPage(
         username: widget.username,
         apartmentId: selectedApartment,
@@ -131,6 +143,7 @@ class _TenantMainPageState extends State<TenantMainPage> {
     ];
   }
 
+  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -144,8 +157,12 @@ class _TenantMainPageState extends State<TenantMainPage> {
         title: const Text('Tenant Interface'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {},
+            icon: const Icon(Icons.logout),
+            tooltip: 'Log-out',
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginPage()),
+            ),
           ),
         ],
       ),
@@ -153,7 +170,7 @@ class _TenantMainPageState extends State<TenantMainPage> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (i) => setState(() => _currentIndex = i),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.lightbulb), label: 'Suggestions'),
