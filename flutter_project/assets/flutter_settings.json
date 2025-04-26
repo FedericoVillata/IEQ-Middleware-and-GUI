@@ -1,7 +1,7 @@
 {
     "REGISTRY_URL": "https://registry.ieqmiddleware.com",
     "ADAPTOR_URL": "https://adaptor.ieqmiddleware.com",
-    "PLOT_SERVICE_URL": "https://plot.ieqmiddelware.com",
+    "PLOT_SERVICE_URL": "https://plot2.ieqmiddleware.com",
     "MQTT_BROKER": "mqtt.eclipseprojects.io",
     "MQTT_PORT": 80,
     "MQTT_TOPIC_BASE": "IEQmidAndGUI"
