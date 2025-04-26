@@ -50,7 +50,6 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
   /* ---------------- build ---------------- */
   @override
   Widget build(BuildContext context) {
-    // Se non è ancora stato scelto l’appartamento → pagina di selezione
     if (selectedLocation == null) {
       return LocationSelectionPage(
         username: widget.username,
@@ -60,8 +59,8 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text('Technical Interface – $selectedLocation'),
-        // ← freccia indietro che riporta alla scelta appartamento
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => setState(() {
@@ -93,7 +92,6 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
   }
 }
 
-/* ---------------- Sidebar widget (staccato per chiarezza) -------------- */
 class _Sidebar extends StatelessWidget {
   final int currentIndex;
   final void Function(int) onChangeTab;
