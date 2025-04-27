@@ -361,8 +361,7 @@ def generate_room_suggestions(room, catalog, classifications, avg_values, t_ext,
         suggestions_list = []
 
     enabled_ids = {s["suggestionId"] for s in suggestions_list if s.get("state", 0) == 1}
-    id_to_name = {s["suggestionId"]: s["suggestionName"] for s in catalog.get("tenant_suggestions", [])}
-    enabled_names = {id_to_name.get(sid) for sid in enabled_ids if id_to_name.get(sid)}
+    name_to_id = {s["suggestionName"]: s["suggestionId"] for s in catalog.get("tenant_suggestions", [])}
 
     tenant_suggestions = get_tenant_suggestions(
         classifications=classifications,
@@ -371,11 +370,11 @@ def generate_room_suggestions(room, catalog, classifications, avg_values, t_ext,
         co2=avg_values["avg_co2"],
         t_ext=t_ext,
         hour=hour_now,
-        pmv=calculate_pmv(season, avg_values["avg_temp"], avg_values["avg_temp"], 0.1,
-                          avg_values["avg_humidity"], settings),
+        pmv=calculate_pmv(season, avg_values["avg_temp"], avg_values["avg_temp"], 0.1, avg_values["avg_humidity"], settings),
         trends=trends,
         settings=suggestion_settings,
-        enabled_suggestions=enabled_names
+        enabled_suggestions=enabled_ids,  
+        name_to_id=name_to_id                
     )
 
     if tenant_suggestions:

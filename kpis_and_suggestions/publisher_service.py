@@ -66,17 +66,18 @@ def publish_tenant_suggestions(publisher, base_topic, apartment_id, room_id, sug
     topic = f"{base_topic}/{apartment_id}/tenant_suggestion"
     timestamp = time.time()
 
-    for metric, tip in suggestions.items():
+    for suggestion_id, tip in suggestions.items():
         event = {
             "bn": topic,
             "e": [{
-                "n": f"{room_id}/{metric}",
+                "n": f"{room_id}/{suggestion_id}",  # ID diretto
                 "t": timestamp,
                 "u": "string",
                 "v": tip
             }]
         }
-        log(f"Tenant suggestion: {metric} = '{tip}'", level="DEBUG", context=f"{apartment_id}/{room_id}")
+
+        log(f"Tenant suggestion: {suggestion_id} = '{tip}'", level="DEBUG", context=f"{apartment_id}/{room_id}")
         #print(json.dumps(payload, indent=2))
         publisher.myPublish(json.dumps(event), topic)
 

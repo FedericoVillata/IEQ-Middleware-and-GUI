@@ -201,7 +201,7 @@ def smart_suggestions(classifications, values, settings, trends=None):
     return suggestions
 
 # --- Public wrapper ---
-def get_tenant_suggestions(classifications, temp=None, humidity=None, co2=None, t_ext=None, hour=None, pmv=None, trends=None, settings=None, enabled_suggestions=None):
+def get_tenant_suggestions(classifications, temp=None, humidity=None, co2=None, t_ext=None, hour=None, pmv=None, trends=None, settings=None, enabled_suggestions=None, name_to_id=None):
     values = {
         "temperature": temp,
         "humidity": humidity,
@@ -215,15 +215,14 @@ def get_tenant_suggestions(classifications, temp=None, humidity=None, co2=None, 
 
     all_suggestions = smart_suggestions(classifications, values, settings, trends)
 
-    if enabled_suggestions is not None:
-        filtered = {k: v for k, v in all_suggestions.items() if k in enabled_suggestions}
-        skipped = set(all_suggestions) - set(filtered)
-        if skipped:
-            log(f"Skipped disabled suggestions: {', '.join(skipped)}", level="DEBUG", context="Suggestions")
-        if filtered:
-            log(f"Returning {len(filtered)} tenant suggestions", context="Suggestions")
-        return filtered
+    final_suggestions = {}
+    for name, text in all_suggestions.items():
+        suggestion_id = name_to_id.get(name)
+        if suggestion_id and (enabled_suggestions is None or suggestion_id in enabled_suggestions):
+            final_suggestions[suggestion_id] = text
 
-    log(f"Returning {len(all_suggestions)} tenant suggestions (no filtering applied)", context="Suggestions")
-    return all_suggestions
+
+    log(f"Returning {len(final_suggestions)} tenant suggestions with IDs", context="Suggestions")
+    return final_suggestions
+
 
