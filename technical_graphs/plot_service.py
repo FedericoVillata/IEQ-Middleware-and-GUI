@@ -167,10 +167,11 @@ class PlotService:
         ax.set_title(f"{measure} Carpet Plot")
         ax.set_xlabel("Date")
         ax.set_ylabel("Time of Day")
+        ax.set_facecolor('#fdf7ff')
 
         plt.tight_layout()
         buf = BytesIO()
-        plt.savefig(buf, format='png')
+        plt.savefig(buf, format='png', facecolor='#fdf7ff')
         plt.close(fig)
         buf.seek(0)
 
@@ -261,10 +262,11 @@ class PlotService:
             ax.xaxis.set_major_locator(dates.DayLocator())
 
         plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
+        ax.set_facecolor('#fdf7ff')
         plt.tight_layout()
 
         buf = BytesIO()
-        plt.savefig(buf, format='png')
+        plt.savefig(buf, format='png', facecolor='#fdf7ff')
         plt.close(fig)
         buf.seek(0)
 
