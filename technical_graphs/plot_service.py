@@ -224,19 +224,6 @@ class PlotService:
         if durationH <= 168:
     # 15-minute resolution
             times_values = self._aggregate_every_15min(times_values)
-        else:
-            # Daily averages (legacy behaviour)
-            day_map = defaultdict(lambda: {"sum": 0.0, "count": 0})
-            for dt, val in times_values:
-                d_key = dt.strftime("%Y-%m-%d")
-                day_map[d_key]["sum"]   += val
-                day_map[d_key]["count"] += 1
-
-            times_values = [
-                (datetime.strptime(k, "%Y-%m-%d"), v["sum"] / v["count"])
-                for k, v in day_map.items()
-            ]
-            times_values.sort(key=lambda x: x[0])
 
         if durationH > 168:
             from collections import defaultdict

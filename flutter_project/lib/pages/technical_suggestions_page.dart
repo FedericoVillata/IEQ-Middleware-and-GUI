@@ -91,12 +91,6 @@ class _SuggestionCard extends StatelessWidget {
           suggestion.message,
           style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
         ),
-        subtitle: Text(
-          '\${suggestion.roomId.isEmpty ? "—" : suggestion.roomId}  •  '
-          '\${suggestion.code}  •  '
-          '\${suggestion.timestamp.toLocal().toString().substring(0, 16)}',
-          style: const TextStyle(fontSize: 13, color: Colors.grey),
-        ),
         trailing: ElevatedButton.icon(
           onPressed: () => mgr.removeTechnicalSuggestion(suggestion),
           icon: const Icon(Icons.check),
