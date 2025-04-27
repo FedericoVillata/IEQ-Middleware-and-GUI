@@ -2528,12 +2528,12 @@
     {
       "suggestionID": "T2",
       "suggestionName": "TEMP_COLD_WARM_PERCEPTION",
-      "text": "Temperature classified as cold, but user perception = Warm or Very Warm. Suggestion: possible inconsistency between real comfort and classification. Check sensors and thresholds."
+      "text": "Temperature classified as borderline cold (Y), but user reports feeling Warm or Very Warm. Suggestion: possible inconsistency between real comfort and classification. Check sensor calibration, placement, or thresholds."
     },
     {
       "suggestionID": "T3",
       "suggestionName": "TEMP_HOT_COLD_PERCEPTION",
-      "text": "Temperature classified as hot, but user perception = Cold or Very Cold. Suggestion: possible reversal in threshold logic or sensor measurement issues."
+      "text": "Temperature classified as borderline hot (Y), but user reports feeling Cold or Very Cold. Suggestion: possible reversal in threshold logic or measurement errors."
     },
     {
       "suggestionID": "T4",
@@ -2548,12 +2548,12 @@
     {
       "suggestionID": "T6",
       "suggestionName": "HUMIDITY_DRY_HUMID_PERCEPTION",
-      "text": "Humidity classified as too dry, but user perception = Humid or Very Humid. Suggestion: review threshold logic; possible discrepancy in measurement."
+      "text": "Humidity classified as too dry, but user perception = Humid or Very Humid. Suggestion: review sensor calibration, positioning, or threshold logic.; possible discrepancy in measurement."
     },
     {
       "suggestionID": "T7",
       "suggestionName": "HUMIDITY_HUMID_DRY_PERCEPTION",
-      "text": "Humidity classified as too humid, but user perception = Very Dry or Dry. Suggestion: measured humidity does not match perceived dryness. Review sensor accuracy and thresholds."
+      "text": "Humidity classified as too humid, but user perception = Very Dry or Dry. Suggestion: measured humidity does not match perceived dryness. Check sensor calibration, placement, or humidity thresholds."
     },
     {
       "suggestionID": "T8",
@@ -2563,32 +2563,27 @@
     {
       "suggestionID": "T9",
       "suggestionName": "ENV_SCORE_GOOD_UNSATISFIED",
-      "text": "Overall environmental score = good (G), but satisfaction feedback = Very Unsatisfied or Unsatisfied. Suggestion: review global thresholds or consider environmental variables not currently measured."
+      "text": "Environmental score = Good (G), but user satisfaction = Very Unsatisfied or Unsatisfied.Suggestion: recalibrate environmental thresholds or audit additional environmental KPIs (e.g., pollutants, noise, light) possibly not considered."
     },
     {
       "suggestionID": "T10",
       "suggestionName": "ENV_SCORE_CRITICAL_SATISFIED",
-      "text": "Overall score = critical (R), but satisfaction feedback = Very Satisfied or Satisfied. Suggestion: the system might be classifying as critical conditions perceived as acceptable."
+      "text": "Environmental score = Critical (R), but user satisfaction = Very Satisfied or Satisfied.Suggestion: investigate the KPIs responsible for the critical classification. Thresholds might be overly conservative or not aligned with user comfort perception."
     },
     {
       "suggestionID": "T11",
       "suggestionName": "PMV_NEUTRAL_DISCOMFORT",
-      "text": "PMV classified as Neutral, but user perception = Cold, Very Cold, Warm or Very Warm. Suggestion: estimated comfort not aligned with perception. Verify user profiles and met/clo parameters."
+      "text": "PPMV classified as Neutral, but user perception = Cold, Very Cold, Warm or Very Warm. Suggestion: estimated comfort does not match perceived comfort. Verify user profiles, metabolic rates, and insulation parameters (met/clo)."
     },
     {
       "suggestionID": "T12",
       "suggestionName": "PMV_COLD_WARM_PERCEPTION",
-      "text": "PMV = Cold or Very Cold, but perception = Warm or Very Warm. Suggestion: possible modeling or measurement error. Check consistency."
+      "text": "PMV classified as Cold or Very Cold, but user perception = Warm or Very Warm. Suggestion: possible inconsistency between modeled and perceived thermal comfort. Review model assumptions (met/clo) and verify sensor calibration."
     },
     {
       "suggestionID": "T13",
       "suggestionName": "PMV_VERY_WARM_COLD_PERCEPTION",
-      "text": "PMV = Very Warm, but perception = Cold or Very Cold. Suggestion: thermal comfort perceived is the opposite of calculated. Verify input parameters."
-    },
-    {
-      "suggestionID": "T14",
-      "suggestionName": "METRIC_GOOD_TREND_DISCOMFORT",
-      "text": "Metric classified as good (G), but trend = rising/falling and perception = Neutral or mild discomfort. Suggestion: even if the value is still acceptable, a preventive action is recommended before critical levels are reached."
+      "text": "PMV classified as Very Warm, but user perception = Cold or Very Cold. Suggestion: strong mismatch between estimated and perceived thermal comfort. Verify met/clo parameters and sensor calibration."
     }
   ],
   "devices": [],
