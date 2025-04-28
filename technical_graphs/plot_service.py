@@ -164,7 +164,6 @@ class PlotService:
         ax.set_xticks(x_vals[::step_x])
         ax.set_xticklabels([all_days[i] for i in x_vals[::step_x]], rotation=45)
 
-        ax.set_title(f"{measure} Carpet Plot")
         ax.set_xlabel("Date")
         ax.set_ylabel("Time of Day")
         ax.set_facecolor('#fdf7ff')
@@ -247,7 +246,6 @@ class PlotService:
         y_vals = [tv[1] for tv in times_values]
 
         ax.plot(x_vals, y_vals, linewidth=2, color='blue')
-        ax.set_title(f"{measure} (Line Chart)")
         ax.set_xlabel("Time")
         ax.set_ylabel(measure)
         plt.grid(True)

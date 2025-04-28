@@ -12,6 +12,7 @@ class TechnicalMainPage extends StatefulWidget {
   final String username;
   const TechnicalMainPage({super.key, required this.username});
 
+  /// Allows nested widgets to reach the nearest [_TechnicalMainPageState]
   static _TechnicalMainPageState? of(BuildContext ctx) =>
       ctx.findAncestorStateOfType<_TechnicalMainPageState>();
 
@@ -23,8 +24,10 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
   String? selectedLocation;
   int _currentIndex = 0;
 
+  /// Makes the Suggestions page visible from anywhere
   void goToSuggestions() => setState(() => _currentIndex = 5);
 
+  /// Pages are (re)built once a location is chosen
   late List<Widget> pages = List.filled(6, const Placeholder());
 
   /* ---------- location handling ---------- */
@@ -50,6 +53,9 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
   /* ---------------- build ---------------- */
   @override
   Widget build(BuildContext context) {
+    // ────────────────────────────────────────────────────────────────
+    //  Step 1: if no apartment chosen -> show the selection page
+    // ────────────────────────────────────────────────────────────────
     if (selectedLocation == null) {
       return LocationSelectionPage(
         username: widget.username,
@@ -57,17 +63,13 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
       );
     }
 
+    // ────────────────────────────────────────────────────────────────
+    //  Step 2: normal “Technical Interface” with chosen apartment
+    // ────────────────────────────────────────────────────────────────
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text('Technical Interface – $selectedLocation'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => setState(() {
-            selectedLocation = null;
-            _currentIndex = 0;
-          }),
-        ),
         actions: [
           IconButton(
             tooltip: 'Logout',
@@ -84,6 +86,10 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
           _Sidebar(
             currentIndex: _currentIndex,
             onChangeTab: (i) => setState(() => _currentIndex = i),
+            onChangeLocation: () => setState(() {
+              selectedLocation = null;
+              _currentIndex = 0;
+            }),
           ),
           Expanded(child: pages[_currentIndex]),
         ],
@@ -92,11 +98,19 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
   }
 }
 
+/*───────────────────────────────────────────────────────────────────────────*/
+/*                               SIDEBAR                                    */
+/*───────────────────────────────────────────────────────────────────────────*/
 class _Sidebar extends StatelessWidget {
   final int currentIndex;
   final void Function(int) onChangeTab;
+  final VoidCallback onChangeLocation;
 
-  const _Sidebar({required this.currentIndex, required this.onChangeTab});
+  const _Sidebar({
+    required this.currentIndex,
+    required this.onChangeTab,
+    required this.onChangeLocation,
+  });
 
   Widget _item(IconData icon, String label, int idx) => InkWell(
         onTap: () => onChangeTab(idx),
@@ -156,6 +170,25 @@ class _Sidebar extends StatelessWidget {
             _item(Icons.delete_forever, 'Deleted Suggs.',   4),
             _item(Icons.lightbulb,      'Tech. Suggestions',5),
             const Spacer(),
+
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.blue,
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: const Icon(Icons.logout),
+                label: const Text('Change Location'),
+                onPressed: onChangeLocation,
+              ),
+            ),
+            const SizedBox(height: 20),
           ],
         ),
       ),

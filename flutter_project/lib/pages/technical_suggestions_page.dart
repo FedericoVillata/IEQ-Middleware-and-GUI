@@ -50,11 +50,10 @@ class _TechnicalSuggestionsPageState extends State<TechnicalSuggestionsPage> {
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
     return Scaffold(
-      backgroundColor: Colors.grey[200],
       appBar: AppBar(
         automaticallyImplyLeading: false, // no back button in embedded view
         title: Text(
-          'Technical Suggestions – $apt',
+          'Technical Suggestions',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),

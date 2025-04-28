@@ -99,7 +99,6 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
         ],
       ),
       body: Container(
-        color: Colors.grey[200],
         child: Column(
           children: [
             // search bar ---------------------------------------------------

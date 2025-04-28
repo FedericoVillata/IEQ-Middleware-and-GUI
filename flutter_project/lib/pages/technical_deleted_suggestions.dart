@@ -291,7 +291,7 @@ class _TechnicalDeletedSuggestionsPageState
               children: [
                 // Title
                 Text(
-                  "Deleted Tenant Suggestions for ${widget.location} (user: ${widget.username})",
+                  "Deleted Tenant Suggestions",
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),

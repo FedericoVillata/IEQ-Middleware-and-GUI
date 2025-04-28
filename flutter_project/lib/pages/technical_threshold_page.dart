@@ -692,7 +692,7 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    "Threshold & Settings for ${widget.location} (User: ${widget.username})",
+                    "Threshold & Settings",
                     style: textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).primaryColorDark,

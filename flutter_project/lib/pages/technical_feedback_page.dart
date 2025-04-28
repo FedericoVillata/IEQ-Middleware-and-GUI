@@ -1,13 +1,18 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
 import '../app_config.dart';
-import '../widgets/suggestions_bell.dart';
 
+// ---------------------------------------------------------------------------
+// TechnicalFeedbackPage – fast & stable
+//   • Uses getAllApartmentData with a *measurement* filter (smaller payload)
+//   • Lightweight in‑place parsing (no isolate overhead)
+//   • Keeps same UI: full‑width, 500‑px tall chart, dynamic X‑axis labels
+// ---------------------------------------------------------------------------
 class TechnicalFeedbackPage extends StatefulWidget {
-  final String username;    // The technical user's ID
-  final String? location;   // The chosen apartment
+  final String username;      // Technical user's ID
+  final String? location;     // Selected apartment
 
   const TechnicalFeedbackPage({
     Key? key,
@@ -20,20 +25,20 @@ class TechnicalFeedbackPage extends StatefulWidget {
 }
 
 class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
-  //static const String adaptorUrl = "http://adaptor:8080";
-  static String get adaptorUrl => AppConfig.adaptorUrl;
+  // -----------------------------------------------------------------------
+  //  Config & State --------------------------------------------------------
+  // -----------------------------------------------------------------------
+  static String get _adaptorUrl => AppConfig.adaptorUrl;
 
-  // Feedback categories
-  final feedbackTypes = [
+  final List<String> _feedbackTypes = [
     "Temperature Perception",
     "Humidity Perception",
     "Environmental Satisfaction",
     "Service Rating",
   ];
-  String selectedFeedback = "Temperature Perception";
+  String _selectedFeedback = "Temperature Perception";
 
-  // Duration dropdown
-  final Map<String, String> durationOptions = {
+  final Map<String, String> _durationOptions = {
     "1 day": "24",
     "3 days": "72",
     "1 week": "168",
@@ -41,15 +46,14 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
     "3 months": "2160",
     "6 months": "4320",
     "1 year": "8760",
-    "all": "999999"
+    "all": "999999",
   };
-  String selectedDuration = "168"; // default to 1 week
+  String _selectedDuration = "168"; // default 1 week
 
-  // ratingCounts[r-1] => how many times rating=r was submitted
-  List<int> ratingCounts = [0, 0, 0, 0, 0];
+  List<int> _ratingCounts = List.filled(5, 0);
 
-  bool isLoading = false;
-  String? errorMessage;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -57,11 +61,13 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
     _fetchFeedbackData();
   }
 
-  // Convert the UI label to the underlying Influx field
+  // -----------------------------------------------------------------------
+  //  Helpers ---------------------------------------------------------------
+  // -----------------------------------------------------------------------
   String _mapFeedbackToField(String label) {
     switch (label) {
       case "Temperature Perception":
-        return "Temperature";
+        return "Temperature"; // as stored in Influx
       case "Humidity Perception":
         return "Humidity";
       case "Environmental Satisfaction":
@@ -73,254 +79,245 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
     }
   }
 
-  /// GET /getAllApartmentData/<techUser>/<apartment>?duration=...
-  /// Then filter by room="Feedback" and measurement=the chosen field => build rating distribution
+  String _ratingLabel(int rating) {
+    switch (_selectedFeedback) {
+      case "Temperature Perception":
+        return [
+          "Very Cold",
+          "Cold",
+          "Neutral",
+          "Warm",
+          "Very Warm",
+        ][rating - 1];
+      case "Humidity Perception":
+        return [
+          "Very Dry",
+          "Dry",
+          "Neutral",
+          "Humid",
+          "Very Humid",
+        ][rating - 1];
+      case "Environmental Satisfaction":
+        return [
+          "Very Unsatisfied",
+          "Unsatisfied",
+          "Neutral",
+          "Satisfied",
+          "Very Satisfied",
+        ][rating - 1];
+      case "Service Rating":
+        return [
+          "Poor",
+          "Fair",
+          "Average",
+          "Good",
+          "Excellent",
+        ][rating - 1];
+      default:
+        return rating.toString();
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  //  Data Fetch ------------------------------------------------------------
+  // -----------------------------------------------------------------------
   Future<void> _fetchFeedbackData() async {
+    if (!mounted) return;
     setState(() {
-      isLoading = true;
-      errorMessage = null;
-      ratingCounts = [0, 0, 0, 0, 0];
+      _isLoading = true;
+      _errorMessage = null;
+      _ratingCounts = List.filled(5, 0);
     });
 
-    final apartmentId = widget.location ?? "apartment0";
-    final fieldNeeded = _mapFeedbackToField(selectedFeedback);
+    final String apartmentId = widget.location ?? "apartment0";
+    final String fieldNeeded = _mapFeedbackToField(_selectedFeedback);
 
-    final url =
-        "$adaptorUrl/getAllApartmentData/${widget.username}/$apartmentId?duration=$selectedDuration";
+    // Smaller payload: filter by measurement directly
+    final Uri url = Uri.parse(
+      "$_adaptorUrl/getAllApartmentData/${widget.username}/$apartmentId?measurement=$fieldNeeded&duration=$_selectedDuration",
+    );
 
     try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode != 200) {
+      final http.Response resp = await http.get(url);
+      if (resp.statusCode != 200) {
         setState(() {
-          errorMessage = "Adaptor error: ${response.statusCode}\n${response.body}";
-          isLoading = false;
+          _isLoading = false;
+          _errorMessage = "Adaptor error: ${resp.statusCode} ${resp.reasonPhrase}";
         });
         return;
       }
 
-      final raw = json.decode(response.body);
-      if (raw is! List) {
+      final dynamic decoded = jsonDecode(resp.body);
+      if (decoded is! List) {
         setState(() {
-          errorMessage = "Adaptor returned non-list JSON!";
-          isLoading = false;
+          _isLoading = false;
+          _errorMessage = "Unexpected JSON format from adaptor.";
         });
         return;
       }
 
-      for (var item in raw) {
+      final List<int> counts = List.filled(5, 0);
+      for (final item in decoded) {
         if (item is Map<String, dynamic>) {
-          if (item["room"] == "Feedback" && item["measurement"] == fieldNeeded) {
-            final val = item["v"];
+          if (item['room'] == 'Feedback' && item['measurement'] == fieldNeeded) {
+            final val = item['v'];
             if (val is num) {
-              final rating = val.toInt();
-              if (rating >= 1 && rating <= 5) {
-                ratingCounts[rating - 1] += 1;
-              }
+              final int rating = val.toInt();
+              if (rating >= 1 && rating <= 5) counts[rating - 1] += 1;
             }
           }
         }
       }
 
+      if (!mounted) return;
       setState(() {
-        isLoading = false;
+        _ratingCounts = counts;
+        _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        errorMessage = "Connection/Parsing error: $e";
-        isLoading = false;
+        _isLoading = false;
+        _errorMessage = "Connection or parsing error: $e";
       });
     }
   }
 
+  // -----------------------------------------------------------------------
+  //  UI --------------------------------------------------------------------
+  // -----------------------------------------------------------------------
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    body: Column(
-      children: [
-        // ──────────────────────────────────────────────────────────
-        //  Duration selector
-        // ──────────────────────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListTile(
-              title: const Text('Select Duration'),
-              trailing: DropdownButton<String>(
-                value: selectedDuration,
-                onChanged: (val) async {
-                  if (val != null) {
-                    setState(() => selectedDuration = val);
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: [
+          // Duration selector
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                title: const Text("Select Duration"),
+                trailing: DropdownButton<String>(
+                  value: _selectedDuration,
+                  onChanged: (val) async {
+                    if (val == null) return;
+                    setState(() => _selectedDuration = val);
                     await _fetchFeedbackData();
-                  }
-                },
-                items: durationOptions.entries
-                    .map(
-                      (entry) => DropdownMenuItem<String>(
-                        value: entry.value,
-                        child: Text(entry.key),
-                      ),
-                    )
-                    .toList(),
+                  },
+                  items: _durationOptions.entries
+                      .map((e) => DropdownMenuItem(value: e.value, child: Text(e.key)))
+                      .toList(),
+                ),
               ),
             ),
           ),
-        ),
 
-        // ──────────────────────────────────────────────────────────
-        //  Feedback-type selector  +  bell aligned right
-        // ──────────────────────────────────────────────────────────
-        // ──────────────────────────────────────────────────────────
-//  Feedback-type buttons centred   +   bell on the far right
-// ──────────────────────────────────────────────────────────
-Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-  child: Row(
-    children: [
-      /// ① centred buttons ─────────────────────────────────────
-      Expanded(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: feedbackTypes.map((type) {
-            final bool isSelected = type == selectedFeedback;
-            return Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      isSelected ? Colors.indigo : Colors.blueGrey,
-                ),
-                onPressed: () async {
-                  setState(() => selectedFeedback = type);
-                  await _fetchFeedbackData();
-                },
-                child: Text(type, style: const TextStyle(color: Colors.white)),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-
-      const SizedBox(width: 8),
-
-      /// ② bell aligned to the right ───────────────────────────
-      SuggestionsBell(
-        location: widget.location,
-        username: widget.username,
-      ),
-    ],
-  ),
-),
-
-
-        // ──────────────────────────────────────────────────────────
-        //  Chart area / loading / error
-        // ──────────────────────────────────────────────────────────
-        Expanded(
-          child: Center(
-            child: isLoading
-                ? const CircularProgressIndicator()
-                : (errorMessage != null
-                    ? Text(
-                        errorMessage!,
-                        style: const TextStyle(color: Colors.red),
-                      )
-                    : _buildBarChart()),
+          // Feedback type selector
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _feedbackTypes.map((f) {
+                final bool selected = (f == _selectedFeedback);
+                return Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: selected ? Colors.indigo : Colors.blueGrey,
+                    ),
+                    onPressed: () async {
+                      setState(() => _selectedFeedback = f);
+                      await _fetchFeedbackData();
+                    },
+                    child: Text(f, style: const TextStyle(color: Colors.white)),
+                  ),
+                );
+              }).toList(),
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
 
+          // Chart / Loading / Error
+          Expanded(
+            child: Center(
+              child: _isLoading
+                  ? const CircularProgressIndicator()
+                  : (_errorMessage != null
+                      ? Text(_errorMessage!, style: const TextStyle(color: Colors.red))
+                      : _buildBarChart()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  // -------------------------- Chart --------------------------------------
   Widget _buildBarChart() {
-    // If no data (sum==0), show a simple text
-    final total = ratingCounts.reduce((a, b) => a + b);
-    if (total == 0) {
+    final int totalVotes = _ratingCounts.reduce((a, b) => a + b);
+    if (totalVotes == 0) {
       return const Text("No feedback data found in this period.");
     }
 
-    // Create bar groups for x=1..5
-    final barGroups = <BarChartGroupData>[];
+    final List<BarChartGroupData> barGroups = [];
     int maxCount = 0;
     for (int i = 0; i < 5; i++) {
-      final count = ratingCounts[i];
+      final int count = _ratingCounts[i];
       if (count > maxCount) maxCount = count;
       barGroups.add(
-        BarChartGroupData(
-          x: i + 1,
-          barRods: [
-            BarChartRodData(
-              toY: count.toDouble(),
-              width: 22,
-              color: Colors.blue,
-            )
-          ],
-        ),
+        BarChartGroupData(x: i + 1, barRods: [
+          BarChartRodData(toY: count.toDouble(), width: 22, color: Colors.blue),
+        ]),
       );
     }
 
-    // Add a bit of headroom
-    final yMax = maxCount + 2.0;
+    final double yMax = maxCount.toDouble() + 2; // headroom
 
     return Container(
-      width: 1600,  // the size you prefer
-      height: 900,
+      width: double.infinity,
+      height: 500,
       alignment: Alignment.center,
       child: BarChart(
         BarChartData(
           maxY: yMax,
           barGroups: barGroups,
           barTouchData: BarTouchData(enabled: true),
-          gridData: FlGridData(
-            drawHorizontalLine: true,
-            drawVerticalLine: false,
-          ),
+          gridData: FlGridData(drawHorizontalLine: true, drawVerticalLine: false),
           borderData: FlBorderData(show: false),
           titlesData: FlTitlesData(
             leftTitles: AxisTitles(
-              axisNameSize: 40, // more space to avoid cutting
-              axisNameWidget: Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                // Rotate "Number of votes" so it fits
+              axisNameSize: 40,
+              axisNameWidget: const Padding(
+                padding: EdgeInsets.only(right: 8.0),
                 child: RotatedBox(
                   quarterTurns: 0,
-                  child: Text(
-                    "Number of votes",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  child: Text("Number of votes", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
               sideTitles: SideTitles(
                 showTitles: true,
                 interval: 1,
-                getTitlesWidget: (value, meta) {
-                  if (value % 1 == 0) {
-                    return Text(value.toInt().toString());
-                  }
-                  return const SizedBox();
-                },
+                getTitlesWidget: (value, _) => value % 1 == 0 ? Text(value.toInt().toString()) : const SizedBox(),
               ),
             ),
             bottomTitles: AxisTitles(
               axisNameSize: 40,
-              axisNameWidget: Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  "Rating (1..5)",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+              axisNameWidget: const Padding(
+                padding: EdgeInsets.only(top: 8.0),
+                child: Text("Rating", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
               sideTitles: SideTitles(
                 showTitles: true,
-                getTitlesWidget: (value, meta) {
-                  final xVal = value.toInt();
+                getTitlesWidget: (value, _) {
+                  final int xVal = value.toInt();
                   if (xVal >= 1 && xVal <= 5) {
-                    return Text(xVal.toString());
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 2.0),
+                      child: Text(
+                        _ratingLabel(xVal),
+                        style: const TextStyle(fontSize: 10),
+                      ),
+                    );
                   }
                   return const SizedBox();
                 },
