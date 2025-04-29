@@ -104,7 +104,7 @@ def publish_technical_suggestions(publisher, base_topic, apartment_id, suggestio
         publisher.myPublish(json.dumps(event), topic)
 
 
-def publish_alerts(publisher, base_topic, apartment_id, room_id, classifications):
+def publish_alerts(publisher, base_topic, apartment_id, room_id, classifications, sensor_alerts=None):
     critical_labels = ["R", "Extreme", "Very Cold", "Very Warm"]
     timestamp = time.time()
     topic = f"{base_topic}/{apartment_id}/alert"
@@ -123,6 +123,20 @@ def publish_alerts(publisher, base_topic, apartment_id, room_id, classifications
             log(f"ALERT: {metric} classified as {label}", level="WARN", context=f"{apartment_id}/{room_id}")
             #print(json.dumps(payload, indent=2))
             publisher.myPublish(json.dumps(alert_event), topic)
+
+    if sensor_alerts:
+        for alert in sensor_alerts:
+            alert_event = {
+                "bn": topic,
+                "e": [{
+                    "n": alert["sensor_name"],
+                    "t": timestamp,
+                    "u": "alert",
+                    "v": alert["message"]
+                }]
+            }
+            log(f"Sensor Alert | Apartment: {apartment_id} | Room/Sensor: {alert["sensor_name"]} | Issue: {alert['message']}", level="WARN")
+            publisher.myPublish(json.dumps(alert_event), topic)        
 
 
 # --- MQTT Publisher Class ---

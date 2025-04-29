@@ -16,6 +16,7 @@ from kpis_classification import *
 
 import numpy as np
 from datetime import datetime
+from dateutil import parser as date_parser
 
 # Map labels to scores for each classification category
 LABEL_SCORE_MAP = {
@@ -79,6 +80,61 @@ def log(message, level="INFO", context=None):
     if context:
         prefix += f" [{context}]"
     print(f"{prefix} {message}")
+
+from dateutil import parser as date_parser
+
+def check_sensor_updates(room, threshold_minutes=60):
+    now = datetime.utcnow()
+    alerts = []
+
+    sensor_type_lookup = {
+        "03:00:": "Temperature/Humidity/CO₂",
+        "02:00:": "Outdoor Temperature",
+        "0000F2": "PM10/CO₂/Humidity",
+        "0000B3": "PM10/CO₂/Humidity",
+        "0000": "Environmental Data"
+    }
+
+    for sensor in room.get("sensors", []):
+        sensor_id = sensor.get("sensorId")
+        last_update = sensor.get("lastUpdate")
+        if not sensor_id or not last_update:
+            continue
+
+        try:
+            parsed_last_update = date_parser.parse(last_update)
+        except Exception:
+            continue
+
+        diff_minutes = (now - parsed_last_update).total_seconds() / 60.0
+        if diff_minutes > threshold_minutes:
+            # Determine sensor type based on sensorId prefix
+            sensor_measurement = "Unknown measurement"
+            for prefix, measure in sensor_type_lookup.items():
+                if sensor_id.startswith(prefix):
+                    sensor_measurement = measure
+                    break
+
+            hours = int(diff_minutes // 60)
+            minutes = int(diff_minutes % 60)
+
+            if hours > 0:
+                time_ago = f"{hours}h {minutes}min"
+            else:
+                time_ago = f"{minutes}min"
+
+            alert_msg = (
+                f"Check the status of sensor {sensor_id} (battery, device failure). "
+                f"No {sensor_measurement} data received for {time_ago}."
+            )
+
+            alerts.append({
+                "sensor_name": f"{room['roomId']}/{sensor_id}",
+                "message": alert_msg
+            })
+
+    return alerts
+
 
 def process_apartment(apartment, catalog, weather_info, publisher,
                       base_topic, adaptor_base, base_settings=None):
@@ -207,8 +263,8 @@ def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
         env_class=env_class
     )
 
-
-    publish_alerts(publisher, base_topic, apartment_id, room_id, classifications)
+    sensor_alerts = check_sensor_updates(room)
+    publish_alerts(publisher, base_topic, apartment_id, room_id, classifications,sensor_alerts=sensor_alerts)
     publish_tenant_suggestions(publisher, base_topic, apartment_id, room_id, suggestions)
 
     log("Finished processing room", context=f"{apartment_id}/{room_id}")
