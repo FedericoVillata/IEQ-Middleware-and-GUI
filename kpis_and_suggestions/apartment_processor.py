@@ -83,7 +83,7 @@ def log(message, level="INFO", context=None):
 
 from dateutil import parser as date_parser
 
-def check_sensor_updates(room, threshold_minutes=60):
+def check_sensor_updates(room, threshold_minutes=24 * 60):
     now = datetime.utcnow()
     alerts = []
 
