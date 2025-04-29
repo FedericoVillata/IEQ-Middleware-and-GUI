@@ -87,6 +87,17 @@ class PlotService:
         end = kwargs.get("end", None)
         download = kwargs.get("download", None)
 
+        if duration:
+            try:
+                duration_hours = int(duration)
+                now = datetime.utcnow()
+                hours_since_midnight = (now.hour + now.minute / 60.0)
+                # Add the "extra" hours needed to go back to previous midnight
+                duration_hours += int(hours_since_midnight)
+                duration = str(duration_hours)
+            except Exception as e:
+                print(f"Error adjusting duration: {e}")
+
         # 1) Fetch data from the adaptor
         data = self._fetch_data(userId, apartmentId, measure, start, end, duration, room)
         if room and any("room" in d for d in data):
@@ -145,12 +156,8 @@ class PlotService:
         )
 
         # Colorbar
-        cb = plt.colorbar(cax, ax=ax, label=measure, format="%.0f")
-
-        # If measure=CO2, optionally set some ticks from 0..12000
-        if measure_lc == "co2":
-            cb.set_ticks(np.arange(0, 12001, 2000))  # e.g., 0,2000,4000,...
-
+        plt.colorbar(cax, ax=ax, label=measure, format="%.0f")
+        
         # Y-axis => hours
         y_ticks = np.arange(0, 48, 2)
         y_labels = [f"{h:02d}:00" for h in range(24)]
