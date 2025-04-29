@@ -1,4 +1,3 @@
-// pages/tenant_suggestions_page.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -24,11 +23,9 @@ class TenantSuggestionsPage extends StatefulWidget {
 }
 
 class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
-  /// key = "<apt>|<room>|<code>|<epoch-ms>"
   final Map<String, int> _downVotes = {};
-  final Map<String, int> _upVotes   = {};
+  final Map<String, int> _upVotes = {};
 
-  //────────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final mgr = context.watch<MqttSuggestionsManager>();
@@ -36,14 +33,13 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
     final suggestions = mgr.allTenantSuggestions
         .where((s) =>
             s.apartmentId == widget.apartmentId &&
-            s.roomId      == widget.roomId)
+            s.roomId == widget.roomId &&
+            s.code != 'value') // Escludi gli overall score
         .toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
-    // ogni rebuild ⇒ tutte le suggestion di questa stanza diventano “lette”
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MqttSuggestionsManager>()
-          .markTenantRead(widget.apartmentId, widget.roomId);
+      context.read<MqttSuggestionsManager>().markTenantRead(widget.apartmentId, widget.roomId);
     });
 
     _cleanupVotes(suggestions);
@@ -66,57 +62,49 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
               padding: const EdgeInsets.all(16),
               itemCount: suggestions.length,
               itemBuilder: (_, i) {
-                final s   = suggestions[i];
+                final s = suggestions[i];
                 final key = _key(s);
                 return _SuggestionCard(
-                  suggestion : s,
-                  downVotes  : _downVotes[key] ?? 0,
-                  upVotes    : _upVotes[key]   ?? 0,
-                  onDownVote : _handleDownVote,
-                  onUpVote   : _handleUpVote,
+                  suggestion: s,
+                  downVotes: _downVotes[key] ?? 0,
+                  upVotes: _upVotes[key] ?? 0,
+                  onDownVote: _handleDownVote,
+                  onUpVote: _handleUpVote,
                 );
               },
             ),
     );
   }
 
-  //──────────────────── helpers ──────────────────────────────────────────
   String _key(TenantSuggestion s) =>
       '${s.apartmentId}|${s.roomId}|${s.code}|${s.timestamp.millisecondsSinceEpoch}';
 
   void _cleanupVotes(List<TenantSuggestion> current) {
     final keys = current.map(_key).toSet();
     _downVotes.removeWhere((k, _) => !keys.contains(k));
-    _upVotes  .removeWhere((k, _) => !keys.contains(k));
+    _upVotes.removeWhere((k, _) => !keys.contains(k));
   }
 
   void _showSnack(String txt, {Color? color}) =>
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(txt), backgroundColor: color));
 
-  //----------------------------  UP-VOTE  --------------------------------
   void _handleUpVote(TenantSuggestion s) {
     final k = _key(s);
     setState(() => _upVotes[k] = (_upVotes[k] ?? 0) + 1);
-
-    _showSnack(
-      'Useful • ${_upVotes[k]} 👍',
-      color: Colors.green,
-    );
+    _showSnack('Useful • ${_upVotes[k]} 👍', color: Colors.green);
   }
 
-  //---------------------------  DOWN-VOTE  -------------------------------
   Future<void> _handleDownVote(TenantSuggestion s) async {
-    final k    = _key(s);
+    final k = _key(s);
     final curr = _downVotes[k] ?? 0;
 
     if (curr == 0) {
       setState(() => _downVotes[k] = 1);
-      _showSnack('Not useful • 1 👎  (tap again to hide)', color: Colors.red);
+      _showSnack('Not useful • 1 👎 (tap again to hide)', color: Colors.red);
       return;
     }
 
-    // secondo tap → disattiva
     setState(() => _downVotes[k] = 2);
     if (await _deactivateSuggestion(s)) {
       context.read<MqttSuggestionsManager>().removeTenantSuggestion(s);
@@ -125,13 +113,12 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
     }
   }
 
-  //------------------ REST call: deactivate ------------------------------
   Future<bool> _deactivateSuggestion(TenantSuggestion s) async {
-    final url  = '${AppConfig.registryUrl}/deactivate_suggestion';
+    final url = '${AppConfig.registryUrl}/deactivate_suggestion';
     final body = {
-      'suggestionId' : s.code,
-      'apartmentId'  : s.apartmentId,
-      'roomId'       : s.roomId,
+      'suggestionId': s.code,
+      'apartmentId': s.apartmentId,
+      'roomId': s.roomId,
     };
 
     try {
@@ -153,7 +140,7 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
   }
 }
 
-//──────────────────────── CARD WIDGET ───────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 class _SuggestionCard extends StatelessWidget {
   final TenantSuggestion suggestion;
   final int downVotes;
@@ -178,36 +165,32 @@ class _SuggestionCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Row(
           children: [
-            // testo ----------------------------------------------------------
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(suggestion.message,
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 2),
                   Text(
-                    '${suggestion.code}  •  '
-                    '${suggestion.timestamp.toLocal().toString().substring(11,16)}',
+                    '${suggestion.roomId}/${suggestion.code} • ${suggestion.timestamp.toLocal().toString().substring(11, 16)}',
                     style: const TextStyle(fontSize: 13, color: Colors.grey),
                   ),
                 ],
               ),
             ),
-            // voti -----------------------------------------------------------
             _VoteButton(
-              icon : Icons.thumb_down,
+              icon: Icons.thumb_down,
               color: Colors.red,
               count: downVotes,
-              onTap : () => onDownVote(suggestion),
+              onTap: () => onDownVote(suggestion),
             ),
             const SizedBox(width: 4),
             _VoteButton(
-              icon : Icons.thumb_up,
+              icon: Icons.thumb_up,
               color: Colors.green,
               count: upVotes,
-              onTap : () => onUpVote(suggestion),
+              onTap: () => onUpVote(suggestion),
             ),
           ],
         ),
@@ -216,11 +199,10 @@ class _SuggestionCard extends StatelessWidget {
   }
 }
 
-//───────────────────── vote button helper ───────────────────────────────
 class _VoteButton extends StatelessWidget {
-  final IconData    icon;
-  final Color       color;
-  final int         count;
+  final IconData icon;
+  final Color color;
+  final int count;
   final VoidCallback onTap;
 
   const _VoteButton({
@@ -237,14 +219,7 @@ class _VoteButton extends StatelessWidget {
       children: [
         IconButton(icon: Icon(icon, color: color), onPressed: onTap),
         if (count > 0)
-          Text(
-            '$count',
-            style: TextStyle(
-              fontSize: 12,
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          Text('$count', style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
       ],
     );
   }
