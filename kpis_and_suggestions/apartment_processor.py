@@ -150,6 +150,10 @@ def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
                  season, weather_info, publisher, base_topic):
     room_id = room["roomId"]
     log("Processing room", context=f"{apartment_id}/{room_id}")
+    if not publisher._paho_mqtt.is_connected():
+        log("MQTT disconnected, trying to reconnect...", level="WARN", context=f"{apartment_id}/{room_id}")
+        publisher._paho_mqtt.reconnect()
+
 
     data = fetch_room_data(room_id, apartment_id, user_id, adaptor_base)
     if not data:
@@ -164,12 +168,23 @@ def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
 
     if not classifications or not isinstance(classifications, dict):
         return None
+    
+    # Keys' mapping from _class to standard
+    mapped_classifications = {
+    "temperature": classifications.get("temp_class"),
+    "humidity": classifications.get("hum_class"),
+    "co2": classifications.get("co2_class"),
+    "pmv": classifications.get("pmv_class"),
+    "ppd": classifications.get("ppd_class"),
+    "icone": classifications.get("icone_class"),
+    "ieqi": classifications.get("ieqi_class"),
+    "overall_score": classifications.get("env_score")
+    }
 
     suggestions = generate_room_suggestions(
-        room, catalog, classifications, avg_values, t_ext, settings,
+        room, catalog, mapped_classifications, avg_values, t_ext, settings,
         season, weather_info, trends
     )
-
 
     pmv = calculate_pmv(season, avg_values["avg_temp"], avg_values["avg_temp"], 0.1, avg_values["avg_humidity"], settings)
     ppd = calculate_ppd(pmv)

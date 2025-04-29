@@ -172,8 +172,20 @@ class MyPublisher:
 
             result = self._paho_mqtt.publish(clean_topic, message, self.qos, retain=False)
 
-            if result.rc != PahoMQTT.MQTT_ERR_SUCCESS:
+            if result.rc == PahoMQTT.MQTT_ERR_NO_CONN:
+                log(f"Publish failed (not connected). Trying to reconnect...", level="WARN", context=self.clientID)
+                try:
+                    self._paho_mqtt.reconnect()
+                    log(f"Reconnect successful, retrying publish...", level="INFO", context=self.clientID)
+                    # Retry the publish once
+                    result = self._paho_mqtt.publish(clean_topic, message, self.qos, retain=False)
+                    if result.rc != PahoMQTT.MQTT_ERR_SUCCESS:
+                        log(f"Retry failed with result code {result.rc}", level="ERROR", context=self.clientID)
+                except Exception as e:
+                    log(f"Reconnect failed: {e}", level="ERROR", context=self.clientID)
+            elif result.rc != PahoMQTT.MQTT_ERR_SUCCESS:
                 log(f"Publish failed with result code {result.rc}", level="ERROR", context=self.clientID)
+
         except Exception as e:
             log(f"Exception during publish: {e}", level="ERROR", context=self.clientID)
 

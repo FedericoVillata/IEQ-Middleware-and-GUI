@@ -51,16 +51,20 @@ def fetch_data(adaptor_base, user_id, apartment_id, measure, start=None, end=Non
             resp = requests.get(url, params=params, timeout=10)
             if resp.status_code == 200:
                 data = resp.json()
-                log(f"Fetched {len(data)} items for {measure}", level="INFO")
+                if not data:
+                    log(f"No {measure} data found (empty list).", level="WARN", context=f"{apartment_id}")
+                else:
+                    log(f"Fetched {len(data)} items for {measure}", level="INFO")
                 return data
             else:
-                log(f"Adaptor returned status {resp.status_code}", level="ERROR")
+                log(f"Adaptor returned status {resp.status_code} for {measure}", level="ERROR", context=f"{apartment_id}")
         except Exception as e:
-            log(f"Exception: {e}", level="ERROR", context=f"Attempt {attempt + 1}")
+            log(f"Exception fetching {measure}: {e}", level="ERROR", context=f"Attempt {attempt + 1}")
         time.sleep(delay)
 
-    log(f"Failed to fetch {measure} after {retries} attempts.", level="ERROR")
+    log(f"Failed to fetch {measure} after {retries} attempts.", level="ERROR", context=f"{apartment_id}")
     return []
+
 
 def fetch_feedback(adaptor_base, user_id, apartment_id, duration=168):
     try:

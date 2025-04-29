@@ -258,23 +258,34 @@ def classify_icone(icone, settings):
 
 def overall_score(classifications, settings):
     """
-    Calculates the weighted overall environment score as a whole number percentage (0 to 100).
+    Calculates a weighted overall environment score (0–100),
+    skipping missing or unknown classifications.
     """
 
     label_to_score = settings["label_to_score"]
     weights = settings["weights"]
 
     total_score = 0.0
+    total_weight = 0.0
 
     for metric, label in classifications.items():
+        if label is None or label == "Unknown":
+            continue  # Skip missing or unknown data
+
         weight = weights.get(metric, 0.0)
         score = label_to_score.get(label, 0)
+
         normalized_score = (score / 3) * weight  # scale to weighted percentage
         total_score += normalized_score
+        total_weight += weight
 
-    #log(f"{metric}: label={label}, score={score}, weight={weight}, normalized={normalized_score:.2f}", level="DEBUG", context="overall_score")
+    if total_weight == 0:
+        return 0  # No valid data, fallback to score 0
 
-    return round(total_score)
+    normalized_total = total_score / total_weight * 100  # Rescale to 0-100
+
+    return round(normalized_total)
+
 
 def classify_overall_score(score, settings):
     thresholds = settings["thresholds"]["overall_score_classification"]
