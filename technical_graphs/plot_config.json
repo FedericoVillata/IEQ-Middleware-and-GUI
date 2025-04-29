@@ -1,6 +1,6 @@
 {
-  "adaptor_url": "http://adaptor:8080",
-  "registry_url": "http://registry:8081",
+  "adaptor_url": "https://adaptor.ieqmiddleware.com",
+  "registry_url": "https://registry.ieqmiddleware.com",
   "port": 9090,
   "request_timeout": 30,
   "max_retries": 3,
