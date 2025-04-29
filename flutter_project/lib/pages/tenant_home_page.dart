@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../widgets/suggestions_bell.dart';
+import '../app_config.dart';
 
 class HomePage extends StatefulWidget {
   final String username;
@@ -48,7 +49,7 @@ class HomePageState extends State<HomePage> {
   // meteo
   String externalTemp = '20°C';
   int    weatherCode  = 0;
-  final  String adaptorUrl = 'http://localhost:8080';
+  final  String adaptorUrl = AppConfig.adaptorUrl;
 
   // ─────────────────────────────── lifecycle
   @override
