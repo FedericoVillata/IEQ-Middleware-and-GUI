@@ -205,7 +205,7 @@ def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
     }
 
 def fetch_room_data(room_id, apartment_id, user_id, adaptor_base):
-    measures = ["Temperature", "Humidity", "CO2", "PM10", "VOC"]
+    measures = ["Temperature", "Humidity", "CO2", "PM10.0", "VOC"]
     measure_data = {}
 
     for measure in measures:
