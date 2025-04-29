@@ -7,6 +7,7 @@ import 'login_page.dart';                         // ← aggiunto
 import 'pages/tenant_home_page.dart';
 import 'pages/tenant_feedback_page.dart' as feedback;
 import 'pages/tenant_suggestions_page.dart' as suggestions;
+import 'app_config.dart';
 
 class MyAppTenant extends StatelessWidget {
   final String username;
@@ -77,7 +78,7 @@ class _TenantMainPageState extends State<TenantMainPage> {
   Future<void> fetchApartmentData() async {
     try {
       final resp =
-          await http.get(Uri.parse('http://localhost:8081/apartments'));
+          await http.get(Uri.parse(AppConfig.registryUrl + "/apartments"));
       if (resp.statusCode != 200) return;
 
       final data = jsonDecode(resp.body) as List<dynamic>;
