@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+
 import 'tenant_main.dart';
 import 'technical_main.dart';
 import 'app_config.dart';
@@ -17,89 +18,76 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
-  final String baseUrl = AppConfig.registryUrl;
-  //final String baseUrl = "http://registry:8081";
-  //final String baseUrl = "Registry.ieqmiddleware.com";
-
-  // Handles the login logic
   Future<void> _attemptLogin() async {
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
+    final url = Uri.parse('${AppConfig.registryUrl}/login');
 
     try {
-      final response = await http.get(Uri.parse("$baseUrl/users"));
-      if (response.statusCode != 200) {
-        _showErrorDialog("Server error: ${response.statusCode}");
-        return;
-      }
-
-      final List<dynamic> users = jsonDecode(response.body);
-      final user = users.firstWhere(
-        (u) => u['userId'] == username && u['password'] == password,
-        orElse: () => null,
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': username, 'password': password}),
       );
 
-      if (user == null) {
-        _showErrorDialog("Wrong credentials");
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode != 200 || data['status'] != 'OK') {
+        final msg = data['message'] ?? 'Login failed';
+        _showErrorDialog(msg);
         return;
       }
 
-      final permission = user['permissions'];
-      final List<String> apartments = List<String>.from(user['apartments']);
-
-      // Ensure each apartment has its data bucket (if needed)
-      for (String apt in apartments) {
-        await _ensureApartmentBucketExists(apt);
-      }
-
-      if (!mounted) return;
-
-      // Redirect based on user role
-      if (permission == "Base") {
+      final message = data['message'];
+      if (message == 'Base') {
+        final apartments = await _fetchUserApartments(username);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => MyAppTenant(
-              username: username,
-              apartments: apartments,
-            ),
+            builder: (_) => MyAppTenant(username: username, apartments: apartments),
           ),
         );
-      } else if (permission == "Technical") {
+      } else if (message == 'Technical') {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => TechnicalMainPage(
-              username: username, // Pass the logged user here
-            ),
+            builder: (_) => TechnicalMainPage(username: username),
           ),
         );
       } else {
-        _showErrorDialog("Unrecognized permission type");
+        _showErrorDialog('Unrecognized role: $message');
       }
     } catch (e) {
       _showErrorDialog("Connection error:\n$e");
     }
   }
 
-  // Sends a dummy request to ensure the apartment's data bucket exists
-  Future<void> _ensureApartmentBucketExists(String apartmentId) async {
-    try {
-      await http.post(
-        Uri.parse("$baseUrl/addApartment"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"apartmentId": apartmentId}),
-      );
-    } catch (_) {
-      // Fail silently
-    }
-  }
+  Future<List<String>> _fetchUserApartments(String userId) async {
+  try {
+    final url = Uri.parse('${AppConfig.registryUrl}/users');
+    final response = await http.get(url);
+    if (response.statusCode != 200) return [];
 
-  // Displays error messages in a dialog
+    final List<dynamic> users = jsonDecode(response.body);
+    final user = users.firstWhere(
+      (u) => u['userId'] == userId,
+      orElse: () => {}, // ← ritorna un Map vuoto invece di null
+    );
+
+    if (user.containsKey('apartments') && user['apartments'] is List) {
+      return List<String>.from(user['apartments']);
+    }
+  } catch (e) {
+    debugPrint('Apartment fetch error: $e');
+  }
+  return [];
+}
+
+
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
         title: const Text('Login Failed'),
         content: Text(message),
         actions: [
@@ -112,7 +100,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // UI: main login screen
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -130,8 +117,6 @@ class _LoginPageState extends State<LoginPage> {
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF236FC6)),
               ),
               const SizedBox(height: 20),
-
-              // Username input
               TextField(
                 controller: _usernameController,
                 decoration: InputDecoration(
@@ -143,8 +128,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Password input
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -161,8 +144,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Login button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
