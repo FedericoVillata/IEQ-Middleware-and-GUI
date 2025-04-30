@@ -16,6 +16,7 @@ from kpis_classification import *
 
 import numpy as np
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo 
 
 # Map labels to scores for each classification category
 LABEL_SCORE_MAP = {
@@ -90,8 +91,12 @@ def parse_isoformat_safe(iso_str):
     except Exception:
         return None
 
-def check_sensor_updates(room, threshold_minutes=24 * 60):
-    now = datetime.utcnow()
+def check_sensor_updates(room, apartment_timezone, threshold_minutes=24 * 60):
+    try:
+        now = datetime.now(ZoneInfo(apartment_timezone)) 
+    except Exception:
+        now = datetime.utcnow()
+
     alerts = []
 
     sensor_type_lookup = {
@@ -144,6 +149,7 @@ def check_sensor_updates(room, threshold_minutes=24 * 60):
 def process_apartment(apartment, catalog, weather_info, publisher,
                       base_topic, adaptor_base, base_settings=None):
     apartment_id = apartment['apartmentId']
+    apartment_timezone = apartment.get("timezone", catalog.get("timezone", "UTC"))
 
     log("Processing apartment", context=apartment_id)
 
@@ -175,6 +181,7 @@ def process_apartment(apartment, catalog, weather_info, publisher,
         result = process_room(
             room,
             apartment_id,
+            apartment_timezone,
             user_id,
             adaptor_base,
             catalog,
@@ -207,7 +214,7 @@ def process_apartment(apartment, catalog, weather_info, publisher,
         weather_info, publisher, base_topic
     )
 
-def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
+def process_room(room, apartment_id, apartment_timezone, user_id, adaptor_base, catalog, settings,
                  season, weather_info, publisher, base_topic):
     room_id = room["roomId"]
     log("Processing room", context=f"{apartment_id}/{room_id}")
@@ -268,7 +275,7 @@ def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
         env_class=env_class
     )
 
-    sensor_alerts = check_sensor_updates(room)
+    sensor_alerts = check_sensor_updates(room, apartment_timezone)
     publish_alerts(publisher, base_topic, apartment_id, room_id, classifications,sensor_alerts=sensor_alerts)
     publish_tenant_suggestions(publisher, base_topic, apartment_id, room_id, suggestions)
 
