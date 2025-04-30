@@ -6,6 +6,7 @@ import threading
 import paho.mqtt.client as PahoMQTT
 import datetime
 from pathlib import Path
+from timezonefinder import TimezoneFinder
 
 P = Path(__file__).parent.absolute()
 CATALOG = P / 'catalog.json'
@@ -235,11 +236,18 @@ class Catalog(object):
                 "sensors": updated_sensors,
                 "suggestions": suggestions
             })
+        aptId = self.find_smallest_missing_apartmentId()
+        tf = TimezoneFinder()
+        coord = apt_json["coordinates"]
+        timezone_str = tf.timezone_at(lng=coord["long"], lat=coord["lat"])
+        timezone_str = timezone_str or "Europe/Rome"
+        timezone_str 
         apt_res ={
             "users": [apt_json["userId"]],
-            "apartmentId": self.find_smallest_missing_apartmentId(),
+            "apartmentId": aptId,
             "apartmentName": apt_json["apartmentName"],
             "coordinates": apt_json["coordinates"],
+            "timezone": timezone_str,
             "MAC": apt_json["MAC"],
             "rooms": updated_rooms,
             "settings": self.catalog["base_settings"]
@@ -487,7 +495,13 @@ class Webserver(object):
                 return json.dumps(self.cat.catalog["users"])
             #GET Apartments from catalog    
             if uri[0] == 'apartments':
-                return json.dumps(self.cat.catalog["apartments"])
+                if len(uri) > 1:
+                    for apt in self.cat.catalog["apartments"]:
+                        if apt["apartmentId"] == uri[1]:
+                            return json.dumps(apt)
+                    return json.dumps({"status": "NOT_OK", "code": 400, "message": "Apartment not found"})
+                else:
+                    return json.dumps(self.cat.catalog["apartments"])
             #GET Default settings from catalog 
             if uri[0] == "base_settings":
                 return json.dumps(self.cat.catalog["base_settings"])

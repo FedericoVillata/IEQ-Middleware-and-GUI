@@ -10,6 +10,7 @@ from pathlib import Path
 import requests
 from requests.exceptions import HTTPError
 import queue
+from zoneinfo import ZoneInfo
 
 P = Path(__file__).parent.absolute()
 SETTINGS = P / "settings.json"
@@ -69,7 +70,7 @@ class Adaptor(object):
         self.client = InfluxDBClient(url=self.influxUrl, token=self.token)
         self.bucket_api = self.client.buckets_api()
         self.test = settings["test"]
-        self.loadUsers()
+        self.loadUsers()        
         
     def loadUsers(self):
         url = self.registryBaseUrl + "/users"
@@ -111,7 +112,7 @@ class Adaptor(object):
         
     def stop(self):
         pass
-        
+
     def GET(self,*uri,**params):
         """Get data from InfluxDB"""
         #http://localhost:8080/getApartmentData/userId/aptId/?measurement=humidity&duration=1 
@@ -134,9 +135,10 @@ class Adaptor(object):
                                         |> filter(fn: (r) => r["_field"] == "{params["measurement"]}")'
                             tables = self.client.query_api().query(org=self.org, query=query)
                             out = []
+                            tz = requests.get(f"{self.registryBaseUrl}/apartments/{uri[2]}").json()["timezone"]
                             for table in tables:
                                 for row in table.records:
-                                    line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"]}
+                                    line = {"t": row.get_time().astimezone(ZoneInfo(tz)).strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"]}
                                     out.append(line)
                             return json.dumps(out)
                     else:
@@ -160,9 +162,10 @@ class Adaptor(object):
                             |> range(start: -{duration}{timeInterval})'
                         tables = self.client.query_api().query(org=self.org, query=query)
                         out = []
+                        tz = requests.get(f"{self.registryBaseUrl}/apartments/{uri[2]}").json()["timezone"]
                         for table in tables:
                             for row in table.records:
-                                line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"], "measurement": row["_field"]}
+                                line = {"t": row.get_time().astimezone(ZoneInfo(tz)).strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"], "measurement": row["_field"]}
                                 out.append(line)
                         return json.dumps(out)
                     else:
@@ -189,9 +192,10 @@ class Adaptor(object):
                                         |> filter(fn: (r) => r["_field"] == "{params["measurement"]}")'
                             tables = self.client.query_api().query(org=self.org, query=query)
                             out = []
+                            tz = requests.get(f"{self.registryBaseUrl}/apartments/{uri[2]}").json()["timezone"]
                             for table in tables:
                                 for row in table.records:
-                                    line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value()}
+                                    line = {"t": row.get_time().astimezone(ZoneInfo(tz)).strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value()}
                                     out.append(line)
                             return json.dumps(out)
                     else:
@@ -217,9 +221,10 @@ class Adaptor(object):
                                 |> filter(fn: (r) => r["_measurement"] == "{uri[3]}")'
                         tables = self.client.query_api().query(org=self.org, query=query)
                         out = []
+                        tz = requests.get(f"{self.registryBaseUrl}/apartments/{uri[2]}").json()["timezone"]
                         for table in tables:
                             for row in table.records:
-                                line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "measurement": row["_field"]}
+                                line = {"t": row.get_time().astimezone(ZoneInfo(tz)).strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "measurement": row["_field"]}
                                 out.append(line)
                         return json.dumps(out)
                     else:
@@ -238,9 +243,10 @@ class Adaptor(object):
                                     |> last()'
                         tables = self.client.query_api().query(org=self.org, query=query)
                         out = []
+                        tz = requests.get(f"{self.registryBaseUrl}/apartments/{uri[2]}").json()["timezone"]
                         for table in tables:
                             for row in table.records:
-                                line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "measurement": row["_field"]}
+                                line = {"t": row.get_time().astimezone(ZoneInfo(tz)).strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "measurement": row["_field"]}
                                 out.append(line)
                         return json.dumps(out)
                     else:
@@ -257,9 +263,10 @@ class Adaptor(object):
                                 |> last()'
                         tables = self.client.query_api().query(org=self.org, query=query)
                         out = []
+                        tz = requests.get(f"{self.registryBaseUrl}/apartments/{uri[2]}").json()["timezone"]
                         for table in tables:
                             for row in table.records:
-                                line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"], "measurement": row["_field"]}
+                                line = {"t": row.get_time().astimezone(ZoneInfo(tz)).strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"], "measurement": row["_field"]}
                                 out.append(line)
                         return json.dumps(out)
                     else:
@@ -287,9 +294,10 @@ class Adaptor(object):
                                         |> filter(fn: (r) => r["_field"] == "{params["measurement"]}")'
                             tables = self.client.query_api().query(org=self.org, query=query)
                             out = []
+                            tz = requests.get(f"{self.registryBaseUrl}/apartments/{uri[2]}").json()["timezone"]
                             for table in tables:
                                 for row in table.records:
-                                    line = {"t": row.get_time().strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"]}
+                                    line = {"t": row.get_time().astimezone(ZoneInfo(tz)).strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"]}
                                     out.append(line)
                             return json.dumps(out)
                     else:

@@ -39,6 +39,7 @@
         "long": 7.6868565,
         "lat": 45.070312
       },
+      "timezone": "Europe/Rome",
       "rooms": [
         {
           "roomId": "room0",
@@ -364,6 +365,7 @@
         "long": 7.6868565,
         "lat": 45.070312
       },
+      "timezone": "Europe/Rome",
       "MAC": [
         {
           "name": "netatmo",
@@ -1132,6 +1134,7 @@
         "long": 7.6868565,
         "lat": 45.070312
       },
+      "timezone": "Europe/Rome",
       "MAC": [
         {
           "name": "capetti",
