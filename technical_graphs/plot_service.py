@@ -373,10 +373,17 @@ class PlotService:
                 pass
         return datetime.now()
 
+
     def _no_data_image(self, download=None):
         """
         Returns a small placeholder "No Data" image if there are no data points.
+        The custom header makes it easy for the Flutter frontend to detect
+        the condition and replace the image with a text message instead.
         """
+        # <----------- added header
+        cherrypy.response.headers["X-No-Data"] = "1"
+        # ----------->
+
         fig, ax = plt.subplots(figsize=(2, 1), dpi=80)
         ax.text(0.5, 0.5, "No Data", ha="center", va="center", fontsize=12)
         ax.axis("off")
