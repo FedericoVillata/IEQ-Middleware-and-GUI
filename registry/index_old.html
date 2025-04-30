@@ -5,207 +5,349 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Service Page</title>
     <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
         .container {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 50px;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
         }
         .column {
-            width: 22%;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
+            margin-bottom: 30px;
         }
-        input[type="text"] {
-            width: 100%;
-            margin-bottom: 10px;
-            padding: 8px;
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        input[type="text"], select {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
             box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+        input[type="text"]:focus, select:focus {
+            border-color: #007bff;
+            outline: none;
         }
         button {
-            width: 100%;
-            padding: 10px;
+            padding: 10px 15px;
             background-color: #007bff;
             color: #fff;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
         }
         button:hover {
             background-color: #0056b3;
         }
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
         #jsonDisplay {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #f9f9f9;
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Add User -->
         <div class="column">
             <h2>Add user</h2>
-            <input type="text" id="input1_col1" placeholder="UserId">
-            <input type="text" id="input2_col1" placeholder="Password">
-            <button onclick="postAddUser(1)">Submit</button>
+            <div class="row">
+                <input type="text" id="input1_col1" placeholder="UserId">
+                <input type="text" id="input2_col1" placeholder="Password">
+                <select id="permission_col1">
+                    <option value="Base">Base</option>
+                    <option value="Technical">Technical</option>
+                </select>
+                <button onclick="postAddUser(1)">Submit</button>
+            </div>
         </div>
+
+        <!-- Add Apartment -->
         <div class="column">
             <h2>Add apartment</h2>
-            <input type="text" id="input1_col2" placeholder="UserId">
-            <input type="text" id="input2_col2" placeholder="ApartmentId">
-            <button onclick="postAddApartment(2)">Submit</button>
+            <div class="row">
+                <input type="text" id="input1_col2" placeholder="UserId">
+                <input type="text" id="input2_col2" placeholder="Apartment Name">
+                <input type="text" id="input3_col2" placeholder="Longitude">
+                <input type="text" id="input4_col2" placeholder="Latitude">
+            </div>
+            <div id="roomsContainer">
+                <div class="row room">
+                    <input type="text" class="roomId" placeholder="Room ID">
+                    <input type="text" class="sensors" placeholder="Sensors (comma separated)">
+                </div>
+            </div>
+            <div class="button-container">
+                <button onclick="addRoomInput()">Add Room</button>
+            </div>
+            <h3>Gateways</h3>
+            <div id="gatewaysContainer">
+                <div class="row gateway">
+                    <select class="gatewayType">
+                        <option value="capetti">Capetti</option>
+                        <option value="netatmo">Netatmo</option>
+                    </select>
+                    <input type="text" class="gatewayMAC" placeholder="MAC Address">
+                </div>
+            </div>
+            <div class="button-container">
+                <button onclick="addGatewayInput()">Add Gateway</button>
+                <button onclick="postAddApartment(2)">Submit</button>
+            </div>
         </div>
+
+        <!-- Update Tokens -->
+        <div class="column">
+            <h2>Update Gateway Tokens</h2>
+            <div class="row">
+                <input type="text" id="updateApartmentId" placeholder="ApartmentId">
+                <input type="text" id="updateGatewayMAC" placeholder="Gateway MAC">
+                <input type="text" id="updateAccessToken" placeholder="Access Token">
+                <input type="text" id="updateRefreshToken" placeholder="Refresh Token">
+                <button onclick="postUpdateTokens()">Submit</button>
+            </div>
+        </div>
+
+        <!-- Add User to Apartment -->
+        <div class="column">
+            <h2>Add User to Apartment</h2>
+            <div class="row">
+                <input type="text" id="input1_col5" placeholder="UserId">
+                <input type="text" id="input2_col5" placeholder="ApartmentId">
+                <button onclick="postAddUserToApartment(5)">Submit</button>
+            </div>
+        </div>
+
+        <!-- Remove User -->
         <div class="column">
             <h2>Remove user</h2>
-            <input type="text" id="input1_col3" placeholder="UserId">
-            <button onclick="postRemoveUser(3)">Submit</button>
+            <div class="row">
+                <input type="text" id="input1_col3" placeholder="UserId">
+                <button onclick="postRemoveUser(3)">Submit</button>
+            </div>
         </div>
+
+        <!-- Remove Apartment -->
         <div class="column">
             <h2>Remove apartment</h2>
-            <input type="text" id="input1_col4" placeholder="ApartmentId">
-            <button onclick="postRemoveApartment(4)">Submit</button>
+            <div class="row">
+                <input type="text" id="input1_col4" placeholder="ApartmentId">
+                <button onclick="postRemoveApartment(4)">Submit</button>
+            </div>
         </div>
     </div>
-
     <div id="jsonDisplay"></div>
 
     <script>
-        function postAddUser(columnNumber) {
-            const userId = document.getElementById(`input1_col${columnNumber}`).value;
-            const password = document.getElementById(`input2_col${columnNumber}`).value;
-            const chatID = null;
-
-
-            // Example POST request using Fetch API
-            //fetch('https://mako-keen-rarely.ngrok-free.app/addUser', {
-            fetch('http://localhost:8081/add_user', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ userId, password , chatID})
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                    //alert('Data submitted successfully!');
-                } else {
-                    alert('Failed to submit data.');
-                }
-            })
-            .then(data => {
-                if (data.status === 'OK') {
-                    alert('Data submitted successfully!');
-                } else {
-                    alert('Data submission failed. Status: ' + data.status + ', Code: ' + data.code);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to submit data.');
-            });
+        // Function to add a new room input dynamically
+        function addRoomInput() {
+            const container = document.getElementById("roomsContainer");
+            const div = document.createElement("div");
+            div.classList.add("row", "room");
+            div.innerHTML = `
+                <input type="text" class="roomId" placeholder="Room ID">
+                <input type="text" class="sensors" placeholder="Sensors (comma separated)">
+            `;
+            container.appendChild(div);
         }
 
-        function postRemoveUser(columnNumber) {
-            const input1 = document.getElementById(`input1_col${columnNumber}`).value;
-
-            // Example POST request using Fetch API
-            //fetch('https://mako-keen-rarely.ngrok-free.app/deleteUser', {
-            fetch('http://localhost:8081/del_user/'+ input1, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                //body: JSON.stringify({ input1 })
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    alert('Failed to submit data.');
-                }
-            })
-            .then(data => {
-                if (data.status === 'OK') {
-                    alert('Data submitted successfully');
-                } else {
-                    alert('Data submission failed. Status: ' + data.status + ', Code: ' + data.code);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to submit data.');
-            });
+        // Function to add a new gateway input dynamically
+        function addGatewayInput() {
+            const container = document.getElementById("gatewaysContainer");
+            const div = document.createElement("div");
+            div.classList.add("row", "gateway");
+            div.innerHTML = `
+                <select class="gatewayType">
+                    <option value="capetti">Capetti</option>
+                    <option value="netatmo">Netatmo</option>
+                </select>
+                <input type="text" class="gatewayMAC" placeholder="MAC Address">
+            `;
+            container.appendChild(div);
         }
 
-        function postAddApartment(columnNumber) {
+        function postAddUserToApartment(columnNumber) {
             const userId = document.getElementById(`input1_col${columnNumber}`).value;
-            const apartmentId= document.getElementById(`input2_col${columnNumber}`).value;
-
-            // Example POST request using Fetch API
-            //fetch('https://mako-keen-rarely.ngrok-free.app/addPlant', {
-            fetch('http://localhost:8081/add_apt', {
+            const apartmentId = document.getElementById(`input2_col${columnNumber}`).value;
+            fetch('http://localhost:8081/add_user_to_apartment', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ userId, apartmentId })
             })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    alert('Failed to submit data.');
-                }
-            })
+            .then(response => response.ok ? response.json() : Promise.reject('Failed to submit data.'))
             .then(data => {
-                if (data.status === 'OK') {
-                    alert('Data submitted successfully!');
-                } else {
-                    alert('Data submission failed. Message: ' + data.message);
-                }
+                alert(data.status === 'OK' ? 'User added to apartment successfully!' : `Failed to add user to apartment. Message: ${data.message}`);
             })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to submit data.');
-            });
+            .catch(error => alert(error));
+        }
+        function postAddUser(columnNumber) {
+            const userId = document.getElementById(`input1_col${columnNumber}`).value;
+            const password = document.getElementById(`input2_col${columnNumber}`).value;
+            const permission = document.getElementById(`permission_col${columnNumber}`).value;
+
+            fetch('http://localhost:8081/add_user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, password, permission})
+            })
+            .then(response => response.ok ? response.json() : Promise.reject('Failed to submit data.'))
+            .then(data => {
+                alert(data.status === 'OK' ? 'Data submitted successfully!' : `Data submission failed. Status: ${data.status}, Code: ${data.code}`);
+            })
+            .catch(error => alert(error));
         }
 
+        // Function to handle the submission of the Add Apartment form
+        function postAddApartment(columnNumber) {
+            const userId = document.getElementById(`input1_col${columnNumber}`).value;
+            const apartmentName = document.getElementById(`input2_col${columnNumber}`).value;
+            const longitude = document.getElementById(`input3_col${columnNumber}`).value;
+            const latitude = document.getElementById(`input4_col${columnNumber}`).value;
+            // Collect rooms data
+            const rooms = [];
+            document.querySelectorAll(".room").forEach(roomDiv => {
+                const roomId = roomDiv.querySelector(".roomId").value;
+                const sensors = roomDiv.querySelector(".sensors").value.split(",").map(s => s.trim());
+                if (roomId) {
+                    rooms.push({ roomId, sensors });
+                }
+            });
+
+            // Collect gateways data
+            const gateways = [];
+            document.querySelectorAll(".gateway").forEach(gatewayDiv => {
+                const gatewayType = gatewayDiv.querySelector(".gatewayType").value;
+                const gatewayMAC = gatewayDiv.querySelector(".gatewayMAC").value;
+                if (gatewayMAC) {
+                    if (gatewayType === "netatmo") {
+                        gateways.push({
+                            name: gatewayType,
+                            MAC: gatewayMAC,
+                            accessToken: "",
+                            refreshToken: ""
+                        });
+                    } else {
+                        gateways.push({ name: gatewayType, MAC: gatewayMAC });
+                    }
+                }
+            });
+
+            // Prepare the JSON payload
+            const payload = {
+                MAC: gateways,
+                apartmentName: apartmentName,
+                coordinates: {
+                    long: parseFloat(longitude),
+                    lat: parseFloat(latitude)
+                },
+                userId: userId,
+                rooms: rooms
+            };
+
+            // Send the POST request
+            fetch('http://localhost:8081/add_apt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.ok ? response.json() : Promise.reject('Failed to submit data.'))
+            .then(data => {
+                alert(data.status === 'OK' ? 'Data submitted successfully!' : `Data submission failed. Message: ${data.message}`);
+            })
+            .catch(error => alert(error));
+        }
+
+        // Function to handle updating tokens
+        function postUpdateTokens() {
+            const apartmentId = document.getElementById("updateApartmentId").value;
+            const gatewayMAC = document.getElementById("updateGatewayMAC").value;
+            const accessToken = document.getElementById("updateAccessToken").value;
+            const refreshToken = document.getElementById("updateRefreshToken").value;
+
+            // Prepare the JSON payload
+            const payload = {
+                apartmentId,
+                gatewayMAC,
+                accessToken,
+                refreshToken
+            };
+
+            // Send the POST request
+            fetch('http://localhost:8081/update_tokens', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.ok ? response.json() : Promise.reject('Failed to update tokens.'))
+            .then(data => {
+                alert(data.status === 'OK' ? 'Tokens updated successfully!' : `Failed to update tokens. Message: ${data.message}`);
+            })
+            .catch(error => alert(error));
+        }
+        
+        function postRemoveUser(columnNumber) {
+            const input1 = document.getElementById(`input1_col${columnNumber}`).value;
+            fetch('http://localhost:8081/del_user/'+ input1, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => response.ok ? response.json() : Promise.reject('Failed to remove user.'))
+            .then(data => {
+                alert(data.status === 'OK' ? 'User removed successfully!' : `Failed to remove user. Message: ${data.message}`);
+            })
+            .catch(error => alert(error));
+        }
         function postRemoveApartment(columnNumber) {
             const aptId = document.getElementById(`input1_col${columnNumber}`).value;
-
-            // Example POST request using Fetch API
-            //fetch('https://mako-keen-rarely.ngrok-free.app/deletePlant', {
             fetch('http://localhost:8081/del_apt/'+ aptId, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                //body: JSON.stringify({ input1, input2 })
             })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    alert('Failed to submit data.');
-                }
-            })
+            .then(response => response.ok ? response.json() : Promise.reject('Failed to remove apartment.'))
             .then(data => {
-                if (data.status === 'OK') {
-                    alert('Data submitted successfully!');
-                } else {
-                    alert('Data submission failed. Status: ' + data.status + ', Code: ' + data.code);
-                }
+                alert(data.status === 'OK' ? 'Apartment removed successfully!' : `Failed to remove apartment. Message: ${data.message}`);
             })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to submit data.');
-            });
+            .catch(error => alert(error));
         }
-
         function fetchData() {
             // Example GET request using Fetch API
             //fetch('https://mako-keen-rarely.ngrok-free.app/getUsers')
@@ -227,7 +369,6 @@
             });
         }
     </script>
-    <button onclick="fetchData()">Get Users</button>
+    <button onclick="fetchData()" style="display: block; margin: 20px auto; padding: 10px 20px;">Get Users</button>
 </body>
 </html>
-

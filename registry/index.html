@@ -75,6 +75,7 @@
 </head>
 <body>
     <div class="container">
+
         <!-- Add User -->
         <div class="column">
             <h2>Add user</h2>
@@ -89,6 +90,7 @@
             </div>
         </div>
 
+
         <!-- Add Apartment -->
         <div class="column">
             <h2>Add apartment</h2>
@@ -99,10 +101,7 @@
                 <input type="text" id="input4_col2" placeholder="Latitude">
             </div>
             <div id="roomsContainer">
-                <div class="row room">
-                    <input type="text" class="roomId" placeholder="Room ID">
-                    <input type="text" class="sensors" placeholder="Sensors (comma separated)">
-                </div>
+                <!-- Rooms will be added here -->
             </div>
             <div class="button-container">
                 <button onclick="addRoomInput()">Add Room</button>
@@ -163,22 +162,50 @@
             </div>
         </div>
     </div>
+
     <div id="jsonDisplay"></div>
 
     <script>
-        // Function to add a new room input dynamically
+        // Function to add new room with dynamic sensor inputs
         function addRoomInput() {
             const container = document.getElementById("roomsContainer");
             const div = document.createElement("div");
-            div.classList.add("row", "room");
+            div.classList.add("room");
             div.innerHTML = `
-                <input type="text" class="roomId" placeholder="Room ID">
-                <input type="text" class="sensors" placeholder="Sensors (comma separated)">
+                <div class="row">
+                    <input type="text" class="roomId" placeholder="Room ID">
+                    <button onclick="addSensorInput(this)">Add Sensor</button>
+                </div>
+                <div class="sensorContainer"></div>
             `;
             container.appendChild(div);
         }
 
-        // Function to add a new gateway input dynamically
+        function addSensorInput(button) {
+            const sensorContainer = button.parentElement.nextElementSibling;
+
+            const sensorDiv = document.createElement("div");
+            sensorDiv.classList.add("row");
+            sensorDiv.style.marginTop = "10px";
+
+            sensorDiv.innerHTML = `
+            <input type="text" class="sensorName" placeholder="Sensor Name">
+            <div style="display: flex; flex-direction: column; max-height: 100px; overflow-y: auto; border: 1px solid #ccc; padding: 5px; border-radius: 4px;">
+                <label><input type="checkbox" class="measurement" value="Temperature"> Temperature</label>
+                <label><input type="checkbox" class="measurement" value="Humidity"> Humidity</label>
+                <label><input type="checkbox" class="measurement" value="Pressure"> Pressure</label>
+                <label><input type="checkbox" class="measurement" value="VOC"> VOC</label>
+                <label><input type="checkbox" class="measurement" value="PM10.0"> PM10.0</label>
+                <label><input type="checkbox" class="measurement" value="PM2.5"> PM2.5</label>
+            </div>
+        `;
+
+
+    sensorContainer.appendChild(sensorDiv);
+        }
+
+        
+        // Function to add gateway input
         function addGatewayInput() {
             const container = document.getElementById("gatewaysContainer");
             const div = document.createElement("div");
@@ -193,77 +220,42 @@
             container.appendChild(div);
         }
 
-        function postAddUserToApartment(columnNumber) {
-            const userId = document.getElementById(`input1_col${columnNumber}`).value;
-            const apartmentId = document.getElementById(`input2_col${columnNumber}`).value;
-            fetch('http://localhost:8081/add_user_to_apartment', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ userId, apartmentId })
-            })
-            .then(response => response.ok ? response.json() : Promise.reject('Failed to submit data.'))
-            .then(data => {
-                alert(data.status === 'OK' ? 'User added to apartment successfully!' : `Failed to add user to apartment. Message: ${data.message}`);
-            })
-            .catch(error => alert(error));
-        }
-        function postAddUser(columnNumber) {
-            const userId = document.getElementById(`input1_col${columnNumber}`).value;
-            const password = document.getElementById(`input2_col${columnNumber}`).value;
-            const permission = document.getElementById(`permission_col${columnNumber}`).value;
-
-            fetch('http://localhost:8081/add_user', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ userId, password, permission})
-            })
-            .then(response => response.ok ? response.json() : Promise.reject('Failed to submit data.'))
-            .then(data => {
-                alert(data.status === 'OK' ? 'Data submitted successfully!' : `Data submission failed. Status: ${data.status}, Code: ${data.code}`);
-            })
-            .catch(error => alert(error));
-        }
-
-        // Function to handle the submission of the Add Apartment form
+        // Submit Add Apartment Form
         function postAddApartment(columnNumber) {
             const userId = document.getElementById(`input1_col${columnNumber}`).value;
             const apartmentName = document.getElementById(`input2_col${columnNumber}`).value;
             const longitude = document.getElementById(`input3_col${columnNumber}`).value;
             const latitude = document.getElementById(`input4_col${columnNumber}`).value;
-            // Collect rooms data
+
             const rooms = [];
             document.querySelectorAll(".room").forEach(roomDiv => {
                 const roomId = roomDiv.querySelector(".roomId").value;
-                const sensors = roomDiv.querySelector(".sensors").value.split(",").map(s => s.trim());
+                const sensors = [];
+                roomDiv.querySelectorAll(".sensorContainer .row").forEach(sensorRow => {
+                    const sensorId = sensorRow.querySelector(".sensorName").value;
+                    const measurements = Array.from(sensorRow.querySelectorAll(".measurement:checked")).map(cb => cb.value);
+                    if (sensorId && measurements.length > 0) {
+                        sensors.push({ sensorId, measurements });
+                    }
+                });
                 if (roomId) {
                     rooms.push({ roomId, sensors });
                 }
             });
 
-            // Collect gateways data
             const gateways = [];
             document.querySelectorAll(".gateway").forEach(gatewayDiv => {
                 const gatewayType = gatewayDiv.querySelector(".gatewayType").value;
                 const gatewayMAC = gatewayDiv.querySelector(".gatewayMAC").value;
                 if (gatewayMAC) {
                     if (gatewayType === "netatmo") {
-                        gateways.push({
-                            name: gatewayType,
-                            MAC: gatewayMAC,
-                            accessToken: "",
-                            refreshToken: ""
-                        });
+                        gateways.push({ name: gatewayType, MAC: gatewayMAC, accessToken: "", refreshToken: "" });
                     } else {
                         gateways.push({ name: gatewayType, MAC: gatewayMAC });
                     }
                 }
             });
 
-            // Prepare the JSON payload
             const payload = {
                 MAC: gateways,
                 apartmentName: apartmentName,
@@ -275,7 +267,6 @@
                 rooms: rooms
             };
 
-            // Send the POST request
             fetch('http://localhost:8081/add_apt', {
                 method: 'POST',
                 headers: {
@@ -290,85 +281,76 @@
             .catch(error => alert(error));
         }
 
-        // Function to handle updating tokens
+        // Remaining unchanged functions...
+        function postAddUserToApartment(columnNumber) {
+            const userId = document.getElementById(`input1_col${columnNumber}`).value;
+            const apartmentId = document.getElementById(`input2_col${columnNumber}`).value;
+            fetch('http://localhost:8081/add_user_to_apartment', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ userId, apartmentId })
+            }).then(response => response.ok ? response.json() : Promise.reject())
+             .then(data => alert(data.status === 'OK' ? 'Success' : 'Fail'))
+             .catch(() => alert('Error'));
+        }
+
+        function postAddUser(columnNumber) {
+            const userId = document.getElementById(`input1_col${columnNumber}`).value;
+            const password = document.getElementById(`input2_col${columnNumber}`).value;
+            const permission = document.getElementById(`permission_col${columnNumber}`).value;
+            fetch('http://localhost:8081/add_user', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ userId, password, permission })
+            }).then(response => response.ok ? response.json() : Promise.reject())
+             .then(data => alert(data.status === 'OK' ? 'Success' : 'Fail'))
+             .catch(() => alert('Error'));
+        }
+
         function postUpdateTokens() {
             const apartmentId = document.getElementById("updateApartmentId").value;
             const gatewayMAC = document.getElementById("updateGatewayMAC").value;
             const accessToken = document.getElementById("updateAccessToken").value;
             const refreshToken = document.getElementById("updateRefreshToken").value;
-
-            // Prepare the JSON payload
-            const payload = {
-                apartmentId,
-                gatewayMAC,
-                accessToken,
-                refreshToken
-            };
-
-            // Send the POST request
             fetch('http://localhost:8081/update_tokens', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(response => response.ok ? response.json() : Promise.reject('Failed to update tokens.'))
-            .then(data => {
-                alert(data.status === 'OK' ? 'Tokens updated successfully!' : `Failed to update tokens. Message: ${data.message}`);
-            })
-            .catch(error => alert(error));
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ apartmentId, gatewayMAC, accessToken, refreshToken })
+            }).then(response => response.ok ? response.json() : Promise.reject())
+             .then(data => alert(data.status === 'OK' ? 'Success' : 'Fail'))
+             .catch(() => alert('Error'));
         }
-        
+
         function postRemoveUser(columnNumber) {
             const input1 = document.getElementById(`input1_col${columnNumber}`).value;
             fetch('http://localhost:8081/del_user/'+ input1, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-            })
-            .then(response => response.ok ? response.json() : Promise.reject('Failed to remove user.'))
-            .then(data => {
-                alert(data.status === 'OK' ? 'User removed successfully!' : `Failed to remove user. Message: ${data.message}`);
-            })
-            .catch(error => alert(error));
+                headers: {'Content-Type': 'application/json'}
+            }).then(response => response.ok ? response.json() : Promise.reject())
+             .then(data => alert(data.status === 'OK' ? 'Success' : 'Fail'))
+             .catch(() => alert('Error'));
         }
+
         function postRemoveApartment(columnNumber) {
             const aptId = document.getElementById(`input1_col${columnNumber}`).value;
             fetch('http://localhost:8081/del_apt/'+ aptId, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-            })
-            .then(response => response.ok ? response.json() : Promise.reject('Failed to remove apartment.'))
-            .then(data => {
-                alert(data.status === 'OK' ? 'Apartment removed successfully!' : `Failed to remove apartment. Message: ${data.message}`);
-            })
-            .catch(error => alert(error));
+                headers: {'Content-Type': 'application/json'}
+            }).then(response => response.ok ? response.json() : Promise.reject())
+             .then(data => alert(data.status === 'OK' ? 'Success' : 'Fail'))
+             .catch(() => alert('Error'));
         }
+
         function fetchData() {
-            // Example GET request using Fetch API
-            //fetch('https://mako-keen-rarely.ngrok-free.app/getUsers')
             fetch('http://localhost:8081/users')
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    throw new Error('Failed to fetch data.');
-                }
-            })
-            .then(data => {
-                const jsonDisplay = document.getElementById('jsonDisplay');
-                jsonDisplay.textContent = JSON.stringify(data, null, 2);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to fetch data.');
-            });
+              .then(response => response.json())
+              .then(data => {
+                  document.getElementById('jsonDisplay').textContent = JSON.stringify(data, null, 2);
+              })
+              .catch(() => alert('Fetch failed'));
         }
     </script>
+
     <button onclick="fetchData()" style="display: block; margin: 20px auto; padding: 10px 20px;">Get Users</button>
 </body>
 </html>

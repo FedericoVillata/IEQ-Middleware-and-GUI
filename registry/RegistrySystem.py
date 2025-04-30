@@ -230,7 +230,7 @@ class Catalog(object):
                 "state": 1
             })
         for room in apt_json["rooms"]:
-            updated_sensors = [{"sensorId": sensor_id, "lastUpdate": 0} for sensor_id in room["sensors"]]
+            updated_sensors = [{"sensorId": sensor["sensorId"], "measurements": sensor["measurements"], "lastUpdate": 0} for sensor in room["sensors"]]
             updated_rooms.append({
                 "roomId": room["roomId"],
                 "sensors": updated_sensors,
@@ -551,6 +551,7 @@ class Webserver(object):
         if uri[0] == 'add_apt':
             # Add new apartment.
             body = json.loads(cherrypy.request.body.read())  # Read body data
+            print(f"adding this apt {body}" )
             out = self.cat.add_apartment(self.settings["adaptor_url"], body)
             if out == "Apartment already registered":
                 response = {"status": "NOT_OK", "code": 400, "message": "Plant already registered"}
