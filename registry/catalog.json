@@ -46,6 +46,7 @@
           "sensors": [
             {
               "sensorId": "sensor0",
+              "measurements" :["Temperature","Humidity"],
               "lastUpdate": "2025-04-26T21:21:09.729743Z"
             }
           ],
@@ -201,6 +202,7 @@
           "sensors": [
             {
               "sensorId": "sensor1",
+              "measurements" :["Temperature","Humidity"],
               "lastUpdate": "2025-04-26T21:21:09.730400Z"
             }
           ],
@@ -380,6 +382,7 @@
           "sensors": [
             {
               "sensorId": "70:ee:50:af:8a:ea",
+              "measurements" :["Temperature","Humidity","CO2"],
               "lastUpdate": 0
             }
           ],
@@ -535,6 +538,7 @@
           "sensors": [
             {
               "sensorId": "03:00:00:0d:34:20",
+              "measurements" :["Temperature","Humidity","CO2"],
               "lastUpdate": 0
             }
           ],
@@ -690,6 +694,7 @@
           "sensors": [
             {
               "sensorId": "02:00:00:af:60:ee",
+              "measurements" :["Temperature","Humidity","CO2"],
               "lastUpdate": 0
             }
           ],
@@ -845,6 +850,7 @@
           "sensors": [
             {
               "sensorId": "03:00:00:0c:e0:b2",
+              "measurements" :["Temperature","Humidity","CO2"],
               "lastUpdate": 0
             }
           ],
@@ -1147,6 +1153,7 @@
           "sensors": [
             {
               "sensorId": "0000F269",
+              "measurements" :["Temperature","Humidity","CO2","Pressure"],
               "lastUpdate": "2025-04-25T03:15:57Z"
             }
           ],
@@ -1302,10 +1309,12 @@
           "sensors": [
             {
               "sensorId": "0000B323",
+              "measurements" :["Temperature","Humidity","CO2"],
               "lastUpdate": "2025-04-25T03:17:55Z"
             },
             {
               "sensorId": "0000F258",
+              "measurements" :["Temperature","PM10.0","CO2","PM2.5"],
               "lastUpdate": "2025-04-25T03:14:55Z"
             }
           ],
@@ -1461,6 +1470,7 @@
           "sensors": [
             {
               "sensorId": "0000F26B",
+              "measurements" :["Temperature","Humidity","CO2","Pressure"],
               "lastUpdate": "2025-04-25T03:20:32Z"
             }
           ],
@@ -1616,6 +1626,7 @@
           "sensors": [
             {
               "sensorId": "0000F26C",
+              "measurements" :["Temperature","Humidity","CO2","Pressure"],
               "lastUpdate": "2025-04-25T03:16:33Z"
             }
           ],
@@ -1771,10 +1782,12 @@
           "sensors": [
             {
               "sensorId": "0000F26A",
+              "measurements" :["Temperature","Humidity","CO2","Pressure"],
               "lastUpdate": "2025-04-25T03:19:14Z"
             },
             {
               "sensorId": "0000F264",
+              "measurements" :["Temperature","Humidity","VOC"],
               "lastUpdate": "2025-04-25T03:17:37Z"
             }
           ],
@@ -1930,6 +1943,7 @@
           "sensors": [
             {
               "sensorId": "0000F257",
+              "measurements" :["Temperature","PM10.0","CO2","PM2.5"],
               "lastUpdate": "2025-04-25T03:14:45Z"
             }
           ],
