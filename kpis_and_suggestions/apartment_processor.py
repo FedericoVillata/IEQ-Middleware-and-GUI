@@ -15,8 +15,7 @@ from technical_suggestions import get_technical_suggestions
 from kpis_classification import *
 
 import numpy as np
-from datetime import datetime
-from dateutil import parser as date_parser
+from datetime import datetime, timedelta
 
 # Map labels to scores for each classification category
 LABEL_SCORE_MAP = {
@@ -81,7 +80,15 @@ def log(message, level="INFO", context=None):
         prefix += f" [{context}]"
     print(f"{prefix} {message}")
 
-from dateutil import parser as date_parser
+
+def parse_isoformat_safe(iso_str):
+    # Convert ISO 8601 with 'Z' to a format accepted by datetime
+    if isinstance(iso_str, str) and iso_str.endswith('Z'):
+        iso_str = iso_str[:-1] + '+00:00'
+    try:
+        return datetime.fromisoformat(iso_str)
+    except Exception:
+        return None
 
 def check_sensor_updates(room, threshold_minutes=24 * 60):
     now = datetime.utcnow()
@@ -95,33 +102,29 @@ def check_sensor_updates(room, threshold_minutes=24 * 60):
         "0000": "Environmental Data"
     }
 
+    threshold_delta = timedelta(minutes=threshold_minutes)
+
     for sensor in room.get("sensors", []):
         sensor_id = sensor.get("sensorId")
         last_update = sensor.get("lastUpdate")
         if not sensor_id or not last_update:
             continue
 
-        try:
-            parsed_last_update = date_parser.parse(last_update)
-        except Exception:
+        parsed_last_update = parse_isoformat_safe(last_update)
+        if not parsed_last_update:
             continue
 
-        diff_minutes = (now - parsed_last_update).total_seconds() / 60.0
-        if diff_minutes > threshold_minutes:
-            # Determine sensor type based on sensorId prefix
+        time_diff = now - parsed_last_update.replace(tzinfo=None)
+        if time_diff > threshold_delta:
             sensor_measurement = "Unknown measurement"
             for prefix, measure in sensor_type_lookup.items():
                 if sensor_id.startswith(prefix):
                     sensor_measurement = measure
                     break
 
-            hours = int(diff_minutes // 60)
-            minutes = int(diff_minutes % 60)
-
-            if hours > 0:
-                time_ago = f"{hours}h {minutes}min"
-            else:
-                time_ago = f"{minutes}min"
+            hours, remainder = divmod(int(time_diff.total_seconds()), 3600)
+            minutes = remainder // 60
+            time_ago = f"{hours}h {minutes}min" if hours > 0 else f"{minutes}min"
 
             alert_msg = (
                 f"Check the status of sensor {sensor_id} (battery, device failure). "
@@ -134,6 +137,8 @@ def check_sensor_updates(room, threshold_minutes=24 * 60):
             })
 
     return alerts
+
+
 
 
 def process_apartment(apartment, catalog, weather_info, publisher,
