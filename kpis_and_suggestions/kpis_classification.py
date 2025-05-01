@@ -185,12 +185,29 @@ def calculate_ppd(pmv):
 # IAQ Indices
 # -----------------------------
 
-def calculate_icone(co2, pm10, tvoc):
+def calculate_icone(co2=None, pm10=None, tvoc=None):
+
     ref_values = {"co2": 1000, "pm10": 50, "tvoc": 0.3}
-    co2_norm = co2 / ref_values["co2"]
-    pm10_norm = pm10 / ref_values["pm10"]
-    tvoc_norm = tvoc / ref_values["tvoc"]
-    return 0.4 * co2_norm + 0.3 * pm10_norm + 0.3 * tvoc_norm
+    components = []
+    weights = []
+
+    if co2 is not None:
+        components.append(co2 / ref_values["co2"])
+        weights.append(0.4)
+    if pm10 is not None:
+        components.append(pm10 / ref_values["pm10"])
+        weights.append(0.3)
+    if tvoc is not None:
+        components.append(tvoc / ref_values["tvoc"])
+        weights.append(0.3)
+
+    if not components:
+        return None  # Cannot compute ICONE without at least one metric
+
+    # Normalize weights to maintain a consistent scale (0–∞)
+    normalized_icone = sum(c * w for c, w in zip(components, weights)) / sum(weights)
+    return normalized_icone
+
 
 def calculate_ieqi(icone, temperature, humidity, settings):
     temp_opt = settings["values"].get("temp_opt", 22)

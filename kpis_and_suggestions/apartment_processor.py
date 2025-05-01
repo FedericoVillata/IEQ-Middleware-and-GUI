@@ -99,14 +99,6 @@ def check_sensor_updates(room, apartment_timezone, threshold_minutes=24 * 60):
 
     alerts = []
 
-    sensor_type_lookup = {
-        "03:00:": "Temperature/Humidity/CO₂",
-        "02:00:": "Outdoor Temperature",
-        "0000F2": "PM10/CO₂/Humidity",
-        "0000B3": "PM10/CO₂/Humidity",
-        "0000": "Environmental Data"
-    }
-
     threshold_delta = timedelta(minutes=threshold_minutes)
 
     for sensor in room.get("sensors", []):
@@ -124,11 +116,11 @@ def check_sensor_updates(room, apartment_timezone, threshold_minutes=24 * 60):
             log(f"Warning: parsed_last_update has no tzinfo — {parsed_last_update}", level="WARN")
 
         if time_diff > threshold_delta:
-            sensor_measurement = "Unknown measurement"
-            for prefix, measure in sensor_type_lookup.items():
-                if sensor_id.startswith(prefix):
-                    sensor_measurement = measure
-                    break
+            measurements = sensor.get("measurements", [])
+            if measurements:
+                sensor_measurement = ", ".join(measurements)
+            else:
+                sensor_measurement = "Unknown measurement"
 
             hours, remainder = divmod(int(time_diff.total_seconds()), 3600)
             minutes = remainder // 60
@@ -145,9 +137,6 @@ def check_sensor_updates(room, apartment_timezone, threshold_minutes=24 * 60):
             })
 
     return alerts
-
-
-
 
 def process_apartment(apartment, catalog, weather_info, publisher,
                       base_topic, adaptor_base, base_settings=None):
@@ -404,7 +393,7 @@ def classify_room_conditions(avg_values, trends, measure_data, settings, season,
     ppd_class = classify_ppd(ppd, settings)
 
     icone = ieqi = icone_class = ieqi_class = None
-    if avg_pm10 is not None and avg_tvoc is not None:
+    if avg_pm10 is not None or avg_tvoc is not None:
         icone = calculate_icone(avg_co2, avg_pm10, avg_tvoc)
         icone_class = classify_icone(icone, settings)
         ieqi = calculate_ieqi(icone, avg_temp, avg_humidity, settings)
