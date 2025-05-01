@@ -186,27 +186,26 @@ def calculate_ppd(pmv):
 # -----------------------------
 
 def calculate_icone(co2=None, pm10=None, tvoc=None):
-
-    ref_values = {"co2": 1000, "pm10": 50, "tvoc": 0.3}
+    ref_values = {"co2": 1000, "pm10": 50, "tvoc": 300} #tvoc in µg/m³
     components = []
     weights = []
 
     if co2 is not None:
-        components.append(co2 / ref_values["co2"])
+        components.append(0.4 * (co2 / ref_values["co2"]))
         weights.append(0.4)
     if pm10 is not None:
-        components.append(pm10 / ref_values["pm10"])
+        components.append(0.3 * (pm10 / ref_values["pm10"]))
         weights.append(0.3)
     if tvoc is not None:
-        components.append(tvoc / ref_values["tvoc"])
+        tvoc_ug_m3 = tvoc * 4  # Convert from ppb to µg/m³
+        components.append(0.3 * (tvoc_ug_m3 / ref_values["tvoc"]))
         weights.append(0.3)
 
-    if not components:
-        return None  # Cannot compute ICONE without at least one metric
 
-    # Normalize weights to maintain a consistent scale (0–∞)
-    normalized_icone = sum(c * w for c, w in zip(components, weights)) / sum(weights)
-    return normalized_icone
+    if not components:
+        return None  
+
+    return sum(components) / sum(weights)  
 
 
 def calculate_ieqi(icone, temperature, humidity, settings):
@@ -224,12 +223,10 @@ def calculate_ieqi(icone, temperature, humidity, settings):
 def classify_generic(metric, thresholds):
     if metric <= thresholds["G"]:
         return "G"
-    elif metric <= thresholds["Y"]:
+    elif metric < thresholds["Y"]:
         return "Y"
-    elif metric <= thresholds["R"]:
+    elif metric >= thresholds["Y"]:
         return "R"
-    elif "Extreme" in thresholds:
-        return "Extreme"
     else:
         log(f"Metric {metric} did not match thresholds", level="WARN", context="classify_generic")
         return "Unknown"

@@ -321,7 +321,7 @@ def compute_room_averages(measure_data):
     avg_temp = average(measure_data.get("Temperature", []))
     avg_humidity = average(measure_data.get("Humidity", []))
     avg_co2 = average(measure_data.get("CO2", []))
-    avg_pm10 = average(measure_data.get("PM10", []))
+    avg_pm10 = average(measure_data.get("PM10.0", []))
     avg_tvoc = average(measure_data.get("VOC", []))
 
     trends = {
@@ -393,7 +393,8 @@ def classify_room_conditions(avg_values, trends, measure_data, settings, season,
     ppd_class = classify_ppd(ppd, settings)
 
     icone = ieqi = icone_class = ieqi_class = None
-    if avg_pm10 is not None or avg_tvoc is not None:
+    if any(v is not None for v in [avg_co2, avg_pm10, avg_tvoc]):
+        log(f"Calculating ICONE with: co2={avg_co2}, pm10={avg_pm10}, tvoc={avg_tvoc}", level="DEBUG", context="calculate_icone")
         icone = calculate_icone(avg_co2, avg_pm10, avg_tvoc)
         icone_class = classify_icone(icone, settings)
         ieqi = calculate_ieqi(icone, avg_temp, avg_humidity, settings)
