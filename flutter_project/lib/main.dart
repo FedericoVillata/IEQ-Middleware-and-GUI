@@ -30,6 +30,7 @@ import 'start_screen.dart';
 import 'app_config.dart';
 import 'mqtt_suggestions_manager.dart'; // Where we put the manager file
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   

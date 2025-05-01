@@ -7,7 +7,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO, StringIO
 import csv
 from collections import defaultdict
@@ -156,7 +156,22 @@ class PlotService:
         )
 
         # Colorbar
-        plt.colorbar(cax, ax=ax, label=measure, format="%.0f")
+
+        units_map = {
+            "temperature": "°C",
+            "humidity": "%RH",
+            "co2": "ppm",
+            "voc": "ppb",
+            "pm10.0": "µg/m³",
+            "pmv": "arb",
+            "ppd": "%",
+            "ieqi": "arb",
+            "icone": "arb",
+            "environment_score": "score",
+        }
+        unit = units_map.get(measure.lower(), "")
+
+        plt.colorbar(cax, ax=ax, label=f"{measure} ({unit})" if unit else measure, format="%.0f")
         
         # Y-axis => hours
         y_ticks = np.arange(0, 48, 2)
@@ -253,8 +268,21 @@ class PlotService:
         y_vals = [tv[1] for tv in times_values]
 
         ax.plot(x_vals, y_vals, linewidth=2, color='blue')
-        ax.set_xlabel("Time")
-        ax.set_ylabel(measure)
+        ax.set_xlabel("Date")
+        units_map = {
+            "temperature": "°C",
+            "humidity": "%RH",
+            "co2": "ppm",
+            "voc": "ppb",
+            "pm10.0": "µg/m³",
+            "pmv": "arb",
+            "ppd": "%",
+            "ieqi": "arb",
+            "icone": "arb",
+            "environment_score": "score",
+        }
+        unit = units_map.get(measure.lower(), "")
+        ax.set_ylabel(f"{measure} ({unit})" if unit else measure)
         plt.grid(True)
 
         # Format x-axis based on duration

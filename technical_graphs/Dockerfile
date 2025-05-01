@@ -1,17 +1,25 @@
 FROM python:3.9-slim
 
+# Set working directory
 WORKDIR /app
 
-# Install system libraries needed by matplotlib
+# Install system dependencies needed by matplotlib
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libfreetype6-dev libpng-dev && \
-    rm -rf /var/lib/apt/lists/*
+    build-essential \
+    libfreetype6-dev \
+    libpng-dev \
+    libjpeg-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-RUN pip install --no-cache-dir cherrypy matplotlib numpy requests
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy your code into the container
+# Copy the rest of the code
 COPY . .
 
-# Start the plot_service
+# Expose the port defined in plot_config.json (9090)
+EXPOSE 9090
+
+# Start the CherryPy server
 CMD ["python", "plot_service.py"]

@@ -1,10 +1,7 @@
 import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
-
 import '../app_config.dart';
 import '../widgets/suggestions_bell.dart';
 
@@ -285,8 +282,8 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _legendRow(Colors.red, labels[0]),
-          _legendRow(Colors.blue, labels[1]),
+          _legendRow(const Color(0xFF8B0000), labels[0]),
+          _legendRow(const Color(0xFF090F7D), labels[1]),
         ],
       ),
     );
