@@ -119,7 +119,10 @@ def check_sensor_updates(room, apartment_timezone, threshold_minutes=24 * 60):
         if not parsed_last_update:
             continue
 
-        time_diff = now - parsed_last_update.replace(tzinfo=None)
+        time_diff = now - parsed_last_update
+        if parsed_last_update.tzinfo is None:
+            log(f"Warning: parsed_last_update has no tzinfo — {parsed_last_update}", level="WARN")
+
         if time_diff > threshold_delta:
             sensor_measurement = "Unknown measurement"
             for prefix, measure in sensor_type_lookup.items():
@@ -246,18 +249,32 @@ def process_room(room, apartment_id, apartment_timezone, user_id, adaptor_base, 
     "ppd": classifications.get("ppd_class"),
     "icone": classifications.get("icone_class"),
     "ieqi": classifications.get("ieqi_class"),
-    "overall_score": classifications.get("env_score")
     }
+
+    pmv = calculate_pmv(season, avg_values["avg_temp"], avg_values["avg_temp"], 0.1, avg_values["avg_humidity"], settings)
+    ppd = calculate_ppd(pmv)
+
+    env_input = {
+        "temperature": classifications.get("temp_class"),
+        "humidity": classifications.get("hum_class"),
+        "co2": classifications.get("co2_class"),
+        "pmv": classifications.get("pmv_class"),
+        "ppd": classifications.get("ppd_class"),
+    }
+    if "icone_class" in classifications:
+        env_input["icone"] = classifications.get("icone_class")
+    if "ieqi_class" in classifications:
+        env_input["ieqi"] = classifications.get("ieqi_class")
+
+    env_score = overall_score(env_input, settings)
+    env_class = classify_overall_score(env_score, settings)
+
+    mapped_classifications["overall_score"] = env_class
 
     suggestions = generate_room_suggestions(
         room, catalog, mapped_classifications, avg_values, t_ext, settings,
         season, weather_info, trends
-    )
-
-    pmv = calculate_pmv(season, avg_values["avg_temp"], avg_values["avg_temp"], 0.1, avg_values["avg_humidity"], settings)
-    ppd = calculate_ppd(pmv)
-    env_score = overall_score(classifications, settings)
-    env_class = classify_overall_score(env_score, settings)
+        )
 
     publish_detailed_room_metrics(
         publisher,
@@ -398,16 +415,7 @@ def classify_room_conditions(avg_values, trends, measure_data, settings, season,
         "hum_class": hum_class,
         "co2_class": co2_class,
         "pmv_class": pmv_class,
-        "ppd_class": ppd_class,
-        "env_score": classify_overall_score(overall_score({
-            "temperature": temp_class,
-            "humidity": hum_class,
-            "co2": co2_class,
-            "pmv": pmv_class,
-            "ppd": ppd_class,
-            **({"icone": icone_class} if icone_class else {}),
-            **({"ieqi": ieqi_class} if ieqi_class else {})
-        }, settings), settings)
+        "ppd_class": ppd_class
     }
 
     if icone_class:

@@ -62,6 +62,8 @@ class KPIEngine:
                 self.catalog.get("base_settings")
             )
         self.publisher.stop()
+        log("KPI cycle completed successfully")
+
 
 def wait_for_data(config_path='config.json'):
     try:
@@ -102,6 +104,7 @@ if __name__ == "__main__":
         try:
             engine = KPIEngine()
             engine.run()
+            time.sleep(2)
         except Exception as e:
             log(f"Error during KPI cycle: {e}", level="ERROR")
 

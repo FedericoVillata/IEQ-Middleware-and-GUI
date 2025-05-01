@@ -290,11 +290,13 @@ def overall_score(classifications, settings):
 def classify_overall_score(score, settings):
     thresholds = settings["thresholds"]["overall_score_classification"]
 
-    if score >= thresholds["G"]:
-        return "G"
-    elif score >= thresholds["Y"]:
-        return "Y"
-    elif score >= thresholds["R"]:
-        return "R"
+    if 0 <= score <= thresholds["G"]:
+        if score > thresholds["Y"]:
+            return "G"
+        elif score > thresholds["R"]:
+            return "Y"
+        else:
+            return "R"
     else:
         return "Unknown"
+
