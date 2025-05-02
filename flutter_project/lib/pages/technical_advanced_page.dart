@@ -182,6 +182,7 @@ class _TechnicalAdvancePageState extends State<TechnicalAdvancePage> {
                     child: ListTile(
                       title: const Text("Select Room"),
                       trailing: DropdownButton<String>(
+                        focusColor: Colors.transparent,
                         value: selectedRoom,
                         items: availableRooms
                             .map((r) => DropdownMenuItem(value: r, child: Text(r)))
@@ -200,6 +201,7 @@ class _TechnicalAdvancePageState extends State<TechnicalAdvancePage> {
                   child: ListTile(
                     title: const Text("Select Duration"),
                     trailing: DropdownButton<String>(
+                      focusColor: Colors.transparent,
                       value: selectedDuration,
                       items: durationOptions.entries
                           .map((e) => DropdownMenuItem(value: e.value, child: Text(e.key)))

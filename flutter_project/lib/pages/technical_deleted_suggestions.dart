@@ -309,6 +309,7 @@ class _TechnicalDeletedSuggestionsPageState
                     child: ListTile(
                       title: const Text("Select Room"),
                       trailing: DropdownButton<String>(
+                        focusColor: Colors.transparent,
                         value: selectedRoom,
                         items: availableRooms.map((r) {
                           return DropdownMenuItem(value: r, child: Text(r));

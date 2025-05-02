@@ -205,6 +205,7 @@ Widget build(BuildContext context) {
                 child: ListTile(
                   title: const Text("Select Duration"),
                   trailing: DropdownButton<String>(
+                    focusColor: Colors.transparent,
                     value: _selectedDuration,
                     onChanged: (val) async {
                       if (val == null) return;

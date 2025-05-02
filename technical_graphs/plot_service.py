@@ -90,10 +90,16 @@ class PlotService:
         if duration:
             try:
                 duration_hours = int(duration)
-                now = datetime.utcnow()
-                hours_since_midnight = (now.hour + now.minute / 60.0)
-                # Add the "extra" hours needed to go back to previous midnight
-                duration_hours += int(hours_since_midnight)
+                now = datetime.utcnow() + timedelta(hours=2)  # Roma (UTC+2 in estate)
+
+                start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                elapsed_minutes = int((now - start_of_day).total_seconds() / 60)
+
+                # Arrotonda a blocco da 30 minuti più vicino SENZA sforare
+                half_hours = elapsed_minutes // 30  # massimo 48 blocchi
+                elapsed_hours = (half_hours * 30) // 60  # blocchi da 30min convertiti in ore
+
+                duration_hours += elapsed_hours
                 duration = str(duration_hours)
             except Exception as e:
                 print(f"Error adjusting duration: {e}")
@@ -105,22 +111,41 @@ class PlotService:
         if not data:
             return self._no_data_image(download)
 
-        # 2) Convert times + values
-        times, values = [], []
+         # 2) Convert times + values and interpolate small gaps (up to 4 hours)
+        time_value_pairs = []
         for row in data:
             dt = self._parse_time(row["t"])
             val = row["v"]
-            times.append(dt)
-            values.append(val)
-        if not times:
+            if isinstance(val, (int, float)):
+                time_value_pairs.append((dt, val))
+
+        if not time_value_pairs:
             return self._no_data_image(download)
+
+        time_value_pairs.sort(key=lambda x: x[0])
+
+        interpolated_pairs = []
+        for i in range(len(time_value_pairs) - 1):
+            current_time, current_val = time_value_pairs[i]
+            next_time, next_val = time_value_pairs[i + 1]
+            interpolated_pairs.append((current_time, current_val))
+
+            delta = next_time - current_time
+            if timedelta(minutes=15) < delta <= timedelta(hours=4):
+                steps = int(delta.total_seconds() // (15 * 60))  # 30-minute steps
+                for step in range(1, steps):
+                    interp_time = current_time + timedelta(minutes=15 * step)
+                    interp_val = current_val + (next_val - current_val) * (step / steps)
+                    interpolated_pairs.append((interp_time, interp_val))
+
+        interpolated_pairs.append(time_value_pairs[-1])
 
         # 3) Build a matrix (48 half-hour slots vs. each day)
         def halfhour_index(dtobj):
             return dtobj.hour * 2 + (1 if dtobj.minute >= 30 else 0)
 
         day_dict = defaultdict(lambda: [np.nan]*48)
-        for dt, val in zip(times, values):
+        for dt, val in interpolated_pairs:
             date_str = dt.strftime("%Y-%m-%d")
             idx = halfhour_index(dt)
             day_dict[date_str][idx] = val
@@ -416,7 +441,7 @@ class PlotService:
         ax.text(0.5, 0.5, "No Data", ha="center", va="center", fontsize=12)
         ax.axis("off")
         buf = BytesIO()
-        plt.savefig(buf, format='png')
+        plt.savefig(buf, format='png', facecolor='#fdf7ff')
         plt.close(fig)
         buf.seek(0)
 
