@@ -7,6 +7,9 @@ import 'package:http/http.dart' as http;
 
 import '../widgets/suggestions_bell.dart';
 import '../app_config.dart';
+import '../mqtt_alert_manager.dart';
+import 'package:provider/provider.dart'; 
+
 
 class HomePage extends StatefulWidget {
   final String username;
@@ -400,6 +403,47 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // ─────────────────────────────── build
   @override
   Widget build(BuildContext context) {
+    final alertManager = Provider.of<MqttAlertManager>(context);
+final alert = alertManager.latestAlert;
+
+Widget? alertBanner;
+if (alert != null &&
+    alert.apartmentId == selectedApartment &&
+    alert.roomId == selectedRoom) {
+  alertBanner = Container(
+    width: double.infinity,
+    margin: const EdgeInsets.only(bottom: 16),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.red[700],
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.warning, color: Colors.white),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            'Room ${alert.roomId.toUpperCase()}: ${alert.message}',
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+
+        IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () {
+            alertManager.clearLatestAlert();
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+
+    
+
     return Scaffold(
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
@@ -420,7 +464,9 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            if (alertBanner != null) alertBanner,
             _buildHeader(),
+
             const SizedBox(height: 20),
 
             // dropdown se visibile
@@ -509,6 +555,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
       ),
     );
+    
   }
 }
 
