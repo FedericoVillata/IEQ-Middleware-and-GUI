@@ -127,6 +127,7 @@ class _TenantMainPageState extends State<TenantMainPage> {
         apartments: widget.apartments,
         rooms: apartmentRooms,
         selectedApartment: selectedApartment,
+        selectedRoom: selectedRoom,
         overallScores: overallScores,
         onRoomChanged: updateSelectedRoom,
         onApartmentChanged: updateSelectedApartment,

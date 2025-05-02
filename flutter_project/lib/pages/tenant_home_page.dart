@@ -13,6 +13,7 @@ class HomePage extends StatefulWidget {
   final List<String> apartments;
   final Map<String, List<String>> rooms;
   final String selectedApartment;
+  final String selectedRoom;
   final Map<String, int> overallScores;
   final Function(String) onRoomChanged;
   final Function(String) onApartmentChanged;
@@ -23,6 +24,7 @@ class HomePage extends StatefulWidget {
     required this.apartments,
     required this.rooms,
     required this.selectedApartment,
+    required this.selectedRoom,
     required this.overallScores,
     required this.onRoomChanged,
     required this.onApartmentChanged,
@@ -60,7 +62,7 @@ class HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     selectedApartment = widget.selectedApartment;
-    selectedRoom      = widget.rooms[selectedApartment]?.first ?? 'Unknown';
+    selectedRoom = widget.selectedRoom;
     _fetchRoomData();
     _fetchExternalWeatherData();
     _startExternalWeatherRefresh();
