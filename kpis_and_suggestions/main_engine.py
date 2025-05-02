@@ -97,14 +97,14 @@ if __name__ == "__main__":
 
      # wait_for_data()  # Commented out for debug purposes
 
-    INTERVAL_SECONDS = 30 * 60
+    INTERVAL_SECONDS = 10 * 60
+    time.sleep(60)
 
     while True:
         log("Starting new KPI cycle...")
         try:
             engine = KPIEngine()
             engine.run()
-            time.sleep(2)
         except Exception as e:
             log(f"Error during KPI cycle: {e}", level="ERROR")
 
