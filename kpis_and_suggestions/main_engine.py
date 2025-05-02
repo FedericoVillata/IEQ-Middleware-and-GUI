@@ -98,7 +98,6 @@ if __name__ == "__main__":
      # wait_for_data()  # Commented out for debug purposes
 
     INTERVAL_SECONDS = 10 * 60
-    time.sleep(60)
 
     while True:
         log("Starting new KPI cycle...")
