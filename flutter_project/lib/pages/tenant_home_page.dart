@@ -53,9 +53,12 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
 
   // meteo
-  String externalTemp = '20°C';
+  String externalTemp = 'Loading...';
   int    weatherCode  = 0;
   final  String adaptorUrl = AppConfig.adaptorUrl;
+  double? apartmentLat;
+  double? apartmentLong;
+
 
   // ─────────────────────────────── lifecycle
   @override
@@ -67,6 +70,8 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _fetchRoomData();
     _fetchExternalWeatherData();
     _startAutoRefresh();
+    _fetchApartmentCoordinates();
+
   }
 
   @override
@@ -104,30 +109,62 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   // ─────────────────────────────── HTTP helpers
   void _fetchExternalWeatherData() async {
-    final url = Uri.parse(
-      'https://api.open-meteo.com/v1/forecast'
-      '?latitude=45.0705&longitude=7.6868'
-      '&hourly=temperature_2m,weather_code'
-      '&timezone=auto&forecast_days=1',
-    );
+  if (apartmentLat == null || apartmentLong == null) return;
 
-    try {
-      final r = await http.get(url);
-      if (r.statusCode == 200) {
-        final d     = jsonDecode(r.body);
-        final temps = d['hourly']['temperature_2m'] as List<dynamic>;
-        final codes = d['hourly']['weather_code']   as List<dynamic>;
-        final h     = DateTime.now().hour;
+  final url = Uri.parse(
+    'https://api.open-meteo.com/v1/forecast'
+    '?latitude=$apartmentLat&longitude=$apartmentLong'
+    '&hourly=temperature_2m,weather_code'
+    '&timezone=auto&forecast_days=1',
+  );
 
-        setState(() {
-          externalTemp = '${(temps[h] as num).toStringAsFixed(1)}°C';
-          weatherCode  = codes[h];
-        });
-      }
-    } catch (e) {
-      debugPrint('meteo error: $e');
+  try {
+    final r = await http.get(url);
+    if (r.statusCode == 200) {
+      final d     = jsonDecode(r.body);
+      final temps = d['hourly']['temperature_2m'] as List<dynamic>;
+      final codes = d['hourly']['weather_code']   as List<dynamic>;
+      final h     = DateTime.now().hour;
+
+      setState(() {
+        externalTemp = '${(temps[h] as num).toStringAsFixed(1)}°C';
+        weatherCode  = codes[h];
+      });
     }
+  } catch (e) {
+    debugPrint('meteo error: $e');
   }
+}
+
+
+    Future<void> _fetchApartmentCoordinates() async {
+  final url = Uri.parse('${AppConfig.registryUrl}/apartments');
+  try {
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as List<dynamic>;
+      for (final apt in data) {
+        if (apt['apartmentId'] == selectedApartment) {
+          final coords = apt['coordinates'];
+          setState(() {
+            apartmentLat = coords['lat'];
+            apartmentLong = coords['long'];
+          });
+
+          // 🔁 Sempre aggiorna il meteo dopo aver aggiornato le coordinate
+          _fetchExternalWeatherData();
+
+          return;
+        }
+      }
+    } else {
+      debugPrint('Error fetching apartments: ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('Exception while fetching coordinates: $e');
+  }
+}
+
 
 
   Future<void> _fetchRoomData() async {
@@ -389,21 +426,32 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
             // dropdown se visibile
             if (showDropdown) ...[
               _buildDropdown(
-                'Select Apartment',
-                selectedApartment,
-                widget.apartments,
-                (v) {
-                  if (v == null) return;
-                  setState(() {
-                    selectedApartment = v;
-                    selectedRoom      = widget.rooms[v]?.first ?? 'Unknown';
-                    widget.onApartmentChanged(v);
-                    widget.onRoomChanged(selectedRoom);
-                    showDropdown = false;
-                    _fetchRoomData();
-                  });
-                },
-              ),
+              'Select Apartment',
+              selectedApartment,
+              widget.apartments,
+              (v) async {
+                if (v == null) return;
+
+                final sameApartment = selectedApartment == v;
+
+                setState(() {
+                  selectedApartment = v;
+                  selectedRoom = widget.rooms[v]?.first ?? 'Unknown';
+                  widget.onApartmentChanged(v);
+                  widget.onRoomChanged(selectedRoom);
+                  showDropdown = false;
+                });
+
+                await _fetchApartmentCoordinates(); // 🔁 aggiorna lat/lon
+                if (sameApartment) {
+                  // 🔁 forza aggiornamento se è lo stesso apartment
+                  _fetchExternalWeatherData();
+                }
+                _fetchRoomData(); // 🔁 sempre aggiorna stanza
+              },
+            ),
+
+
               const SizedBox(height: 10),
               _buildDropdown(
                 'Select Room',
@@ -416,6 +464,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     widget.onRoomChanged(v);
                     showDropdown = false;
                     _fetchRoomData();
+                    _fetchApartmentCoordinates();
                   });
                 },
               ),
@@ -423,18 +472,21 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ],
 
             _buildInfoCard(
-              'External Temperature',
+              'External Temperature • Open-Meteo',
               externalTemp,
               _getWeatherIcon(weatherCode),
               _getWeatherColor(weatherCode),
             ),
             const SizedBox(height: 12),
             _buildInfoCard(
-              'Indoor Temperature',
+              selectedRoom.toLowerCase() == 'exterior'
+                  ? 'External Temperature • Sensor'
+                  : 'Indoor Temperature',
               indoorTemp,
               Icons.thermostat,
               _colorFromClass(tempClass),
             ),
+
             const SizedBox(height: 12),
             _buildInfoCard(
               'Humidity Level',
@@ -459,3 +511,4 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 }
+
