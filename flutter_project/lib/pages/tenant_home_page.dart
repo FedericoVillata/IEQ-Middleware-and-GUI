@@ -13,6 +13,7 @@ class HomePage extends StatefulWidget {
   final List<String> apartments;
   final Map<String, List<String>> rooms;
   final String selectedApartment;
+  final String selectedRoom;
   final Map<String, int> overallScores;
   final Function(String) onRoomChanged;
   final Function(String) onApartmentChanged;
@@ -23,6 +24,7 @@ class HomePage extends StatefulWidget {
     required this.apartments,
     required this.rooms,
     required this.selectedApartment,
+    required this.selectedRoom,
     required this.overallScores,
     required this.onRoomChanged,
     required this.onApartmentChanged,
@@ -32,7 +34,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => HomePageState();
 }
 
-class HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // ─────────────────────────────── state vars
   late String selectedApartment;
   late String selectedRoom;
@@ -42,9 +44,13 @@ class HomePageState extends State<HomePage> {
   String indoorTemp     = 'Loading...';
   String humidity       = 'Loading...';
   String co2            = 'Loading...';
-  String tempStatus     = '';
-  String humidityStatus = '';
-  String co2Status      = '';
+  String tempClass = '';
+  String humidityClass = '';
+  String co2Class = '';
+  String environmentClass = '';
+
+  int environmentScore = 10;
+
 
   // meteo
   String externalTemp = '20°C';
@@ -55,18 +61,46 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     selectedApartment = widget.selectedApartment;
-    selectedRoom      = widget.rooms[selectedApartment]?.first ?? 'Unknown';
+    selectedRoom = widget.selectedRoom;
     _fetchRoomData();
     _fetchExternalWeatherData();
-    _startExternalWeatherRefresh();
+    _startAutoRefresh();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _refreshTimer?.cancel();
     super.dispose();
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Quando si torna alla homepage, aggiorna entrambi
+    _fetchRoomData();
+    _fetchExternalWeatherData();
+  }
+
+  @override
+  void didUpdateWidget(covariant HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedApartment != widget.selectedApartment ||
+        oldWidget.selectedRoom != widget.selectedRoom) {
+      _fetchRoomData();
+      _fetchExternalWeatherData();
+    }
+  }
+
+  void _startAutoRefresh() {
+  _refreshTimer =
+      Timer.periodic(const Duration(minutes: 10), (_) {
+        _fetchExternalWeatherData();
+        _fetchRoomData(); 
+      });
+}
 
   // ─────────────────────────────── HTTP helpers
   void _fetchExternalWeatherData() async {
@@ -95,10 +129,6 @@ class HomePageState extends State<HomePage> {
     }
   }
 
-  void _startExternalWeatherRefresh() {
-    _refreshTimer =
-        Timer.periodic(const Duration(minutes: 10), (_) => _fetchExternalWeatherData());
-  }
 
   Future<void> _fetchRoomData() async {
     try {
@@ -114,17 +144,32 @@ class HomePageState extends State<HomePage> {
             case 'Temperature':
               final v = d['v'] as num;
               indoorTemp = '${v.toStringAsFixed(1)}°C';
-              tempStatus = v < 18 ? 'poor' : v <= 26 ? 'good' : 'medium';
               break;
             case 'Humidity':
               final v = d['v'] as num;
               humidity = '${v.toStringAsFixed(1)}%';
-              humidityStatus = v < 30 ? 'poor' : v <= 60 ? 'good' : 'medium';
               break;
             case 'CO2':
               final v = d['v'] as num;
               co2 = '${v.toInt()} ppm';
-              co2Status = v < 800 ? 'good' : v <= 1200 ? 'medium' : 'poor';
+              break;
+            case 'environment_score':
+              final v = d['v'] as num;
+              environmentScore = v.clamp(0, 100).toInt();
+              break;
+
+            // classi
+            case 'temperature_class':
+              tempClass = d['v'] as String;
+              break;
+            case 'humidity_class':
+              humidityClass = d['v'] as String;
+              break;
+            case 'co2_class':
+              co2Class = d['v'] as String;
+              break;
+            case 'environment_score_class':
+              environmentClass = d['v'] as String;
               break;
           }
         }
@@ -158,6 +203,20 @@ class HomePageState extends State<HomePage> {
     if (code >= 95) return Colors.purple;
     return Colors.blueGrey;
   }
+
+  Color _colorFromClass(String cls) {
+  switch (cls) {
+    case 'G':
+      return Colors.green;
+    case 'Y':
+      return Colors.amber;
+    case 'R':
+      return Colors.red;
+    default:
+      return Colors.grey;
+  }
+}
+
 
   Widget _buildHeader() {
     return Container(
@@ -232,87 +291,74 @@ class HomePageState extends State<HomePage> {
   }
 
   Widget _buildInfoCard(
-    String title,
-    String value,
-    IconData icon,
-    Color defaultColor, {
-    String? status,
-  }) {
-    Color c = defaultColor;
-    if (status != null) {
-      if (status == 'good')   c = Colors.green;
-      if (status == 'medium') c = Colors.amber;
-      if (status == 'poor')   c = Colors.red;
-    }
+  String title,
+  String value,
+  IconData icon,
+  Color color,
+) {
+  return Card(
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    elevation: 6,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 5),
+              Text(value, style: const TextStyle(fontSize: 14, color: Colors.black54)),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: color, size: 40),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
-    return Card(
+
+
+  Widget _buildOverallScoreCard(int p, Color c) {
+  return Center(
+    child: Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       elevation: 6,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        padding: const EdgeInsets.all(20),
+        child: Column(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const Text('Overall Score', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Stack(
+              alignment: Alignment.center,
               children: [
-                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 5),
-                Text(value, style: const TextStyle(fontSize: 14, color: Colors.black54)),
+                SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: CircularProgressIndicator(
+                    value: p / 100,
+                    strokeWidth: 8,
+                    backgroundColor: Colors.grey[300],
+                    color: c,
+                  ),
+                ),
+                Text('$p%', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: c)),
               ],
-            ),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: c.withOpacity(0.1), shape: BoxShape.circle),
-              child: Icon(icon, color: c, size: 40),
             ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
-  Color _colorForScore(int p) =>
-      p < 30 ? Colors.red :
-      p < 60 ? Colors.orange :
-      p < 80 ? Colors.amber :
-      p < 100 ? Colors.lightGreen :
-      Colors.green;
-
-  Widget _buildOverallScoreCard(int p) {
-    final c = _colorForScore(p);
-    return Center(
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        elevation: 6,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              const Text('Overall Score', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 80,
-                    height: 80,
-                    child: CircularProgressIndicator(
-                      value: p / 100,
-                      strokeWidth: 8,
-                      backgroundColor: Colors.grey[300],
-                      color: c,
-                    ),
-                  ),
-                  Text('$p%', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: c)),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   // ─────────────────────────────── build
   @override
@@ -387,27 +433,26 @@ class HomePageState extends State<HomePage> {
               'Indoor Temperature',
               indoorTemp,
               Icons.thermostat,
-              Colors.red,
-              status: tempStatus,
+              _colorFromClass(tempClass),
             ),
             const SizedBox(height: 12),
             _buildInfoCard(
               'Humidity Level',
               humidity,
               Icons.water_drop,
-              Colors.blue,
-              status: humidityStatus,
+              _colorFromClass(humidityClass),
             ),
             const SizedBox(height: 12),
             _buildInfoCard(
               'Air Quality',
               co2,
               Icons.air,
-              Colors.green,
-              status: co2Status,
+              _colorFromClass(co2Class),
             ),
+
             const SizedBox(height: 30),
-            _buildOverallScoreCard(widget.overallScores[selectedApartment] ?? 0),
+            _buildOverallScoreCard(environmentScore, _colorFromClass(environmentClass)),
+
           ],
         ),
       ),

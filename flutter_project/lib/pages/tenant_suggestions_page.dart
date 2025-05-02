@@ -30,19 +30,29 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
   Widget build(BuildContext context) {
     final mgr = context.watch<MqttSuggestionsManager>();
 
-    final suggestions = mgr.allTenantSuggestions
-        .where((s) =>
-            s.apartmentId == widget.apartmentId &&
-            s.roomId == widget.roomId &&
-            s.code != 'value') // Escludi gli overall score
-        .toList()
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final suggestions = <String, TenantSuggestion>{};
+
+      for (final s in mgr.allTenantSuggestions) {
+        final isSameRoom = s.apartmentId == widget.apartmentId && s.roomId == widget.roomId;
+        final isValid = s.code != 'value';
+
+        if (isSameRoom && isValid) {
+          final key = '${s.code}|${s.message}';
+          if (!suggestions.containsKey(key)) {
+            suggestions[key] = s;
+          }
+        }
+      }
+
+      final deduplicatedList = suggestions.values.toList()
+        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MqttSuggestionsManager>().markTenantRead(widget.apartmentId, widget.roomId);
     });
 
-    _cleanupVotes(suggestions);
+    _cleanupVotes(deduplicatedList);
 
     return Scaffold(
       backgroundColor: Colors.grey[200],
@@ -60,9 +70,10 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
             )
           : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: suggestions.length,
+              itemCount: deduplicatedList.length,
               itemBuilder: (_, i) {
-                final s = suggestions[i];
+                final s = deduplicatedList[i];
+
                 final key = _key(s);
                 return _SuggestionCard(
                   suggestion: s,
@@ -107,6 +118,7 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
 
     setState(() => _downVotes[k] = 2);
     if (await _deactivateSuggestion(s)) {
+      if (!mounted) return;
       context.read<MqttSuggestionsManager>().removeTenantSuggestion(s);
       _downVotes.remove(k);
       _upVotes.remove(k);
