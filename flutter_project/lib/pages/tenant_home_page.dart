@@ -34,7 +34,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => HomePageState();
 }
 
-class HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // ─────────────────────────────── state vars
   late String selectedApartment;
   late String selectedRoom;
@@ -61,18 +61,46 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     selectedApartment = widget.selectedApartment;
     selectedRoom = widget.selectedRoom;
     _fetchRoomData();
     _fetchExternalWeatherData();
-    _startExternalWeatherRefresh();
+    _startAutoRefresh();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _refreshTimer?.cancel();
     super.dispose();
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Quando si torna alla homepage, aggiorna entrambi
+    _fetchRoomData();
+    _fetchExternalWeatherData();
+  }
+
+  @override
+  void didUpdateWidget(covariant HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedApartment != widget.selectedApartment ||
+        oldWidget.selectedRoom != widget.selectedRoom) {
+      _fetchRoomData();
+      _fetchExternalWeatherData();
+    }
+  }
+
+  void _startAutoRefresh() {
+  _refreshTimer =
+      Timer.periodic(const Duration(minutes: 10), (_) {
+        _fetchExternalWeatherData();
+        _fetchRoomData(); 
+      });
+}
 
   // ─────────────────────────────── HTTP helpers
   void _fetchExternalWeatherData() async {
@@ -101,10 +129,6 @@ class HomePageState extends State<HomePage> {
     }
   }
 
-  void _startExternalWeatherRefresh() {
-    _refreshTimer =
-        Timer.periodic(const Duration(minutes: 10), (_) => _fetchExternalWeatherData());
-  }
 
   Future<void> _fetchRoomData() async {
     try {
@@ -435,4 +459,3 @@ class HomePageState extends State<HomePage> {
     );
   }
 }
-
