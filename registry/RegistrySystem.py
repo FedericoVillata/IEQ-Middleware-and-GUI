@@ -246,6 +246,7 @@ class Catalog(object):
             "users": [apt_json["userId"]],
             "apartmentId": aptId,
             "apartmentName": apt_json["apartmentName"],
+            "type": apt_json["type"],
             "coordinates": apt_json["coordinates"],
             "timezone": timezone_str,
             "MAC": apt_json["MAC"],
