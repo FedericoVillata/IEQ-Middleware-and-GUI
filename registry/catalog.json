@@ -372,8 +372,8 @@
         {
           "name": "netatmo",
           "MAC": "70:ee:50:af:8a:ea",
-          "accessToken": "67251bc704bee2bc3e05de23|fd7d3bcc9665197ae79337dd8d8f0d0b",
-          "refreshToken": "67251bc704bee2bc3e05de23|147c69d1340e0acf7d7c524a423818c7"
+          "accessToken": "67251bc704bee2bc3e05de23|50601f20b1265cd38d42a51b67ed78c0",
+          "refreshToken": "67251bc704bee2bc3e05de23|82c4cb9b9ac7b9c6e8e29d395f0c5df8"
         }
       ],
       "rooms": [
