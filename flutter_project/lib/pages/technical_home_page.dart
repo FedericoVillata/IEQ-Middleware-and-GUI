@@ -1,6 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
 import '../app_config.dart';
 import '../widgets/suggestions_bell.dart';
@@ -20,18 +20,26 @@ class TechnicalHomePage extends StatefulWidget {
 }
 
 class _TechnicalHomePageState extends State<TechnicalHomePage> {
-  // The base URL for your adaptor and plot service
-  // static const String ADAPTOR_URL = "http://localhost:8080";      // For CSV data, etc.
-  //static const String PLOT_SERVICE_URL = "http://service_plot:9090"; // For images (line/carpet)
+  // ──────────────────────────────────────────────────────────────────────────
+  //  Configuration
+  // ──────────────────────────────────────────────────────────────────────────
   static String get PLOT_SERVICE_URL => AppConfig.plotServiceUrl;
 
   // Metrics
   final List<String> metrics = ["Temperature", "Humidity", "CO2", "PM10.0", "VOC"];
   String selectedMetric = "Temperature";
 
+  // Legend texts
+  final Map<String, List<String>> _legendTexts = {
+    "Temperature": ["Too hot", "Too cold"],
+    "Humidity": ["Too humid", "Too dry"],
+    "CO2": ["CO₂ too high", "Ideal CO₂ level"],
+    "PM10.0": ["PM10.0 too high", "Ideal PM10.0 level"],
+    "VOC": ["VOC too high", "Ideal VOC level"],
+  };
+
   // Chart type
-  // The user asked to swap the order: now "Line Chart" is first, "Carpet Plot" is second
-  String selectedChartType = "line"; // possible values: "line" or "carpet"
+  String selectedChartType = "line"; // "line" or "carpet"
 
   // Duration options
   final Map<String, String> durationOptions = {
@@ -50,10 +58,13 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
   List<String> availableRooms = [];
   String? selectedRoom;
 
-  // For error or fallback
+  // Error / loading flags
   String? errorMessage;
   bool isLoadingRooms = false;
 
+  // ──────────────────────────────────────────────────────────────────────────
+  //  Lifecycle
+  // ──────────────────────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
@@ -69,7 +80,6 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     });
 
     try {
-      // final resp = await http.get(Uri.parse("http://localhost:8081/apartments"));
       final resp = await http.get(Uri.parse(AppConfig.registryUrl + "/apartments"));
       if (resp.statusCode == 200) {
         final arr = json.decode(resp.body);
@@ -93,7 +103,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
           }
         }
       }
-      // If we got here, no success
+      // Fallback
       setState(() {
         availableRooms = ["(FallbackRoom1)", "(FallbackRoom2)"];
         selectedRoom = "(FallbackRoom1)";
@@ -107,6 +117,9 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     }
   }
 
+  // ──────────────────────────────────────────────────────────────────────────
+  //  Build
+  // ──────────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,9 +139,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: sel ? Colors.indigo : Colors.blueGrey,
                         ),
-                        onPressed: () {
-                          setState(() => selectedMetric = m);
-                        },
+                        onPressed: () => setState(() => selectedMetric = m),
                         child: Text(m, style: const TextStyle(color: Colors.white)),
                       ),
                     );
@@ -136,7 +147,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
                 ),
               ),
 
-              // Chart type: Line vs. Carpet (swapped order)
+              // Chart-type buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -146,7 +157,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
                 ],
               ),
 
-              // Room selection
+              // Room selector
               if (availableRooms.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -155,19 +166,18 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
                     child: ListTile(
                       title: const Text("Select Room"),
                       trailing: DropdownButton<String>(
+                        focusColor: Colors.transparent,
                         value: selectedRoom,
-                        items: availableRooms.map((r) {
-                          return DropdownMenuItem(value: r, child: Text(r));
-                        }).toList(),
-                        onChanged: (val) {
-                          setState(() => selectedRoom = val);
-                        },
+                        items: availableRooms
+                            .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                            .toList(),
+                        onChanged: (val) => setState(() => selectedRoom = val),
                       ),
                     ),
                   ),
                 ),
 
-              // Duration selection
+              // Duration selector
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 child: Card(
@@ -175,10 +185,11 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
                   child: ListTile(
                     title: const Text("Select Duration"),
                     trailing: DropdownButton<String>(
+                      focusColor: Colors.transparent,
                       value: selectedDuration,
-                      items: durationOptions.entries.map((e) {
-                        return DropdownMenuItem(value: e.value, child: Text(e.key));
-                      }).toList(),
+                      items: durationOptions.entries
+                          .map((e) => DropdownMenuItem(value: e.value, child: Text(e.key)))
+                          .toList(),
                       onChanged: (val) {
                         if (val == null) return;
                         setState(() => selectedDuration = val);
@@ -188,7 +199,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
                 ),
               ),
 
-              // Buttons for "Download Chart" and "Export CSV"
+              // Download / Export buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -207,35 +218,29 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
               ),
 
               const SizedBox(height: 20),
-              // The main chart area
-              Expanded(
-                child: Center(
-                  child: isLoadingRooms
-                      ? const CircularProgressIndicator()
-                      : (errorMessage != null
-                          ? Text(errorMessage!, style: const TextStyle(color: Colors.red))
-                          : _buildChartImage()),
-                ),
-              ),
+
+              // Main chart area
+              Expanded(child: Center(child: _buildChartArea())),
             ],
-        ),
-
-         Positioned(
-          top: 12,
-          right: 12,
-          child: SuggestionsBell(
-            location: widget.location,
-            username: widget.username,
           ),
-        ),
-      ],
-    ),
-  );
-}
 
-  // ---------------------------------------------
-  //   Chart Type Button
-  // ---------------------------------------------
+          // Suggestions bell
+          Positioned(
+            top: 12,
+            right: 12,
+            child: SuggestionsBell(
+              location: widget.location,
+              username: widget.username,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  //  UI helpers
+  // ──────────────────────────────────────────────────────────────────────────
   Widget _buildChartTypeButton(String label, String value) {
     final isSelected = (selectedChartType == value);
     return OutlinedButton(
@@ -243,70 +248,196 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
         backgroundColor: isSelected ? Colors.blue.shade100 : Colors.white,
         side: BorderSide(color: isSelected ? Colors.blue : Colors.grey),
       ),
-      onPressed: () {
-        setState(() {
-          selectedChartType = value;
-        });
-      },
-      child: Text(label, style: TextStyle(color: isSelected ? Colors.blue : Colors.black)),
-    );
-  }
-
-  // --------------------------------------------------
-  //  Build the image from plot_service.py
-  // --------------------------------------------------
-  Widget _buildChartImage() {
-    final user = widget.username;
-    final apt = widget.location ?? "apartment0";
-    final measure = selectedMetric;
-    final dur = selectedDuration;
-
-    // Decide which endpoint to use
-    final endpoint = (selectedChartType == "line") ? "generateLineChart" : "generateCarpetPlot";
-
-    // Build URL
-    String url = "$PLOT_SERVICE_URL/$endpoint?userId=$user&apartmentId=$apt&measure=$measure&duration=$dur";
-    if (selectedRoom != null && !selectedRoom!.startsWith("(")) {
-      url += "&room=$selectedRoom";
-    }
-    // Add a timestamp param to avoid caching
-    final ts = DateTime.now().millisecondsSinceEpoch;
-    url += "&ts=$ts";
-
-    return SizedBox(
-      width: 1200,
-      height: 900,
-      child: Image.network(
-        url,
-        fit: BoxFit.contain,
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) return child;
-          return const CircularProgressIndicator();
-        },
-        errorBuilder: (context, error, stack) => const Text("Error loading chart image."),
+      onPressed: () => setState(() => selectedChartType = value),
+      child: Text(
+        label,
+        style: TextStyle(color: isSelected ? Colors.blue : Colors.black),
       ),
     );
   }
 
-  // --------------------------------------------------
-  //           Download / Export
-  // --------------------------------------------------
-  Future<void> _downloadChart() async {
+  Widget _buildLegend() {
+    final labels = _legendTexts[selectedMetric] ?? ["High", "Low"];
+
+    Widget _legendRow(Color color, String text) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 16, height: 16, color: color),
+              const SizedBox(width: 8),
+              Text(text, style: const TextStyle(fontSize: 12)),
+            ],
+          ),
+        );
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: const [
+          BoxShadow(blurRadius: 6, color: Colors.black12, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _legendRow(const Color(0xFF8B0000), labels[0]),
+          _legendRow(const Color(0xFF090F7D), labels[1]),
+        ],
+      ),
+    );
+  }
+
+  // Combines image + (optional) legend, or a "no data" message
+  Widget _buildChartArea() {
+    if (isLoadingRooms) {
+      return const CircularProgressIndicator();
+    }
+    if (errorMessage != null) {
+      return Text(errorMessage!, style: const TextStyle(color: Colors.red));
+    }
+
+    return (selectedChartType == "carpet")
+        ? _buildCarpetChartWithLegend()
+        : _buildChartOnly();
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  //  Chart builders
+  // ──────────────────────────────────────────────────────────────────────────
+  /// Builds the URL with all current parameters
+  String _chartUrl() {
     final user = widget.username;
     final apt = widget.location ?? "apartment0";
-    final measure = selectedMetric;
-    final dur = selectedDuration;
+    final endpoint =
+        (selectedChartType == "line") ? "generateLineChart" : "generateCarpetPlot";
 
-    // Which endpoint
-    final endpoint = (selectedChartType == "line") ? "generateLineChart" : "generateCarpetPlot";
-
-    // Add download=png param
-    String url = "$PLOT_SERVICE_URL/$endpoint?userId=$user&apartmentId=$apt"
-        "&measure=$measure&duration=$dur&download=png";
+    String url =
+        "$PLOT_SERVICE_URL/$endpoint?userId=$user&apartmentId=$apt&measure=$selectedMetric&duration=$selectedDuration";
 
     if (selectedRoom != null && !selectedRoom!.startsWith("(")) {
       url += "&room=$selectedRoom";
     }
+    // Bypass caches
+    url += "&ts=${DateTime.now().millisecondsSinceEpoch}";
+    return url;
+  }
+
+  /// Line chart or carpet without legend
+  Widget _buildChartOnly() {
+    return FutureBuilder<http.Response>(
+      future: http.get(Uri.parse(_chartUrl())),
+      builder: (context, snapshot) {
+        // --------------- NEW: show spinner while waiting for the new future
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const CircularProgressIndicator();
+        }
+        // ---------------------------------------------------------------
+
+        if (snapshot.hasError) {
+          return const Text("Error loading chart image.");
+        }
+
+        if (!snapshot.hasData) {
+          return const Text("No response from server.");
+        }
+
+        final res = snapshot.data!;
+        if (res.statusCode != 200) {
+          return const Text("Error loading chart image.");
+        }
+        final noData = res.headers['x-no-data'] == '1';
+        if (noData) {
+          return Text(_noDataMessageForMetric(selectedMetric),
+              style: const TextStyle(fontStyle: FontStyle.italic));
+        }
+
+        return SizedBox(
+          width: 800,
+          height: 600,
+          child: Image.memory(res.bodyBytes, fit: BoxFit.contain),
+        );
+      },
+    );
+  }
+
+  /// Carpet plot + legend (legend hidden if no data)
+  Widget _buildCarpetChartWithLegend() {
+    return FutureBuilder<http.Response>(
+      future: http.get(Uri.parse(_chartUrl())),
+      builder: (context, snapshot) {
+        // --------------- NEW: show spinner while waiting for the new future
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const CircularProgressIndicator();
+        }
+        // ---------------------------------------------------------------
+
+        if (snapshot.hasError) {
+          return const Text("Error loading chart image.");
+        }
+
+        if (!snapshot.hasData) {
+          return const Text("No response from server.");
+        }
+
+        final res = snapshot.data!;
+        if (res.statusCode != 200) {
+          return const Text("Error loading chart image.");
+        }
+        final noData = res.headers['x-no-data'] == '1';
+        if (noData) {
+          return Text(_noDataMessageForMetric(selectedMetric),
+              style: const TextStyle(fontStyle: FontStyle.italic));
+        }
+
+        final img = SizedBox(
+          width: 800,
+          height: 600,
+          child: Image.memory(res.bodyBytes, fit: BoxFit.contain),
+        );
+
+        // Image + legend
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              img,
+              const SizedBox(width: 0),
+              Transform.translate(offset: const Offset(0, -22), child: _buildLegend()),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // "No data" placeholder texts per metric
+  String _noDataMessageForMetric(String metric) {
+    switch (metric) {
+      case "Humidity":
+        return "No humidity data for the selected range of time";
+      case "Temperature":
+        return "No temperature data for the selected range of time";
+      case "CO2":
+        return "No CO2 data for the selected range of time";
+      case "PM10.0":
+        return "No PM10.0 data for the selected range of time";
+      case "VOC":
+        return "No VOC data for the selected range of time";
+      default:
+        return "No data for the selected range of time";
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  //  Download / Export helpers
+  // ──────────────────────────────────────────────────────────────────────────
+  Future<void> _downloadChart() async {
+    final url = _chartUrl().replaceFirst("&ts=", "&download=png&ts=");
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     }
@@ -315,12 +446,9 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
   Future<void> _exportCsv() async {
     final user = widget.username;
     final apt = widget.location ?? "apartment0";
-    final measure = selectedMetric;
-    final dur = selectedDuration;
 
-    // The plot service uses exportCsv for CSV
-    String url = "$PLOT_SERVICE_URL/exportCsv?userId=$user&apartmentId=$apt"
-        "&measure=$measure&duration=$dur";
+    String url =
+        "$PLOT_SERVICE_URL/exportCsv?userId=$user&apartmentId=$apt&measure=$selectedMetric&duration=$selectedDuration";
 
     if (selectedRoom != null && !selectedRoom!.startsWith("(")) {
       url += "&room=$selectedRoom";

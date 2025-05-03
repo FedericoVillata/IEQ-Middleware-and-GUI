@@ -905,6 +905,7 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
           const SizedBox(width: 12),
           Expanded(
             child: DropdownButton<String>(
+              focusColor: Colors.transparent,
               isExpanded: true,
               value: ventilationType,
               items: const [
@@ -936,6 +937,7 @@ class _TechnicalThresholdPageState extends State<TechnicalThresholdPage> {
           const SizedBox(width: 12),
           Expanded(
             child: DropdownButton<String>(
+              focusColor: Colors.transparent,
               isExpanded: true,
               value: adaptiveTempCategory,
               items: const [

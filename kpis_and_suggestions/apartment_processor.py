@@ -16,6 +16,7 @@ from kpis_classification import *
 
 import numpy as np
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo 
 
 # Map labels to scores for each classification category
 LABEL_SCORE_MAP = {
@@ -90,17 +91,13 @@ def parse_isoformat_safe(iso_str):
     except Exception:
         return None
 
-def check_sensor_updates(room, threshold_minutes=24 * 60):
-    now = datetime.utcnow()
-    alerts = []
+def check_sensor_updates(room, apartment_timezone, threshold_minutes=24 * 60):
+    try:
+        now = datetime.now(ZoneInfo(apartment_timezone)) 
+    except Exception:
+        now = datetime.utcnow()
 
-    sensor_type_lookup = {
-        "03:00:": "Temperature/Humidity/CO₂",
-        "02:00:": "Outdoor Temperature",
-        "0000F2": "PM10/CO₂/Humidity",
-        "0000B3": "PM10/CO₂/Humidity",
-        "0000": "Environmental Data"
-    }
+    alerts = []
 
     threshold_delta = timedelta(minutes=threshold_minutes)
 
@@ -114,13 +111,16 @@ def check_sensor_updates(room, threshold_minutes=24 * 60):
         if not parsed_last_update:
             continue
 
-        time_diff = now - parsed_last_update.replace(tzinfo=None)
+        time_diff = now - parsed_last_update
+        if parsed_last_update.tzinfo is None:
+            log(f"Warning: parsed_last_update has no tzinfo — {parsed_last_update}", level="WARN")
+
         if time_diff > threshold_delta:
-            sensor_measurement = "Unknown measurement"
-            for prefix, measure in sensor_type_lookup.items():
-                if sensor_id.startswith(prefix):
-                    sensor_measurement = measure
-                    break
+            measurements = sensor.get("measurements", [])
+            if measurements:
+                sensor_measurement = ", ".join(measurements)
+            else:
+                sensor_measurement = "Unknown measurement"
 
             hours, remainder = divmod(int(time_diff.total_seconds()), 3600)
             minutes = remainder // 60
@@ -138,12 +138,10 @@ def check_sensor_updates(room, threshold_minutes=24 * 60):
 
     return alerts
 
-
-
-
 def process_apartment(apartment, catalog, weather_info, publisher,
                       base_topic, adaptor_base, base_settings=None):
     apartment_id = apartment['apartmentId']
+    apartment_timezone = apartment.get("timezone", catalog.get("timezone", "UTC"))
 
     log("Processing apartment", context=apartment_id)
 
@@ -157,6 +155,26 @@ def process_apartment(apartment, catalog, weather_info, publisher,
         log("No user associated with apartment, skipping", level="ERROR", context=apartment.get("apartmentId"))
         return
     user_id = user_list[0]
+
+    # --- Get exterior room temperature series if available ---
+    external_temp_series = []
+
+    for room in apartment.get("rooms", []):
+        if room.get("roomId") == "exterior":
+            ext_data = fetch_room_data("exterior", apartment_id, user_id, adaptor_base)
+            if ext_data and "Temperature" in ext_data:
+                external_temp_series = [float(d["v"]) for d in ext_data["Temperature"] if "v" in d]
+                log(f"Using exterior room temperatures: {external_temp_series[-7:]}", context=apartment_id)
+            else:
+                log("No valid temperature data in 'exterior' room", level="WARN", context=apartment_id)
+            break
+
+    # fallback: use weather temperature repeated
+    if not external_temp_series:
+        fallback_temp = weather_info.get("temperature", -999)
+        external_temp_series = [fallback_temp] * 7
+        log(f"Using fallback weather temperature series: {external_temp_series}", context=apartment_id)
+
 
     feedback = fetch_feedback(adaptor_base, user_id, apartment_id)
 
@@ -172,15 +190,20 @@ def process_apartment(apartment, catalog, weather_info, publisher,
 
     # Loop through each room in the apartment
     for room in apartment["rooms"]:
+        if room.get("roomId") == "exterior":
+            continue
+
         result = process_room(
             room,
             apartment_id,
+            apartment_timezone,
             user_id,
             adaptor_base,
             catalog,
             settings,
             season,
             weather_info,
+            external_temp_series,
             publisher,
             base_topic
         )
@@ -207,8 +230,8 @@ def process_apartment(apartment, catalog, weather_info, publisher,
         weather_info, publisher, base_topic
     )
 
-def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
-                 season, weather_info, publisher, base_topic):
+def process_room(room, apartment_id, apartment_timezone, user_id, adaptor_base, catalog, settings,
+                 season, weather_info, external_temp_series, publisher, base_topic):
     room_id = room["roomId"]
     log("Processing room", context=f"{apartment_id}/{room_id}")
     if not publisher._paho_mqtt.is_connected():
@@ -222,8 +245,8 @@ def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
         return None
 
     avg_values, trends = compute_room_averages(data)
-    classifications, t_ext, icone, ieqi, adaptive_comfort = classify_room_conditions(
-        avg_values, trends, data, settings, season, weather_info
+    classifications, t_ext_rm, icone, ieqi, adaptive_comfort = classify_room_conditions(
+        avg_values, trends, data, settings, season, weather_info, external_temp_series
     )
 
 
@@ -239,18 +262,32 @@ def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
     "ppd": classifications.get("ppd_class"),
     "icone": classifications.get("icone_class"),
     "ieqi": classifications.get("ieqi_class"),
-    "overall_score": classifications.get("env_score")
     }
-
-    suggestions = generate_room_suggestions(
-        room, catalog, mapped_classifications, avg_values, t_ext, settings,
-        season, weather_info, trends
-    )
 
     pmv = calculate_pmv(season, avg_values["avg_temp"], avg_values["avg_temp"], 0.1, avg_values["avg_humidity"], settings)
     ppd = calculate_ppd(pmv)
-    env_score = overall_score(classifications, settings)
+
+    env_input = {
+        "temperature": classifications.get("temp_class"),
+        "humidity": classifications.get("hum_class"),
+        "co2": classifications.get("co2_class"),
+        "pmv": classifications.get("pmv_class"),
+        "ppd": classifications.get("ppd_class"),
+    }
+    if "icone_class" in classifications:
+        env_input["icone"] = classifications.get("icone_class")
+    if "ieqi_class" in classifications:
+        env_input["ieqi"] = classifications.get("ieqi_class")
+
+    env_score = overall_score(env_input, settings)
     env_class = classify_overall_score(env_score, settings)
+
+    mapped_classifications["overall_score"] = env_class
+
+    suggestions = generate_room_suggestions(
+        room, catalog, mapped_classifications, avg_values, t_ext_rm, settings,
+        season, weather_info, trends
+        )
 
     publish_detailed_room_metrics(
         publisher,
@@ -268,7 +305,7 @@ def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
         env_class=env_class
     )
 
-    sensor_alerts = check_sensor_updates(room)
+    sensor_alerts = check_sensor_updates(room, apartment_timezone)
     publish_alerts(publisher, base_topic, apartment_id, room_id, classifications,sensor_alerts=sensor_alerts)
     publish_tenant_suggestions(publisher, base_topic, apartment_id, room_id, suggestions)
 
@@ -277,7 +314,7 @@ def process_room(room, apartment_id, user_id, adaptor_base, catalog, settings,
     return classifications, {
         "temperature": avg_values["avg_temp"],
         "humidity": avg_values["avg_humidity"],
-        "t_ext": t_ext
+        "t_ext": t_ext_rm
     }
 
 def fetch_room_data(room_id, apartment_id, user_id, adaptor_base):
@@ -308,7 +345,7 @@ def compute_room_averages(measure_data):
     avg_temp = average(measure_data.get("Temperature", []))
     avg_humidity = average(measure_data.get("Humidity", []))
     avg_co2 = average(measure_data.get("CO2", []))
-    avg_pm10 = average(measure_data.get("PM10", []))
+    avg_pm10 = average(measure_data.get("PM10.0", []))
     avg_tvoc = average(measure_data.get("VOC", []))
 
     trends = {
@@ -329,7 +366,7 @@ def compute_room_averages(measure_data):
 
     return avg_values, trends
 
-def classify_room_conditions(avg_values, trends, measure_data, settings, season, weather_info):
+def classify_room_conditions(avg_values, trends, measure_data, settings, season, weather_info, external_temp_series):
     avg_temp = avg_values["avg_temp"]
     avg_humidity = avg_values["avg_humidity"]
     avg_co2 = avg_values["avg_co2"]
@@ -339,24 +376,13 @@ def classify_room_conditions(avg_values, trends, measure_data, settings, season,
     if avg_temp is None or avg_humidity is None or avg_co2 is None:
         return None, None, None, None, None
 
-    # Get fallback temperature from weather_info
-    external_temp_fallback = weather_info.get("temperature", avg_temp)
-
-    # Build outdoor temperature series using fallback if necessary
-    temp_series = [
-        d.get("outdoor_temp") if d.get("outdoor_temp") is not None else external_temp_fallback
-        for d in measure_data.get("Temperature", [])
-    ]
-
-    if len(temp_series) < 7:
-        log(f"Only {len(temp_series)} external temp values found, filling with fallback where needed", level="WARN", context="adaptive_comfort")
-
-    # Use last 7 or fill missing values with fallback if list is empty
-    if not temp_series:
-        temp_series = [external_temp_fallback] * 7
-
-    outdoor_temps = temp_series[-7:] if len(temp_series) >= 7 else temp_series
-    log(f"Outdoor temps used for adaptive comfort: {outdoor_temps}", level="DEBUG", context="adaptive_comfort")
+    outdoor_temps = external_temp_series[-7:] if len(external_temp_series) >= 7 else external_temp_series
+    if len(outdoor_temps) < 7:
+        log(f"Only {len(outdoor_temps)} outdoor temps available, padding with last value", level="WARN", context="adaptive_comfort")
+        if outdoor_temps:
+            outdoor_temps += [outdoor_temps[-1]] * (7 - len(outdoor_temps))
+        else:
+            outdoor_temps = [avg_temp] * 7 
 
     adaptive_comfort = adaptive_thermal_comfort(outdoor_temps)
 
@@ -380,7 +406,8 @@ def classify_room_conditions(avg_values, trends, measure_data, settings, season,
     ppd_class = classify_ppd(ppd, settings)
 
     icone = ieqi = icone_class = ieqi_class = None
-    if avg_pm10 is not None and avg_tvoc is not None:
+    if any(v is not None for v in [avg_co2, avg_pm10, avg_tvoc]):
+        log(f"Calculating ICONE with: co2={avg_co2}, pm10={avg_pm10}, tvoc={avg_tvoc}", level="DEBUG", context="calculate_icone")
         icone = calculate_icone(avg_co2, avg_pm10, avg_tvoc)
         icone_class = classify_icone(icone, settings)
         ieqi = calculate_ieqi(icone, avg_temp, avg_humidity, settings)
@@ -391,16 +418,7 @@ def classify_room_conditions(avg_values, trends, measure_data, settings, season,
         "hum_class": hum_class,
         "co2_class": co2_class,
         "pmv_class": pmv_class,
-        "ppd_class": ppd_class,
-        "env_score": classify_overall_score(overall_score({
-            "temperature": temp_class,
-            "humidity": hum_class,
-            "co2": co2_class,
-            "pmv": pmv_class,
-            "ppd": ppd_class,
-            **({"icone": icone_class} if icone_class else {}),
-            **({"ieqi": ieqi_class} if ieqi_class else {})
-        }, settings), settings)
+        "ppd_class": ppd_class
     }
 
     if icone_class:

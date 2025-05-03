@@ -35,6 +35,7 @@
       ],
       "apartmentId": "apartment0",
       "apartmentName": "Test apartment",
+      "type": "House",
       "coordinates": {
         "long": 7.6868565,
         "lat": 45.070312
@@ -363,6 +364,7 @@
       ],
       "apartmentId": "apartment1",
       "apartmentName": "Luca's apartment",
+      "type": "House",
       "coordinates": {
         "long": 7.6868565,
         "lat": 45.070312
@@ -1136,6 +1138,7 @@
       ],
       "apartmentId": "apartment3",
       "apartmentName": "School",
+      "type": "School",
       "coordinates": {
         "long": 7.6868565,
         "lat": 45.070312

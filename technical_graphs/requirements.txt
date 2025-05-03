@@ -1,0 +1,5 @@
+cherrypy
+matplotlib
+numpy
+requests
+pandas

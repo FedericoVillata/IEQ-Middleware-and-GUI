@@ -185,12 +185,28 @@ def calculate_ppd(pmv):
 # IAQ Indices
 # -----------------------------
 
-def calculate_icone(co2, pm10, tvoc):
-    ref_values = {"co2": 1000, "pm10": 50, "tvoc": 0.3}
-    co2_norm = co2 / ref_values["co2"]
-    pm10_norm = pm10 / ref_values["pm10"]
-    tvoc_norm = tvoc / ref_values["tvoc"]
-    return 0.4 * co2_norm + 0.3 * pm10_norm + 0.3 * tvoc_norm
+def calculate_icone(co2=None, pm10=None, tvoc=None):
+    ref_values = {"co2": 1000, "pm10": 50, "tvoc": 300} #tvoc in µg/m³
+    components = []
+    weights = []
+
+    if co2 is not None:
+        components.append(0.4 * (co2 / ref_values["co2"]))
+        weights.append(0.4)
+    if pm10 is not None:
+        components.append(0.3 * (pm10 / ref_values["pm10"]))
+        weights.append(0.3)
+    if tvoc is not None:
+        tvoc_ug_m3 = tvoc * 4  # Convert from ppb to µg/m³
+        components.append(0.3 * (tvoc_ug_m3 / ref_values["tvoc"]))
+        weights.append(0.3)
+
+
+    if not components:
+        return None  
+
+    return sum(components) / sum(weights)  
+
 
 def calculate_ieqi(icone, temperature, humidity, settings):
     temp_opt = settings["values"].get("temp_opt", 22)
@@ -207,12 +223,10 @@ def calculate_ieqi(icone, temperature, humidity, settings):
 def classify_generic(metric, thresholds):
     if metric <= thresholds["G"]:
         return "G"
-    elif metric <= thresholds["Y"]:
+    elif metric < thresholds["Y"]:
         return "Y"
-    elif metric <= thresholds["R"]:
+    elif metric >= thresholds["Y"]:
         return "R"
-    elif "Extreme" in thresholds:
-        return "Extreme"
     else:
         log(f"Metric {metric} did not match thresholds", level="WARN", context="classify_generic")
         return "Unknown"
@@ -290,11 +304,13 @@ def overall_score(classifications, settings):
 def classify_overall_score(score, settings):
     thresholds = settings["thresholds"]["overall_score_classification"]
 
-    if score >= thresholds["G"]:
-        return "G"
-    elif score >= thresholds["Y"]:
-        return "Y"
-    elif score >= thresholds["R"]:
-        return "R"
+    if 0 <= score <= thresholds["G"]:
+        if score > thresholds["Y"]:
+            return "G"
+        elif score > thresholds["R"]:
+            return "Y"
+        else:
+            return "R"
     else:
         return "Unknown"
+

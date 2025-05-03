@@ -31,10 +31,7 @@ def smart_suggestions(classifications, values, settings, trends=None):
     pmv = values.get("pmv")
     t_ext = values.get("t_ext")
     if t_ext is None:
-        forecast = settings.get("values", {}).get("forecast", {})
-        t_ext = forecast.get("current_temp")
-    if t_ext is not None:
-        log(f"t_ext was missing, recovered from forecast: {t_ext}", level="DEBUG", context="Suggestions")
+        log("Warning: t_ext not provided; suggestions may be less accurate", level="WARN", context="Suggestions")
 
     hour = values.get("hour", datetime.now().hour)
 

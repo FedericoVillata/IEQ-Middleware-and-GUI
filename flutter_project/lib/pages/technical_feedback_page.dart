@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:fl_chart/fl_chart.dart';
 import '../app_config.dart';
+import '../widgets/suggestions_bell.dart';
 
 // ---------------------------------------------------------------------------
 // TechnicalFeedbackPage – fast & stable
@@ -187,70 +188,94 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
   //  UI --------------------------------------------------------------------
   // -----------------------------------------------------------------------
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        children: [
-          // Duration selector
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: ListTile(
-                title: const Text("Select Duration"),
-                trailing: DropdownButton<String>(
-                  value: _selectedDuration,
-                  onChanged: (val) async {
-                    if (val == null) return;
-                    setState(() => _selectedDuration = val);
-                    await _fetchFeedbackData();
-                  },
-                  items: _durationOptions.entries
-                      .map((e) => DropdownMenuItem(value: e.value, child: Text(e.key)))
-                      .toList(),
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: Stack(
+      children: [
+        // ── main content ────────────────────────────────────────────────
+        Column(
+          children: [
+            // Duration selector ------------------------------------------------
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                child: ListTile(
+                  title: const Text("Select Duration"),
+                  trailing: DropdownButton<String>(
+                    focusColor: Colors.transparent,
+                    value: _selectedDuration,
+                    onChanged: (val) async {
+                      if (val == null) return;
+                      setState(() => _selectedDuration = val);
+                      await _fetchFeedbackData();
+                    },
+                    items: _durationOptions.entries
+                        .map((e) => DropdownMenuItem(
+                              value: e.value,
+                              child: Text(e.key),
+                            ))
+                        .toList(),
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // Feedback type selector
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: _feedbackTypes.map((f) {
-                final bool selected = (f == _selectedFeedback);
-                return Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: selected ? Colors.indigo : Colors.blueGrey,
+            // Feedback-type selector -------------------------------------------
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _feedbackTypes.map((f) {
+                  final bool selected = (f == _selectedFeedback);
+                  return Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            selected ? Colors.indigo : Colors.blueGrey,
+                      ),
+                      onPressed: () async {
+                        setState(() => _selectedFeedback = f);
+                        await _fetchFeedbackData();
+                      },
+                      child:
+                          Text(f, style: const TextStyle(color: Colors.white)),
                     ),
-                    onPressed: () async {
-                      setState(() => _selectedFeedback = f);
-                      await _fetchFeedbackData();
-                    },
-                    child: Text(f, style: const TextStyle(color: Colors.white)),
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
-          ),
 
-          // Chart / Loading / Error
-          Expanded(
-            child: Center(
-              child: _isLoading
-                  ? const CircularProgressIndicator()
-                  : (_errorMessage != null
-                      ? Text(_errorMessage!, style: const TextStyle(color: Colors.red))
-                      : _buildBarChart()),
+            // Chart / loading / error ------------------------------------------
+            Expanded(
+              child: Center(
+                child: _isLoading
+                    ? const CircularProgressIndicator()
+                    : (_errorMessage != null
+                        ? Text(_errorMessage!,
+                            style: const TextStyle(color: Colors.red))
+                        : _buildBarChart()),
+              ),
             ),
+          ],
+        ),
+
+        // ── Suggestions bell (top-right overlay) ─────────────────────────
+        Positioned(
+          // push it just below the normal app-bar height (56 px) + a little padding
+          top: kToolbarHeight + 24,   // was: 12
+          right: 12,
+          child: SuggestionsBell(
+            location: widget.location,
+            username: widget.username,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   // -------------------------- Chart --------------------------------------
   Widget _buildBarChart() {

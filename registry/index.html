@@ -99,6 +99,11 @@
                 <input type="text" id="input2_col2" placeholder="Apartment Name">
                 <input type="text" id="input3_col2" placeholder="Longitude">
                 <input type="text" id="input4_col2" placeholder="Latitude">
+                <select id="apartmentType">
+                    <option value="House">House</option>
+                    <option value="School">School</option>
+                    <option value="Other">Other</option>
+                </select>
             </div>
             <div id="roomsContainer">
                 <!-- Rooms will be added here -->
@@ -226,6 +231,7 @@
             const apartmentName = document.getElementById(`input2_col${columnNumber}`).value;
             const longitude = document.getElementById(`input3_col${columnNumber}`).value;
             const latitude = document.getElementById(`input4_col${columnNumber}`).value;
+            const apartmentType = document.getElementById("apartmentType").value;
 
             const rooms = [];
             document.querySelectorAll(".room").forEach(roomDiv => {
@@ -263,6 +269,7 @@
                     long: parseFloat(longitude),
                     lat: parseFloat(latitude)
                 },
+                type: apartmentType,
                 userId: userId,
                 rooms: rooms
             };

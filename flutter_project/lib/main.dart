@@ -26,30 +26,46 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'start_screen.dart';
 import 'app_config.dart';
-import 'mqtt_suggestions_manager.dart'; // Where we put the manager file
+import 'mqtt_suggestions_manager.dart';
+import 'mqtt_alert_manager.dart'; // ⬅️ Importa il nuovo manager
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Load the JSON
+
+  // Carica configurazioni dal JSON
   await AppConfig.load();
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) {
-        final manager = MqttSuggestionsManager();
-        // Example: Subscribing to 2 or 3 apartments. 
-        // If you only need one, pass just ["apartment1"] or whichever is relevant.
-        manager.initMqtt(
-          brokerHost: AppConfig.mqttBroker,
-          brokerPort: AppConfig.mqttPort,
-          topicBase: AppConfig.mqttTopicBase,
-          apartmentsToListen: ["apartment0", "apartment1", "apartment3"],
-        );
-        return manager;
-      },
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<MqttSuggestionsManager>(
+          create: (_) {
+            final manager = MqttSuggestionsManager();
+            manager.initMqtt(
+              brokerHost: AppConfig.mqttBroker,
+              brokerPort: AppConfig.mqttPort,
+              topicBase: AppConfig.mqttTopicBase,
+              apartmentsToListen: ["apartment0", "apartment1", "apartment3"],
+            );
+            return manager;
+          },
+        ),
+        ChangeNotifierProvider<MqttAlertManager>(
+          create: (_) {
+            final manager = MqttAlertManager();
+            manager.init(
+              broker: AppConfig.mqttBroker,
+              port: AppConfig.mqttPort,
+              topicBase: AppConfig.mqttTopicBase,
+              apartments: ["apartment0", "apartment1", "apartment3"],
+            );
+            return manager;
+          },
+        ),
+      ],
       child: const MainSelectorApp(),
     ),
   );

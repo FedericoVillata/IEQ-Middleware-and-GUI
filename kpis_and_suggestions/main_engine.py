@@ -62,6 +62,8 @@ class KPIEngine:
                 self.catalog.get("base_settings")
             )
         self.publisher.stop()
+        log("KPI cycle completed successfully")
+
 
 def wait_for_data(config_path='config.json'):
     try:
@@ -95,7 +97,7 @@ if __name__ == "__main__":
 
      # wait_for_data()  # Commented out for debug purposes
 
-    INTERVAL_SECONDS = 30 * 60
+    INTERVAL_SECONDS = 10 * 60
 
     while True:
         log("Starting new KPI cycle...")

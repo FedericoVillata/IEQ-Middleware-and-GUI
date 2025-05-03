@@ -141,6 +141,7 @@ def publish_alerts(publisher, base_topic, apartment_id, room_id, classifications
 
 # --- MQTT Publisher Class ---
 import paho.mqtt.client as PahoMQTT
+import threading
 
 class MyPublisher:
     
@@ -161,6 +162,12 @@ class MyPublisher:
         self.port = port
         self.qos = qos  # Default to QoS 2 for high reliability
 
+        self._pending_messages = 0
+        self._lock = threading.Lock()
+        self._all_sent_event = threading.Event()
+        self._all_sent_event.set()  # Start unblocked
+
+
     def start(self):
         try:
             self._paho_mqtt.connect(self.messageBroker, self.port)
@@ -170,40 +177,49 @@ class MyPublisher:
             log(f"Failed to connect to MQTT broker: {e}", level="ERROR", context=self.clientID)
 
     def stop(self):
+        log("Waiting for all MQTT messages to be published...", context=self.clientID)
+        self._all_sent_event.wait(timeout=10)  # Max 10 sec wait
         self._paho_mqtt.loop_stop()
         self._paho_mqtt.disconnect()
         log("Disconnected from MQTT broker.", context=self.clientID)
 
 
+
     def myPublish(self, message, topic):
         try:
-            # Ensure topic does not end with a slash (to avoid mismatches)
             clean_topic = topic.rstrip("/")
-
-            # Log message size in bytes
             payload_size = len(message.encode("utf-8"))
             log(f"Publishing to '{clean_topic}' | Size: {payload_size} bytes", level="DEBUG", context=self.clientID)
 
             result = self._paho_mqtt.publish(clean_topic, message, self.qos, retain=False)
 
-            if result.rc == PahoMQTT.MQTT_ERR_NO_CONN:
+            if result.rc == PahoMQTT.MQTT_ERR_SUCCESS:
+                with self._lock:
+                    self._pending_messages += 1
+                    self._all_sent_event.clear()
+
+            elif result.rc == PahoMQTT.MQTT_ERR_NO_CONN:
                 log(f"Publish failed (not connected). Trying to reconnect...", level="WARN", context=self.clientID)
                 try:
                     self._paho_mqtt.reconnect()
                     log(f"Reconnect successful, retrying publish...", level="INFO", context=self.clientID)
-                    # Retry the publish once
                     result = self._paho_mqtt.publish(clean_topic, message, self.qos, retain=False)
-                    if result.rc != PahoMQTT.MQTT_ERR_SUCCESS:
+                    if result.rc == PahoMQTT.MQTT_ERR_SUCCESS:
+                        with self._lock:
+                            self._pending_messages += 1
+                            self._all_sent_event.clear()
+                    else:
                         log(f"Retry failed with result code {result.rc}", level="ERROR", context=self.clientID)
                 except Exception as e:
                     log(f"Reconnect failed: {e}", level="ERROR", context=self.clientID)
-            elif result.rc != PahoMQTT.MQTT_ERR_SUCCESS:
+
+            else:
                 log(f"Publish failed with result code {result.rc}", level="ERROR", context=self.clientID)
 
         except Exception as e:
             log(f"Exception during publish: {e}", level="ERROR", context=self.clientID)
 
-
+            
     def myOnConnect(self, client, userdata, flags, rc, properties=None):
         if rc == 0:
             log("Successfully connected to broker.", context=self.clientID)
@@ -212,5 +228,10 @@ class MyPublisher:
 
     def myOnPublish(self, client, userdata, mid):
         log(f"Message published (mid: {mid})", level="DEBUG", context=self.clientID)
+        with self._lock:
+            self._pending_messages -= 1
+            if self._pending_messages == 0:
+                self._all_sent_event.set()
+
 
 
