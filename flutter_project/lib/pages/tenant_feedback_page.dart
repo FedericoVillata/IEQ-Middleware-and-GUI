@@ -95,37 +95,54 @@ Future<void> _submitFeedback(String category, int rating) async {
 
   // ───────────────────────────────── helper widget
   Widget buildRatingSection(
-    String title,
-    int rating,
-    ValueChanged<int> onRatingChanged, {
-    required List<IconData> icons,
-  }) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(icons.length, (i) {
-                final selected = i < rating;
-                final color = selected ? ratingColors[rating - 1] : Colors.grey;
-                return IconButton(
-                  iconSize: 30,
-                  icon: Icon(icons[i], color: color),
-                  onPressed: () => onRatingChanged(i + 1),
-                );
-              }),
-            ),
-          ],
-        ),
+  String title,
+  int rating,
+  ValueChanged<int> onRatingChanged, {
+  required List<IconData> icons,
+}) {
+  return Card(
+    elevation: 4,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(icons.length, (i) {
+              final int index = i + 1;
+
+              Color color;
+              if (title == 'Temperature Perception' || title == 'Humidity Perception') {
+                if (index == 1 || index == 5) {
+                  color = Colors.red;
+                } else if (index == 2 || index == 4) {
+                  color = Colors.yellow[700]!;
+                } else {
+                  color = Colors.green;
+                }
+              } else {
+                // fallback default coloring for other categories
+                color = (index <= rating) ? ratingColors[rating - 1] : Colors.grey;
+              }
+
+              final bool selected = index <= rating;
+
+              return IconButton(
+                iconSize: 30,
+                icon: Icon(icons[i], color: selected ? color : Colors.grey),
+                onPressed: () => onRatingChanged(index),
+              );
+            }),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   // ───────────────────────────────── build
   @override
