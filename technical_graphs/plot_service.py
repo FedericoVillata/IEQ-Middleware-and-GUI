@@ -95,9 +95,8 @@ class PlotService:
                 start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
                 elapsed_minutes = int((now - start_of_day).total_seconds() / 60)
 
-                # Arrotonda a blocco da 30 minuti più vicino SENZA sforare
-                half_hours = elapsed_minutes // 30  # massimo 48 blocchi
-                elapsed_hours = (half_hours * 30) // 60  # blocchi da 30min convertiti in ore
+                half_hours = elapsed_minutes // 30 
+                elapsed_hours = (half_hours * 30) // 60  
 
                 duration_hours += elapsed_hours
                 duration = str(duration_hours)
