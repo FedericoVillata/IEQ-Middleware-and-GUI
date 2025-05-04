@@ -1,21 +1,29 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 
 import '../mqtt_suggestions_manager.dart';
 import '../app_config.dart';
+import '../suggestion_vote_mqtt_publisher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+
 
 class TenantSuggestionsPage extends StatefulWidget {
   final String username;
   final String apartmentId;
   final String roomId;
+  final Map<String, List<String>> rooms;
+
 
   const TenantSuggestionsPage({
     super.key,
     required this.username,
     required this.apartmentId,
     required this.roomId,
+    required this.rooms,
   });
 
   @override
@@ -23,8 +31,47 @@ class TenantSuggestionsPage extends StatefulWidget {
 }
 
 class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
+  late String _selectedRoomId;
+
+ @override
+void initState() {
+  super.initState();
+  _selectedRoomId = widget.roomId;
+
+  SharedPreferences.getInstance().then((prefs) {
+    _prefs = prefs;
+
+    final keys = _prefs.getKeys();
+    for (final k in keys.where((k) => k.startsWith('vote_total_'))) {
+      final baseKey = k.replaceFirst('vote_total_', '');
+      _localTotalVotes[baseKey] = _prefs.getInt(k) ?? 0;
+    }
+    for (final k in keys.where((k) => k.startsWith('vote_down_'))) {
+      final baseKey = k.replaceFirst('vote_down_', '');
+      final count = _prefs.getInt(k) ?? 0;
+      _localDownVotes[baseKey] = count;
+      _downVotes[baseKey] = count; // 👈 AGGIUNTO: sincronizza visivamente
+    }
+    for (final k in keys.where((k) => k.startsWith('vote_up_'))) {
+  final baseKey = k.replaceFirst('vote_up_', '');
+  final count = _prefs.getInt(k) ?? 0;
+  _upVotes[baseKey] = count;
+}
+
+
+    setState(() {}); // forza il rebuild una volta caricati i dati
+  });
+}
+
+
+
   final Map<String, int> _downVotes = {};
   final Map<String, int> _upVotes = {};
+  late SharedPreferences _prefs;
+final Map<String, int> _localTotalVotes = {};
+final Map<String, int> _localDownVotes = {};
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -32,21 +79,24 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
 
     final suggestions = <String, TenantSuggestion>{};
 
-      for (final s in mgr.allTenantSuggestions) {
-        final isSameRoom = s.apartmentId == widget.apartmentId && s.roomId == widget.roomId;
-        final isValid = s.code != 'value';
+    for (final s in mgr.allTenantSuggestions) {
+      final now = DateTime.now();
+final isSameDay = s.timestamp.year == now.year &&
+                  s.timestamp.month == now.month &&
+                  s.timestamp.day == now.day;
 
-        if (isSameRoom && isValid) {
-          final key = '${s.code}|${s.message}';
-          if (!suggestions.containsKey(key)) {
-            suggestions[key] = s;
-          }
-        }
-      }
+final isSameRoom = s.apartmentId == widget.apartmentId && s.roomId == _selectedRoomId;
+final isValid = s.code != 'value';
 
-      final deduplicatedList = suggestions.values.toList()
-        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+if (isSameRoom && isValid && isSameDay) {
+  final key = '${s.code}|${s.message}';
+  suggestions.putIfAbsent(key, () => s);
+}
 
+    }
+
+    final deduplicatedList = suggestions.values.toList()
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MqttSuggestionsManager>().markTenantRead(widget.apartmentId, widget.roomId);
@@ -54,18 +104,52 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
 
     _cleanupVotes(deduplicatedList);
 
+   final roomList = widget.rooms[widget.apartmentId] ?? [];
+
+
     return Scaffold(
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 2,
-        title: Text('Suggestions – ${widget.roomId}',
-            style: const TextStyle(color: Colors.black)),
+        title: const Text('Daily Suggestions History', style: TextStyle(color: Colors.black)),
         centerTitle: true,
       ),
-      body: suggestions.isEmpty
+      
+      body: Column(
+  children: [
+    Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+          children: roomList.where((room) => room.toLowerCase() != 'exterior').map((room) {
+          final isSelected = room == _selectedRoomId;
+          return InputChip(
+  avatar: Icon(Icons.meeting_room, color: isSelected ? Colors.white : Colors.grey[700], size: 20),
+  label: Text(room),
+  selected: isSelected,
+  selectedColor: Colors.blueAccent,
+  onSelected: (_) {
+    setState(() {
+      _selectedRoomId = room;
+    });
+  },
+  labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
+  backgroundColor: Colors.white,
+  elevation: 2,
+  pressElevation: 5,
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+);
+
+        }).toList(),
+      ),
+    ),
+    const SizedBox(height: 8),
+    Expanded(
+      child: suggestions.isEmpty
           ? const Center(
-              child: Text('No suggestions available for the selected room.',
+              child: Text('No suggestions received today for the selected room.',
                   style: TextStyle(fontSize: 16)),
             )
           : ListView.builder(
@@ -73,7 +157,6 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
               itemCount: deduplicatedList.length,
               itemBuilder: (_, i) {
                 final s = deduplicatedList[i];
-
                 final key = _key(s);
                 return _SuggestionCard(
                   suggestion: s,
@@ -84,11 +167,18 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
                 );
               },
             ),
+    ),
+  ],
+),
+
     );
   }
 
-  String _key(TenantSuggestion s) =>
-      '${s.apartmentId}|${s.roomId}|${s.code}|${s.timestamp.millisecondsSinceEpoch}';
+  String _key(TenantSuggestion s) {
+  final date = '${s.timestamp.year}-${s.timestamp.month}-${s.timestamp.day}';
+  return '${s.apartmentId}|${s.roomId}|${s.code}|$date';
+}
+
 
   void _cleanupVotes(List<TenantSuggestion> current) {
     final keys = current.map(_key).toSet();
@@ -97,33 +187,64 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
   }
 
   void _showSnack(String txt, {Color? color}) =>
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(txt), backgroundColor: color));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(txt), backgroundColor: color));
 
-  void _handleUpVote(TenantSuggestion s) {
-    final k = _key(s);
-    setState(() => _upVotes[k] = (_upVotes[k] ?? 0) + 1);
-    _showSnack('Useful • ${_upVotes[k]} 👍', color: Colors.green);
-  }
+  void _handleUpVote(TenantSuggestion s) async {
+  final k = _key(s);
+  _upVotes[k] = (_upVotes[k] ?? 0) + 1;
+
+  // 🔐 Salva anche nei dati persistenti
+  await _prefs.setInt('vote_up_$k', _upVotes[k]!);
+
+  setState(() {}); // forzi aggiornamento visivo
+
+  _showSnack('Useful • ${_upVotes[k]} 👍', color: Colors.green);
+  await _sendVoteMQTT(s, 1);
+}
+
 
   Future<void> _handleDownVote(TenantSuggestion s) async {
-    final k = _key(s);
-    final curr = _downVotes[k] ?? 0;
+  final k = _key(s);
+  // Aggiorna i contatori in memoria
+  _localTotalVotes[k] = (_localTotalVotes[k] ?? 0) + 1;
+  _localDownVotes[k] = (_localDownVotes[k] ?? 0) + 1;
 
-    if (curr == 0) {
-      setState(() => _downVotes[k] = 1);
-      _showSnack('Not useful • 1 👎 (tap again to hide)', color: Colors.red);
-      return;
-    }
+  // Salva i contatori su disco
+  await _prefs.setInt('vote_total_$k', _localTotalVotes[k]!);
+  await _prefs.setInt('vote_down_$k', _localDownVotes[k]!);
 
-    setState(() => _downVotes[k] = 2);
+  // Aggiorna l'interfaccia
+  setState(() {
+    _downVotes[k] = (_downVotes[k] ?? 0) + 1;
+  });
+
+  _showSnack('Not useful • ${_downVotes[k]} 👎', color: Colors.red);
+  await _sendVoteMQTT(s, -1);
+
+  // Controlla se deve essere disattivata
+  final total = _localTotalVotes[k]!;
+  final downs = _localDownVotes[k]!;
+  final percent = downs / total;
+
+  if (total >= 5 && percent >= 0.7) {
     if (await _deactivateSuggestion(s)) {
       if (!mounted) return;
+
+      // Rimuovi suggestion e voti
       context.read<MqttSuggestionsManager>().removeTenantSuggestion(s);
       _downVotes.remove(k);
       _upVotes.remove(k);
+      _localTotalVotes.remove(k);
+      _localDownVotes.remove(k);
+
+      // Elimina anche da SharedPreferences
+      await _prefs.remove('vote_total_$k');
+      await _prefs.remove('vote_down_$k');
     }
   }
+}
+
+
 
   Future<bool> _deactivateSuggestion(TenantSuggestion s) async {
     final url = '${AppConfig.registryUrl}/deactivate_suggestion';
@@ -134,11 +255,8 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
     };
 
     try {
-      final r = await http.put(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
+      final r = await http.put(Uri.parse(url),
+          headers: {'Content-Type': 'application/json'}, body: jsonEncode(body));
 
       if (r.statusCode == 200) {
         _showSnack('Suggestion deactivated', color: Colors.red);
@@ -150,7 +268,23 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
     }
     return false;
   }
+
+  Future<void> _sendVoteMQTT(TenantSuggestion s, int score) async {
+    await SuggestionVoteMqttPublisher.instance.init(
+      broker: AppConfig.mqttBroker,
+      port: kIsWeb ? 443 : AppConfig.mqttPort,
+    );
+
+    await SuggestionVoteMqttPublisher.instance.publishVote(
+      apartmentId: widget.apartmentId,
+      suggestionId: s.code,
+      roomId: s.roomId,
+      username: widget.username,
+      score: score,
+    );
+  }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 class _SuggestionCard extends StatelessWidget {
@@ -236,3 +370,4 @@ class _VoteButton extends StatelessWidget {
     );
   }
 }
+

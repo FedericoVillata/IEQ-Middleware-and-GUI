@@ -136,6 +136,7 @@ class _TenantMainPageState extends State<TenantMainPage> {
         username: widget.username,
         apartmentId: selectedApartment,
         roomId: selectedRoom,
+        rooms: apartmentRooms,
       ),
       feedback.FeedbackPage(
         username: widget.username,

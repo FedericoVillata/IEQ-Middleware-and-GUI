@@ -148,9 +148,11 @@ class SuggestionsBell extends StatelessWidget {
             username: username,
             apartmentId: apartmentId,
             roomId: roomId ?? '',
+            rooms: TenantMainPage.of(context)?.apartmentRooms ?? {},
           ),
         ),
       );
     }
   }
 }
+
