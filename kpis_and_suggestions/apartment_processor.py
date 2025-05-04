@@ -139,7 +139,7 @@ def check_sensor_updates(room, apartment_timezone, threshold_minutes=24 * 60):
     return alerts
 
 def process_apartment(apartment, catalog, weather_info, publisher,
-                      base_topic, adaptor_base, base_settings=None):
+                      base_topic, adaptor_base, base_settings=None, first_iteration=False):
     apartment_id = apartment['apartmentId']
     apartment_timezone = apartment.get("timezone", catalog.get("timezone", "UTC"))
 
@@ -205,7 +205,8 @@ def process_apartment(apartment, catalog, weather_info, publisher,
             weather_info,
             external_temp_series,
             publisher,
-            base_topic
+            base_topic,
+            first_iteration=first_iteration
         )
 
         # If the room returned valid results
@@ -231,7 +232,7 @@ def process_apartment(apartment, catalog, weather_info, publisher,
     )
 
 def process_room(room, apartment_id, apartment_timezone, user_id, adaptor_base, catalog, settings,
-                 season, weather_info, external_temp_series, publisher, base_topic):
+                 season, weather_info, external_temp_series, publisher, base_topic, first_iteration=False):
     room_id = room["roomId"]
     log("Processing room", context=f"{apartment_id}/{room_id}")
     if not publisher._paho_mqtt.is_connected():
@@ -306,7 +307,11 @@ def process_room(room, apartment_id, apartment_timezone, user_id, adaptor_base, 
     )
 
     sensor_alerts = check_sensor_updates(room, apartment_timezone)
-    publish_alerts(publisher, base_topic, apartment_id, room_id, classifications,sensor_alerts=sensor_alerts)
+    if not first_iteration:
+        publish_alerts(publisher, base_topic, apartment_id, room_id, classifications, sensor_alerts=sensor_alerts)
+    else:
+        log("Skipping alert publication on first iteration", level="DEBUG", context=f"{apartment_id}/{room_id}")
+
     publish_tenant_suggestions(publisher, base_topic, apartment_id, room_id, suggestions)
 
     log("Finished processing room", context=f"{apartment_id}/{room_id}")

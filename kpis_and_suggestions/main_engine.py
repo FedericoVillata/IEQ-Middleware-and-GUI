@@ -35,8 +35,9 @@ class KPIEngine:
 
         self.publisher = MyPublisher("KPIModule", self.MQTT_BASE_TOPIC, self.MQTT_BROKER, self.MQTT_PORT, self.MQTT_QOS)
         self.catalog = get_catalog(self.REGISTRY_URL)
+        
 
-    def run(self):
+    def run(self, first_iteration=False):
         self.publisher.start()
 
         if "apartments" not in self.catalog or not isinstance(self.catalog["apartments"], list):
@@ -59,10 +60,12 @@ class KPIEngine:
                 self.publisher,
                 self.MQTT_BASE_TOPIC,
                 self.ADAPTOR_BASE, 
-                self.catalog.get("base_settings")
+                self.catalog.get("base_settings"),
+                first_iteration=first_iteration
             )
         self.publisher.stop()
         log("KPI cycle completed successfully")
+
 
 
 def wait_for_data(config_path='config.json'):
@@ -97,15 +100,19 @@ if __name__ == "__main__":
 
      # wait_for_data()  # Commented out for debug purposes
 
-    INTERVAL_SECONDS = 10 * 60
+    INTERVAL_SECONDS = 3 * 60
+    first_iteration = True
 
     while True:
         log("Starting new KPI cycle...")
+        log(f"First iteration: {first_iteration}")
         try:
             engine = KPIEngine()
-            engine.run()
+            engine.run(first_iteration=first_iteration)
         except Exception as e:
             log(f"Error during KPI cycle: {e}", level="ERROR")
 
+        first_iteration = False  # da ora in poi non sarà più la prima
         log(f"Waiting {INTERVAL_SECONDS / 60} minutes before next cycle...")
         time.sleep(INTERVAL_SECONDS)
+
