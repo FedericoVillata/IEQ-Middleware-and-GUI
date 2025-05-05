@@ -43,6 +43,8 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late String selectedRoom;
   bool  showDropdown = false;
   Timer? _refreshTimer;
+  String? apartmentType;
+
 
   String indoorTemp     = 'Loading...';
   String humidity       = 'Loading...';
@@ -53,6 +55,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   String environmentClass = '';
 
   int environmentScore = 10;
+  
 
 
   // meteo
@@ -152,6 +155,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
           setState(() {
             apartmentLat = coords['lat'];
             apartmentLong = coords['long'];
+            apartmentType = apt['type'];
           });
 
           // 🔁 Sempre aggiorna il meteo dopo aver aggiornato le coordinate
@@ -409,7 +413,11 @@ final alert = alertManager.latestAlert;
 Widget? alertBanner;
 if (alert != null &&
     alert.apartmentId == selectedApartment &&
-    alert.roomId == selectedRoom) {
+    (
+      apartmentType == 'House' || // 👈 mostra sempre se è House
+      alert.roomId == selectedRoom // 👈 oppure se matcha room
+    )) {
+
   alertBanner = Container(
     width: double.infinity,
     margin: const EdgeInsets.only(bottom: 16),
