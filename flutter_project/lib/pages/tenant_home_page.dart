@@ -367,6 +367,37 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   );
 }
 
+Widget _buildAlertBanner(AlertMessage alert, MqttAlertManager manager) {
+  return Container(
+    width: double.infinity,
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.red[700],
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.warning, color: Colors.white),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            'Room ${alert.roomId.toUpperCase()}: ${alert.message}',
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () {
+            manager.removeAlert(alert);
+          },
+        ),
+      ],
+    ),
+  );
+}
+
 
 
   Widget _buildOverallScoreCard(int p, Color c) {
@@ -408,46 +439,10 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final alertManager = Provider.of<MqttAlertManager>(context);
-final alert = alertManager.latestAlert;
-
-Widget? alertBanner;
-if (alert != null &&
-    alert.apartmentId == selectedApartment &&
-    (
-      apartmentType == 'House' || // 👈 mostra sempre se è House
-      alert.roomId == selectedRoom // 👈 oppure se matcha room
-    )) {
-
-  alertBanner = Container(
-    width: double.infinity,
-    margin: const EdgeInsets.only(bottom: 16),
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.red[700],
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
-    ),
-    child: Row(
-      children: [
-        const Icon(Icons.warning, color: Colors.white),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            'Room ${alert.roomId.toUpperCase()}: ${alert.message}',
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-          ),
-        ),
-
-        IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () {
-            alertManager.clearLatestAlert();
-          },
-        ),
-      ],
-    ),
-  );
-}
+final relevantAlerts = alertManager.allAlerts.where((a) =>
+  a.apartmentId == selectedApartment &&
+  (apartmentType == 'House' || a.roomId == selectedRoom)
+).toList();
 
 
     
@@ -471,8 +466,9 @@ if (alert != null &&
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          children: [
-            if (alertBanner != null) alertBanner,
+  children: [
+    ...relevantAlerts.map((a) => _buildAlertBanner(a, alertManager)).toList(),
+
             _buildHeader(),
 
             const SizedBox(height: 20),

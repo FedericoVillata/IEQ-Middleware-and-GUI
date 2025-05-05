@@ -108,4 +108,9 @@ class MqttAlertManager extends ChangeNotifier {
     latestAlert = null;
     notifyListeners();
   }
+  void removeAlert(AlertMessage alert) {
+  _alerts.remove(alert);
+  notifyListeners();
+}
+
 }
