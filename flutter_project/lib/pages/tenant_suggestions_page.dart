@@ -37,30 +37,7 @@ class _TenantSuggestionsPageState extends State<TenantSuggestionsPage> {
 void initState() {
   super.initState();
   _selectedRoomId = widget.roomId;
-
-  SharedPreferences.getInstance().then((prefs) {
-    _prefs = prefs;
-
-    final keys = _prefs.getKeys();
-    for (final k in keys.where((k) => k.startsWith('vote_total_'))) {
-      final baseKey = k.replaceFirst('vote_total_', '');
-      _localTotalVotes[baseKey] = _prefs.getInt(k) ?? 0;
-    }
-    for (final k in keys.where((k) => k.startsWith('vote_down_'))) {
-      final baseKey = k.replaceFirst('vote_down_', '');
-      final count = _prefs.getInt(k) ?? 0;
-      _localDownVotes[baseKey] = count;
-      _downVotes[baseKey] = count; // 👈 AGGIUNTO: sincronizza visivamente
-    }
-    for (final k in keys.where((k) => k.startsWith('vote_up_'))) {
-  final baseKey = k.replaceFirst('vote_up_', '');
-  final count = _prefs.getInt(k) ?? 0;
-  _upVotes[baseKey] = count;
-}
-
-
-    setState(() {}); // forza il rebuild una volta caricati i dati
-  });
+  _loadVotesForRoom(_selectedRoomId);
 }
 
 
@@ -70,6 +47,15 @@ void initState() {
   late SharedPreferences _prefs;
 final Map<String, int> _localTotalVotes = {};
 final Map<String, int> _localDownVotes = {};
+
+   @override
+  void didUpdateWidget(covariant TenantSuggestionsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.roomId != widget.roomId) {
+      setState(() => _selectedRoomId = widget.roomId);
+      _loadVotesForRoom(widget.roomId);
+    }
+  }
 
 
 
@@ -97,10 +83,6 @@ if (isSameRoom && isValid && isSameDay) {
 
     final deduplicatedList = suggestions.values.toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MqttSuggestionsManager>().markTenantRead(widget.apartmentId, widget.roomId);
-    });
 
     _cleanupVotes(deduplicatedList);
 
@@ -133,6 +115,7 @@ if (isSameRoom && isValid && isSameDay) {
   onSelected: (_) {
     setState(() {
       _selectedRoomId = room;
+      _loadVotesForRoom(room);
     });
   },
   labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
@@ -201,6 +184,42 @@ if (isSameRoom && isValid && isSameDay) {
   _showSnack('Useful • ${_upVotes[k]} 👍', color: Colors.green);
   await _sendVoteMQTT(s, 1);
 }
+ Future<void> _loadVotesForRoom(String roomId) async {
+  final prefs = await SharedPreferences.getInstance();
+  _prefs = prefs;
+
+  _downVotes.clear();
+  _upVotes.clear();
+  _localTotalVotes.clear();
+  _localDownVotes.clear();
+
+  final keys = prefs.getKeys();
+  for (final k in keys.where((k) => k.startsWith('vote_total_'))) {
+    final baseKey = k.replaceFirst('vote_total_', '');
+    if (baseKey.contains('|$roomId|')) {
+      _localTotalVotes[baseKey] = prefs.getInt(k) ?? 0;
+    }
+  }
+
+  for (final k in keys.where((k) => k.startsWith('vote_down_'))) {
+    final baseKey = k.replaceFirst('vote_down_', '');
+    if (baseKey.contains('|$roomId|')) {
+      final count = prefs.getInt(k) ?? 0;
+      _localDownVotes[baseKey] = count;
+      _downVotes[baseKey] = count;
+    }
+  }
+
+  for (final k in keys.where((k) => k.startsWith('vote_up_'))) {
+    final baseKey = k.replaceFirst('vote_up_', '');
+    if (baseKey.contains('|$roomId|')) {
+      _upVotes[baseKey] = prefs.getInt(k) ?? 0;
+    }
+  }
+
+  setState(() {});
+}
+
 
 
   Future<void> _handleDownVote(TenantSuggestion s) async {

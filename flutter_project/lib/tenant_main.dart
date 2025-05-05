@@ -8,6 +8,9 @@ import 'pages/tenant_home_page.dart';
 import 'pages/tenant_feedback_page.dart' as feedback;
 import 'pages/tenant_suggestions_page.dart' as suggestions;
 import 'app_config.dart';
+import 'package:provider/provider.dart';
+import 'mqtt_suggestions_manager.dart';          //  ← aggiungi questo
+
 
 class MyAppTenant extends StatelessWidget {
   final String username;
@@ -21,14 +24,27 @@ class MyAppTenant extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'IEQ Tenant Interface',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: TenantMainPage(username: username, apartments: apartments),
+return ChangeNotifierProvider<MqttSuggestionsManager>(
+      create: (_) {
+        final mgr = MqttSuggestionsManager();
+        mgr.initMqtt(
+          brokerHost: AppConfig.mqttBroker,
+          brokerPort: AppConfig.mqttPort,
+          topicBase: 'IEQmidAndGUI',
+          apartmentsToListen: apartments,
+        );
+        return mgr;
+      },
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'IEQ Tenant Interface',
+        theme: ThemeData(primarySwatch: Colors.blue),
+        home: TenantMainPage(username: username, apartments: apartments),
+      ),
     );
   }
 }
+
 
 // ─────────────────────────────────────────────────────────────
 //                   MAIN PAGE – TENANT
@@ -44,7 +60,8 @@ class TenantMainPage extends StatefulWidget {
   });
 
   static _TenantMainPageState? of(BuildContext ctx) =>
-      ctx.findAncestorStateOfType<_TenantMainPageState>();
+    ctx.findAncestorStateOfType<_TenantMainPageState>();
+
 
   @override
   State<TenantMainPage> createState() => _TenantMainPageState();
@@ -78,7 +95,7 @@ class _TenantMainPageState extends State<TenantMainPage> {
   Future<void> fetchApartmentData() async {
     try {
       final resp =
-          await http.get(Uri.parse(AppConfig.registryUrl + "/apartments"));
+          await http.get(Uri.parse('${AppConfig.registryUrl}/apartments'));
       if (resp.statusCode != 200) return;
 
       final data = jsonDecode(resp.body) as List<dynamic>;
@@ -155,31 +172,48 @@ class _TenantMainPageState extends State<TenantMainPage> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tenant Interface'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Log-out',
-            onPressed: () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const LoginPage()),
-            ),
-          ),
-        ],
+    // tenant_main.dart  →  _TenantMainPageState.build
+return Scaffold(
+  appBar: AppBar(
+    title: const Text('Tenant Interface'),
+    actions: [
+      IconButton(
+        icon: const Icon(Icons.logout),
+        tooltip: 'Log‑out',
+        onPressed: () => Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        ),
       ),
-      body: pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.lightbulb), label: 'Suggestions'),
-          BottomNavigationBarItem(icon: Icon(Icons.feedback), label: 'Feedback'),
-        ],
-      ),
-    );
+    ],
+  ),
+
+  // 🔄 Mantieni vive tutte le pagine
+  body: IndexedStack(
+    index: _currentIndex,
+    children: pages,   // <— le stesse istanze create in _updatePages()
+  ),
+
+  bottomNavigationBar: BottomNavigationBar(
+    type: BottomNavigationBarType.fixed,
+    currentIndex: _currentIndex,
+   onTap: (i) {
+  setState(() => _currentIndex = i);
+
+  if (i == 1) { // Suggestions
+    context.read<MqttSuggestionsManager>()
+           .markTenantRead(selectedApartment, selectedRoom);
+  }
+},
+
+
+    items: const [
+      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+      BottomNavigationBarItem(icon: Icon(Icons.lightbulb), label: 'Suggestions'),
+      BottomNavigationBarItem(icon: Icon(Icons.feedback), label: 'Feedback'),
+    ],
+  ),
+);
+
   }
 }
