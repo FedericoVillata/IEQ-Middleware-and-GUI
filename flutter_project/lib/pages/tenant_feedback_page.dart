@@ -44,9 +44,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirm Feedback'),
-        content: Text(rating == 0
-            ? 'Do you want to reset your feedback for "$category"?'
-            : 'Do you confirm a "$rating" rating for "$category"?'),
+        content: Text('Do you confirm a "$rating" rating for "$category"?'),
+
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirm')),
@@ -142,8 +141,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
                     color: color.withOpacity(selected ? 1.0 : 0.3),
                   ),
                   onPressed: () {
-                    final newRating = (rating == index) ? 0 : index;
-                    _submitFeedback(title, newRating, onConfirmed: onConfirmedRating);
+                    _submitFeedback(title, index, onConfirmed: onConfirmedRating);
+
                   },
                 );
               }),
