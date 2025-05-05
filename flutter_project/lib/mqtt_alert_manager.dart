@@ -79,15 +79,25 @@ class MqttAlertManager extends ChangeNotifier {
           final ts   = DateTime.now(); // or use `e['t']` if desired
 
           final alert = AlertMessage(
-            apartmentId: aptId,
-            roomId: roomId,
-            message: msg,
-            timestamp: ts,
-          );
+  apartmentId: aptId,
+  roomId: roomId,
+  message: msg,
+  timestamp: ts,
+);
 
-          latestAlert = alert;
-          _alerts.add(alert);
-          notifyListeners();
+// ✅ evita duplicati identici (apt + room + message)
+final isDuplicate = _alerts.any((a) =>
+  a.apartmentId == alert.apartmentId &&
+  a.roomId == alert.roomId &&
+  a.message == alert.message,
+);
+
+if (!isDuplicate) {
+  latestAlert = alert;
+  _alerts.add(alert);
+  notifyListeners();
+}
+
         }
       } catch (e) {
         debugPrint('[MQTT ALERT] parse error: $e');
