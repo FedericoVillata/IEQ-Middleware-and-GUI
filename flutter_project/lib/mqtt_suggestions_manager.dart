@@ -92,35 +92,95 @@ class MqttSuggestionsManager extends ChangeNotifier {
   String _cKey(TechnicalSuggestion s)=> '${s.apartmentId}|${s.code}';
 
   /// Count unread technical suggestions for a given apartment.
-  int unreadTechnicalCount(String apartment) =>
-      _technical.where((s) =>
-        s.apartmentId == apartment && !_techRead.contains(_cKey(s))
-      ).length;
+  int unreadTechnicalCount(String apartment) {
+  final now = DateTime.now();
+  final seenKeys = <String>{};
+  int count = 0;
+
+  for (final s in _technical) {
+    final isToday = s.timestamp.year == now.year &&
+                    s.timestamp.month == now.month &&
+                    s.timestamp.day == now.day;
+    final isTarget = s.apartmentId == apartment;
+    final isUnread = !_techRead.contains(_cKey(s));
+
+    if (isToday && isTarget && isUnread) {
+      final key = '${s.code}|${s.message}';
+      if (seenKeys.add(key)) count++;
+    }
+  }
+
+  return count;
+}
+
 
   /// Count unread tenant suggestions for a given apartment and room.
-  int unreadTenantCount(String apartment, String room) =>
-      _tenant.where((s) =>
-        s.apartmentId == apartment &&
-        s.roomId      == room &&
-        !_tenRead.contains(_tKey(s))
-      ).length;
+  int unreadTenantCount(String apartment, String room) {
+  final now = DateTime.now();
+  final seenKeys = <String>{};
+  int count = 0;
+
+  for (final s in _tenant) {
+    final isToday = s.timestamp.year == now.year &&
+                    s.timestamp.month == now.month &&
+                    s.timestamp.day == now.day;
+
+    final isTarget = s.apartmentId == apartment && s.roomId == room;
+    final isUnread = !_tenRead.contains(_tKey(s));
+
+    if (isToday && isTarget && isUnread) {
+      final key = '${s.code}|${s.message}';
+      if (seenKeys.add(key)) count++;
+    }
+  }
+
+  return count;
+}
+
 
   /// Mark all technical suggestions in an apartment as read.
   void markTechnicalRead(String apartment) {
-    for (final s in _technical.where((t) => t.apartmentId == apartment)) {
-      _techRead.add(_cKey(s));
+  final now = DateTime.now();
+  final seenKeys = <String>{};
+
+  for (final s in _technical) {
+    final isToday = s.timestamp.year == now.year &&
+                    s.timestamp.month == now.month &&
+                    s.timestamp.day == now.day;
+    if (s.apartmentId == apartment && isToday) {
+      final key = '${s.code}|${s.message}';
+      if (seenKeys.add(key)) {
+        _techRead.add(_cKey(s));
+      }
     }
-    notifyListeners();
   }
+
+  notifyListeners();
+}
+
 
   /// Mark all tenant suggestions for apartment+room as read.
   void markTenantRead(String apartment, String room) {
-    for (final s in _tenant.where((t) =>
-        t.apartmentId == apartment && t.roomId == room)) {
-      _tenRead.add(_tKey(s));
+  final now = DateTime.now();
+  final seenKeys = <String>{};
+
+  for (final s in _tenant) {
+    final isToday = s.timestamp.year == now.year &&
+                    s.timestamp.month == now.month &&
+                    s.timestamp.day == now.day;
+
+    final isTarget = s.apartmentId == apartment && s.roomId == room;
+    if (isToday && isTarget) {
+      final key = '${s.code}|${s.message}';
+      if (seenKeys.add(key)) {
+        _tenRead.add(_tKey(s));
+      }
     }
-    notifyListeners();
   }
+
+  notifyListeners();
+}
+
 
   // ──────────────────────────────────────────────────────────────────────────
   //  Add / remove suggestions
