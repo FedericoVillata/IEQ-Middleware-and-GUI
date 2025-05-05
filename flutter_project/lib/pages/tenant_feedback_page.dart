@@ -161,6 +161,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 2,
+        centerTitle: true, 
         title: const Text('Give Your Daily Feedback', style: TextStyle(color: Colors.black)),
         actions: [
           SuggestionsBell(
