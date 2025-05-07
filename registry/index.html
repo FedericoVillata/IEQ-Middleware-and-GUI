@@ -71,17 +71,32 @@
             white-space: pre-wrap;
             overflow-x: auto;
         }
+        /* Header Styles */
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        .logo {
+            max-width: 30%;
+            height: auto;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+       <!-- Header Section -->
+    <div class="header">
+        <img src="logo.png" alt="IEQ Middleware Logo" class="logo">
+    </div>
 
+    <div class="container">
         <!-- Add User -->
         <div class="column">
             <h2>Add user</h2>
             <div class="row">
                 <input type="text" id="input1_col1" placeholder="UserId">
                 <input type="text" id="input2_col1" placeholder="Password">
+            </div>
+            <div class="row">
                 <select id="permission_col1">
                     <option value="Base">Base</option>
                     <option value="Technical">Technical</option>
@@ -90,24 +105,25 @@
             </div>
         </div>
 
-
         <!-- Add Apartment -->
         <div class="column">
             <h2>Add apartment</h2>
             <div class="row">
                 <input type="text" id="input1_col2" placeholder="UserId">
                 <input type="text" id="input2_col2" placeholder="Apartment Name">
+            </div>
+            <div class="row">
                 <input type="text" id="input3_col2" placeholder="Longitude">
                 <input type="text" id="input4_col2" placeholder="Latitude">
-                <select id="apartmentType">
+            </div>
+            <div class="row">
+                <select id="apartmentType" style="width: 100%;">
                     <option value="House">House</option>
                     <option value="School">School</option>
                     <option value="Other">Other</option>
                 </select>
             </div>
-            <div id="roomsContainer">
-                <!-- Rooms will be added here -->
-            </div>
+            <div id="roomsContainer"></div>
             <div class="button-container">
                 <button onclick="addRoomInput()">Add Room</button>
             </div>
@@ -133,8 +149,12 @@
             <div class="row">
                 <input type="text" id="updateApartmentId" placeholder="ApartmentId">
                 <input type="text" id="updateGatewayMAC" placeholder="Gateway MAC">
+            </div>
+            <div class="row">
                 <input type="text" id="updateAccessToken" placeholder="Access Token">
                 <input type="text" id="updateRefreshToken" placeholder="Refresh Token">
+            </div>
+            <div class="row">
                 <button onclick="postUpdateTokens()">Submit</button>
             </div>
         </div>
@@ -145,6 +165,8 @@
             <div class="row">
                 <input type="text" id="input1_col5" placeholder="UserId">
                 <input type="text" id="input2_col5" placeholder="ApartmentId">
+            </div>
+            <div class="row">
                 <button onclick="postAddUserToApartment(5)">Submit</button>
             </div>
         </div>
@@ -169,8 +191,11 @@
     </div>
 
     <div id="jsonDisplay"></div>
+    <button onclick="fetchData()" style="display: block; margin: 20px auto; padding: 10px 20px;">Get Users</button>
 
     <script>
+        const BASE_URL = "https://registry.ieqmiddleware.com";
+    
         // Function to add new room with dynamic sensor inputs
         function addRoomInput() {
             const container = document.getElementById("roomsContainer");
@@ -185,32 +210,26 @@
             `;
             container.appendChild(div);
         }
-
+    
         function addSensorInput(button) {
             const sensorContainer = button.parentElement.nextElementSibling;
-
             const sensorDiv = document.createElement("div");
             sensorDiv.classList.add("row");
             sensorDiv.style.marginTop = "10px";
-
             sensorDiv.innerHTML = `
-            <input type="text" class="sensorName" placeholder="Sensor Name">
-            <div style="display: flex; flex-direction: column; max-height: 100px; overflow-y: auto; border: 1px solid #ccc; padding: 5px; border-radius: 4px;">
-                <label><input type="checkbox" class="measurement" value="Temperature"> Temperature</label>
-                <label><input type="checkbox" class="measurement" value="Humidity"> Humidity</label>
-                <label><input type="checkbox" class="measurement" value="Pressure"> Pressure</label>
-                <label><input type="checkbox" class="measurement" value="VOC"> VOC</label>
-                <label><input type="checkbox" class="measurement" value="PM10.0"> PM10.0</label>
-                <label><input type="checkbox" class="measurement" value="PM2.5"> PM2.5</label>
-            </div>
-        `;
-
-
-    sensorContainer.appendChild(sensorDiv);
+                <input type="text" class="sensorName" placeholder="Sensor Name">
+                <div style="display: flex; flex-direction: column; max-height: 100px; overflow-y: auto; border: 1px solid #ccc; padding: 5px; border-radius: 4px;">
+                    <label><input type="checkbox" class="measurement" value="Temperature"> Temperature</label>
+                    <label><input type="checkbox" class="measurement" value="Humidity"> Humidity</label>
+                    <label><input type="checkbox" class="measurement" value="Pressure"> Pressure</label>
+                    <label><input type="checkbox" class="measurement" value="VOC"> VOC</label>
+                    <label><input type="checkbox" class="measurement" value="PM10.0"> PM10.0</label>
+                    <label><input type="checkbox" class="measurement" value="PM2.5"> PM2.5</label>
+                </div>
+            `;
+            sensorContainer.appendChild(sensorDiv);
         }
-
-        
-        // Function to add gateway input
+    
         function addGatewayInput() {
             const container = document.getElementById("gatewaysContainer");
             const div = document.createElement("div");
@@ -224,15 +243,14 @@
             `;
             container.appendChild(div);
         }
-
-        // Submit Add Apartment Form
+    
         function postAddApartment(columnNumber) {
             const userId = document.getElementById(`input1_col${columnNumber}`).value;
             const apartmentName = document.getElementById(`input2_col${columnNumber}`).value;
             const longitude = document.getElementById(`input3_col${columnNumber}`).value;
             const latitude = document.getElementById(`input4_col${columnNumber}`).value;
             const apartmentType = document.getElementById("apartmentType").value;
-
+    
             const rooms = [];
             document.querySelectorAll(".room").forEach(roomDiv => {
                 const roomId = roomDiv.querySelector(".roomId").value;
@@ -248,7 +266,7 @@
                     rooms.push({ roomId, sensors });
                 }
             });
-
+    
             const gateways = [];
             document.querySelectorAll(".gateway").forEach(gatewayDiv => {
                 const gatewayType = gatewayDiv.querySelector(".gatewayType").value;
@@ -261,7 +279,7 @@
                     }
                 }
             });
-
+    
             const payload = {
                 MAC: gateways,
                 apartmentName: apartmentName,
@@ -273,12 +291,10 @@
                 userId: userId,
                 rooms: rooms
             };
-
-            fetch('http://localhost:8081/add_apt', {
+    
+            fetch(`${BASE_URL}/add_apt`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
             .then(response => response.ok ? response.json() : Promise.reject('Failed to submit data.'))
@@ -287,12 +303,11 @@
             })
             .catch(error => alert(error));
         }
-
-        // Remaining unchanged functions...
+    
         function postAddUserToApartment(columnNumber) {
             const userId = document.getElementById(`input1_col${columnNumber}`).value;
             const apartmentId = document.getElementById(`input2_col${columnNumber}`).value;
-            fetch('http://localhost:8081/add_user_to_apartment', {
+            fetch(`${BASE_URL}/add_user_to_apartment`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ userId, apartmentId })
@@ -300,12 +315,12 @@
              .then(data => alert(data.status === 'OK' ? 'Success' : 'Fail'))
              .catch(() => alert('Error'));
         }
-
+    
         function postAddUser(columnNumber) {
             const userId = document.getElementById(`input1_col${columnNumber}`).value;
             const password = document.getElementById(`input2_col${columnNumber}`).value;
             const permission = document.getElementById(`permission_col${columnNumber}`).value;
-            fetch('http://localhost:8081/add_user', {
+            fetch(`${BASE_URL}/add_user`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ userId, password, permission })
@@ -313,13 +328,13 @@
              .then(data => alert(data.status === 'OK' ? 'Success' : 'Fail'))
              .catch(() => alert('Error'));
         }
-
+    
         function postUpdateTokens() {
             const apartmentId = document.getElementById("updateApartmentId").value;
             const gatewayMAC = document.getElementById("updateGatewayMAC").value;
             const accessToken = document.getElementById("updateAccessToken").value;
             const refreshToken = document.getElementById("updateRefreshToken").value;
-            fetch('http://localhost:8081/update_tokens', {
+            fetch(`${BASE_URL}/update_tokens`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ apartmentId, gatewayMAC, accessToken, refreshToken })
@@ -327,29 +342,29 @@
              .then(data => alert(data.status === 'OK' ? 'Success' : 'Fail'))
              .catch(() => alert('Error'));
         }
-
+    
         function postRemoveUser(columnNumber) {
             const input1 = document.getElementById(`input1_col${columnNumber}`).value;
-            fetch('http://localhost:8081/del_user/'+ input1, {
+            fetch(`${BASE_URL}/del_user/${input1}`, {
                 method: 'DELETE',
                 headers: {'Content-Type': 'application/json'}
             }).then(response => response.ok ? response.json() : Promise.reject())
              .then(data => alert(data.status === 'OK' ? 'Success' : 'Fail'))
              .catch(() => alert('Error'));
         }
-
+    
         function postRemoveApartment(columnNumber) {
             const aptId = document.getElementById(`input1_col${columnNumber}`).value;
-            fetch('http://localhost:8081/del_apt/'+ aptId, {
+            fetch(`${BASE_URL}/del_apt/${aptId}`, {
                 method: 'DELETE',
                 headers: {'Content-Type': 'application/json'}
             }).then(response => response.ok ? response.json() : Promise.reject())
              .then(data => alert(data.status === 'OK' ? 'Success' : 'Fail'))
              .catch(() => alert('Error'));
         }
-
+    
         function fetchData() {
-            fetch('http://localhost:8081/users')
+            fetch(`${BASE_URL}/users`)
               .then(response => response.json())
               .then(data => {
                   document.getElementById('jsonDisplay').textContent = JSON.stringify(data, null, 2);
@@ -357,7 +372,6 @@
               .catch(() => alert('Fetch failed'));
         }
     </script>
-
-    <button onclick="fetchData()" style="display: block; margin: 20px auto; padding: 10px 20px;">Get Users</button>
 </body>
 </html>
+

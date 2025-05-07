@@ -493,7 +493,13 @@ class Webserver(object):
                 return json.dumps(self.cat.catalog["services"])
             #GET Users from catalog    
             if uri[0] == 'users':
-                return json.dumps(self.cat.catalog["users"])
+                out = [] #users without password
+                for user in self.cat.catalog["users"]:
+                    out.append({
+                        "userId": user["userId"], 
+                        "permissions": user["permissions"],
+                        "apartments": user["apartments"]})
+                return json.dumps(out)
             #GET Apartments from catalog    
             if uri[0] == 'apartments':
                 if len(uri) > 1:
