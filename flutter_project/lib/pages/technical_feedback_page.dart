@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:fl_chart/fl_chart.dart';
 import '../app_config.dart';
 import '../widgets/suggestions_bell.dart';
+import 'package:flutter/foundation.dart' show compute;
 
 // ---------------------------------------------------------------------------
 // TechnicalFeedbackPage – fast & stable
@@ -11,6 +12,13 @@ import '../widgets/suggestions_bell.dart';
 //   • Lightweight in‑place parsing (no isolate overhead)
 //   • Keeps same UI: full‑width, 500‑px tall chart, dynamic X‑axis labels
 // ---------------------------------------------------------------------------
+
+// Parses {"1":12,"2":7,...} → [12,7,0,0,0]
+List<int> _decodeHistogram(String body) {
+  final Map<String, dynamic> map = jsonDecode(body);
+  return List<int>.generate(5, (i) => (map['${i + 1}'] ?? 0) as int);
+}
+
 class TechnicalFeedbackPage extends StatefulWidget {
   final String username;      // Technical user's ID
   final String? location;     // Selected apartment
@@ -30,6 +38,7 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
   //  Config & State --------------------------------------------------------
   // -----------------------------------------------------------------------
   static String get _adaptorUrl => AppConfig.adaptorUrl;
+  static String get _plotServiceUrl => AppConfig.plotServiceUrl;
 
   final List<String> _feedbackTypes = [
     "Temperature Perception",
@@ -133,10 +142,13 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
     final String apartmentId = widget.location ?? "apartment0";
     final String fieldNeeded = _mapFeedbackToField(_selectedFeedback);
 
-    // Smaller payload: filter by measurement directly
     final Uri url = Uri.parse(
-      "$_adaptorUrl/getAllApartmentData/${widget.username}/$apartmentId?measurement=$fieldNeeded&duration=$_selectedDuration",
-    );
+    "$_plotServiceUrl/feedbackHistogram"
+    "?userId=${widget.username}"
+    "&apartmentId=$apartmentId"
+    "&field=$fieldNeeded"
+    "&duration=$_selectedDuration",
+  );
 
     try {
       final http.Response resp = await http.get(url);
@@ -148,27 +160,8 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
         return;
       }
 
-      final dynamic decoded = jsonDecode(resp.body);
-      if (decoded is! List) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = "Unexpected JSON format from adaptor.";
-        });
-        return;
-      }
-
-      final List<int> counts = List.filled(5, 0);
-      for (final item in decoded) {
-        if (item is Map<String, dynamic>) {
-          if (item['room'] == 'Feedback' && item['measurement'] == fieldNeeded) {
-            final val = item['v'];
-            if (val is num) {
-              final int rating = val.toInt();
-              if (rating >= 1 && rating <= 5) counts[rating - 1] += 1;
-            }
-          }
-        }
-      }
+      // Parse in a background isolate so the UI thread never blocks
+      final List<int> counts = await compute(_decodeHistogram, resp.body);
 
       if (!mounted) return;
       setState(() {

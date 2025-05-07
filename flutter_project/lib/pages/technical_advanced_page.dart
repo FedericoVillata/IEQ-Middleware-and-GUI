@@ -353,7 +353,7 @@ class _TechnicalAdvancePageState extends State<TechnicalAdvancePage> {
         final res = snapshot.data!;
         if (res.statusCode != 200) return const Text("Error loading chart image.");
 
-        final noData = res.headers['x-no-data'] == '1';
+        final noData = _isNoData(res);
         if (noData) {
           return Text(_noDataMessageForMetric(selectedMetric),
               style: const TextStyle(fontStyle: FontStyle.italic));
@@ -383,7 +383,7 @@ class _TechnicalAdvancePageState extends State<TechnicalAdvancePage> {
         final res = snapshot.data!;
         if (res.statusCode != 200) return const Text("Error loading chart image.");
 
-        final noData = res.headers['x-no-data'] == '1';
+        final noData = _isNoData(res);
         if (noData) {
           return Text(_noDataMessageForMetric(selectedMetric),
               style: const TextStyle(fontStyle: FontStyle.italic));
@@ -411,9 +411,15 @@ class _TechnicalAdvancePageState extends State<TechnicalAdvancePage> {
     );
   }
 
+  bool _isNoData(http.Response res) {
+        final h = res.headers;
+        // case‑insensitive lookup
+        return (h['X-No-Data'] == '1') || (h['x-no-data'] == '1');
+  }
+
   // Custom “no-data” text per metric
   String _noDataMessageForMetric(String metric) =>
-      "No $metric data for the selected time of range";
+    'No data for $metric in the selected time period';
 
   // ──────────────────────────────────────────────────────────────────────────
   //  Download / Export helpers

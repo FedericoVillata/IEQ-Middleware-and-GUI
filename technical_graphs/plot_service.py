@@ -13,6 +13,10 @@ import csv
 from collections import defaultdict
 from matplotlib.colors import Normalize
 import os
+from zoneinfo import ZoneInfo
+###############
+from collections import Counter
+###############
 
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'plot_config.json')
@@ -66,6 +70,57 @@ class PlotService:
         aggregated.sort(key=lambda x: x[0])
         return aggregated
 
+    ########################################################################################################
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def feedbackHistogram(self, **q):
+        """
+        Returns a 5‑bucket histogram of feedback ratings (1–5) for the
+        requested user / apartment.
+
+        Query parameters
+        ----------------
+        userId        : str  (required)
+        apartmentId   : str  (required)
+        field         : str  (optional, default “Temperature”)
+        duration      : int  (optional, hours back from now, default 168 h ≈ 1 week)
+
+        Response
+        --------
+        JSON object like {"1": 12, "2": 33, "3": 57, "4": 18, "5": 4}
+        """
+        user_id      = q.get("userId")
+        apartment_id = q.get("apartmentId")
+        field        = q.get("field", "Temperature")
+        duration     = int(q.get("duration", 168))
+
+        if not user_id or not apartment_id:
+            raise cherrypy.HTTPError(400, "Missing userId or apartmentId")
+
+        # Forward the request to the Adaptor, but ask only for the specific
+        # measurement and time‑window we need.
+        url    = f"{self.ADAPTOR_BASE}/getApartmentData/{user_id}/{apartment_id}"
+        params = {"measurement": field, "duration": duration}
+        resp   = requests.get(url, params=params, timeout=self.DEFAULT_TIMEOUT)
+        resp.raise_for_status()
+
+        # Build the histogram: count values 1‑5 for records tagged as “Feedback”
+        counter = Counter()
+        for m in resp.json():
+            if m.get("room") == "Feedback":
+                try:
+                    v = int(round(float(m["v"])))
+                    if 1 <= v <= 5:
+                        counter[v] += 1
+                except (ValueError, TypeError):
+                    pass
+
+        # Ensure all five buckets are present
+        return {str(i): counter.get(i, 0) for i in range(1, 6)}
+
+    ########################################################################################################
+
     @cherrypy.expose
     def generateCarpetPlot(self, **kwargs):
         """
@@ -90,7 +145,18 @@ class PlotService:
         if duration:
             try:
                 duration_hours = int(duration)
-                now = datetime.utcnow() + timedelta(hours=2)  # Roma (UTC+2 in estate)
+                tz_name = "Europe/Rome"            
+                try:
+                    apt_resp = requests.get(
+                        f"{self.REGISTRY_BASE}/apartments/{apartmentId}",
+                        timeout=self.DEFAULT_TIMEOUT
+                    )
+                    if apt_resp.status_code == 200:
+                        tz_name = apt_resp.json().get("timezone", tz_name)
+                except Exception:
+                    pass                                
+
+                now = datetime.now(ZoneInfo(tz_name))
 
                 start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
                 elapsed_minutes = int((now - start_of_day).total_seconds() / 60)
@@ -139,24 +205,64 @@ class PlotService:
 
         interpolated_pairs.append(time_value_pairs[-1])
 
+        # ---------------------------------------------------------------
         # 3) Build a matrix (48 half-hour slots vs. each day)
+        # ---------------------------------------------------------------
         def halfhour_index(dtobj):
             return dtobj.hour * 2 + (1 if dtobj.minute >= 30 else 0)
 
-        day_dict = defaultdict(lambda: [np.nan]*48)
+        day_dict = defaultdict(lambda: [np.nan] * 48)
         for dt, val in interpolated_pairs:
             date_str = dt.strftime("%Y-%m-%d")
             idx = halfhour_index(dt)
             day_dict[date_str][idx] = val
 
-        all_days = sorted(day_dict.keys())
-        if not all_days:
-            return self._no_data_image(download)
+        # ----------------------------------------------------------------
+        #  FILL MIDNIGHT (slot 0)
+        #     • riempi SOLO se esiste prev_sample entro 4 h
+        #     • se anche next_sample è entro 4 h ⇒ media
+        #     • altrimenti ⇒ valore di prev_sample
+        # ----------------------------------------------------------------
+        all_days = sorted(day_dict.keys())          # usato anche più avanti
+        for day_str in all_days:
+            if not np.isnan(day_dict[day_str][0]):
+                continue                            # slot già valorizzato
 
+            midnight = datetime.strptime(day_str, "%Y-%m-%d")
+
+            # ultimo campione prima di mezzanotte (se esiste)
+            prev_sample = next(
+                ((dt, v) for dt, v in reversed(interpolated_pairs) if dt < midnight),
+                None
+            )
+            if not prev_sample:
+                continue                            # niente valore prima → lasciamo NaN
+
+            gap_prev = midnight - prev_sample[0]
+            if gap_prev > timedelta(hours=4):
+                continue                            # troppo lontano → lasciamo NaN
+
+            # primo campione dopo/uguale mezzanotte (se esiste)
+            next_sample = next(
+                ((dt, v) for dt, v in interpolated_pairs if dt >= midnight),
+                None
+            )
+
+            if next_sample and (next_sample[0] - prev_sample[0]) <= timedelta(hours=4):
+                fill_val = (prev_sample[1] + next_sample[1]) / 2
+            else:
+                fill_val = prev_sample[1]
+
+            day_dict[day_str][0] = fill_val
+        # ----------------------------------------------------------------
+
+
+        # build the matrix
         n_days = len(all_days)
         matrix = np.zeros((48, n_days), dtype=float)
         for col, dStr in enumerate(all_days):
             matrix[:, col] = day_dict[dStr]
+
 
         # 4) Determine color scale
         #    We simply do a linear normalization from a fixed range.

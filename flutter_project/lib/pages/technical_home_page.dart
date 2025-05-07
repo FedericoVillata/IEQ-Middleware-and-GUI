@@ -271,6 +271,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
           ),
         );
 
+  
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -290,7 +291,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
       ),
     );
   }
-
+  
   // Combines image + (optional) legend, or a "no data" message
   Widget _buildChartArea() {
     if (isLoadingRooms) {
@@ -304,6 +305,8 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
         ? _buildCarpetChartWithLegend()
         : _buildChartOnly();
   }
+
+  
 
   // ──────────────────────────────────────────────────────────────────────────
   //  Chart builders
@@ -325,7 +328,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     url += "&ts=${DateTime.now().millisecondsSinceEpoch}";
     return url;
   }
-
+  
   /// Line chart or carpet without legend
   Widget _buildChartOnly() {
     return FutureBuilder<http.Response>(
@@ -349,7 +352,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
         if (res.statusCode != 200) {
           return const Text("Error loading chart image.");
         }
-        final noData = res.headers['x-no-data'] == '1';
+        final noData = _isNoData(res);
         if (noData) {
           return Text(_noDataMessageForMetric(selectedMetric),
               style: const TextStyle(fontStyle: FontStyle.italic));
@@ -387,7 +390,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
         if (res.statusCode != 200) {
           return const Text("Error loading chart image.");
         }
-        final noData = res.headers['x-no-data'] == '1';
+        final noData = _isNoData(res);
         if (noData) {
           return Text(_noDataMessageForMetric(selectedMetric),
               style: const TextStyle(fontStyle: FontStyle.italic));
@@ -415,23 +418,16 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     );
   }
 
-  // "No data" placeholder texts per metric
-  String _noDataMessageForMetric(String metric) {
-    switch (metric) {
-      case "Humidity":
-        return "No humidity data for the selected range of time";
-      case "Temperature":
-        return "No temperature data for the selected range of time";
-      case "CO2":
-        return "No CO2 data for the selected range of time";
-      case "PM10.0":
-        return "No PM10.0 data for the selected range of time";
-      case "VOC":
-        return "No VOC data for the selected range of time";
-      default:
-        return "No data for the selected range of time";
-    }
+  bool _isNoData(http.Response res) {
+  final h = res.headers;
+  // case‑insensitive lookup
+  return (h['X-No-Data'] == '1') || (h['x-no-data'] == '1');
   }
+
+  // "No data" placeholder texts per metric
+  String _noDataMessageForMetric(String metric) =>
+    'No data for $metric in the selected time period';
+  
 
   // ──────────────────────────────────────────────────────────────────────────
   //  Download / Export helpers
