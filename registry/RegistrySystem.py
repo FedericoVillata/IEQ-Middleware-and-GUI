@@ -490,7 +490,7 @@ class Webserver(object):
             }
         }
         cherrypy.tree.mount(self,'/',conf)
-        cherrypy.tree.mount(LoginHandler(), '/login', {
+        cherrypy.tree.mount(LoginHandler(), '/loginTechnician', {
             '/': {
                 'tools.sessions.on': True
             }
@@ -511,7 +511,7 @@ class Webserver(object):
         self.cat.load_file()
         if len(uri) == 0:
             if not cherrypy.session.get('authenticated'):
-                raise cherrypy.HTTPRedirect("/login")
+                raise cherrypy.HTTPRedirect("/loginTechnician")
             return open(INDEX, 'rb').read()
         else:
             #GET Devices from catalog            
