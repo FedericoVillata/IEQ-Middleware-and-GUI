@@ -464,8 +464,9 @@ final relevantAlerts = alertManager.allAlerts.where((a) =>
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+      physics: const AlwaysScrollableScrollPhysics(), // 👈 AGGIUNTO
+      padding: const EdgeInsets.all(16),
+      child: Column(
   children: [
     ...relevantAlerts.map((a) => _buildAlertBanner(a, alertManager)).toList(),
 
@@ -562,4 +563,5 @@ final relevantAlerts = alertManager.allAlerts.where((a) =>
     
   }
 }
+
 

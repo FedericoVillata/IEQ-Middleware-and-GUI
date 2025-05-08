@@ -173,6 +173,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
         ],
       ),
       body: ListView(
+        physics: const AlwaysScrollableScrollPhysics(), 
         padding: const EdgeInsets.all(16),
         children: [
           buildRatingSection(
@@ -219,3 +220,4 @@ class _FeedbackPageState extends State<FeedbackPage> {
     );
   }
 }
+

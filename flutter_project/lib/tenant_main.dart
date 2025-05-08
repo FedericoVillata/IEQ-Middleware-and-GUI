@@ -10,6 +10,7 @@ import 'pages/tenant_suggestions_page.dart' as suggestions;
 import 'app_config.dart';
 import 'package:provider/provider.dart';
 import 'mqtt_suggestions_manager.dart';          //  ← aggiungi questo
+import 'package:flutter/gestures.dart';
 
 
 class MyAppTenant extends StatelessWidget {
@@ -39,7 +40,13 @@ return ChangeNotifierProvider<MqttSuggestionsManager>(
         debugShowCheckedModeBanner: false,
         title: 'IEQ Tenant Interface',
         theme: ThemeData(primarySwatch: Colors.blue),
-        home: TenantMainPage(username: username, apartments: apartments),
+        scrollBehavior: const MaterialScrollBehavior().copyWith(
+        dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+        },
+      ),
+      home: TenantMainPage(username: username, apartments: apartments),
       ),
     );
   }
@@ -217,3 +224,4 @@ return Scaffold(
 
   }
 }
+

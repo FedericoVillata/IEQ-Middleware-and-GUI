@@ -136,6 +136,7 @@ if (isSameRoom && isValid && isSameDay) {
                   style: TextStyle(fontSize: 16)),
             )
           : ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(), 
               padding: const EdgeInsets.all(16),
               itemCount: deduplicatedList.length,
               itemBuilder: (_, i) {
@@ -389,4 +390,5 @@ class _VoteButton extends StatelessWidget {
     );
   }
 }
+
 
