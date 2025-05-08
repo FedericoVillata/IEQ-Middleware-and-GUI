@@ -560,6 +560,7 @@ def CORS():
     cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
     cherrypy.response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
     cherrypy.response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    cherrypy.response.headers["Access-Control-Expose-Headers"] = "X-No-Data"
 
     if cherrypy.request.method == "OPTIONS":
             cherrypy.response.status = 200

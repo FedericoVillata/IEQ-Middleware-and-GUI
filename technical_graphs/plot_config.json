@@ -1,6 +1,7 @@
 {
-  "adaptor_url": "https://adaptor.ieqmiddleware.com",
-  "registry_url": "https://registry.ieqmiddleware.com",
+  "REGISTRY_URL": "https://registry.ieqmiddleware.com",
+  "ADAPTOR_URL": "https://adaptor.ieqmiddleware.com",
+  "PLOT_SERVICE_URL": "https://plot2.ieqmiddleware.com",
   "port": 9090,
   "request_timeout": 30,
   "max_retries": 3,
