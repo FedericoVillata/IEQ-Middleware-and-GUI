@@ -2,5 +2,7 @@
     "port": "1883",
     "base_topic": "IEQmidAndGUI/#",
     "broker": "mqtt.eclipseprojects.io",
-    "adaptor_url": "http://192.68.0.25:8080"
+    "adaptor_url": "http://192.68.0.25:8080",
+    "admin_user": "AlessandroCaramia",
+    "admin_password": "Interdisciplinary2025"
 }

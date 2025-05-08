@@ -448,6 +448,23 @@ class Catalog(object):
                     return "Invalid password"
         if found == 0:
             return "User not found"
+class LoginHandler:
+    @cherrypy.expose
+    def index(self):
+        return open(str(P / 'login.html'), 'rb').read()
+
+    @cherrypy.expose
+    def login(self, userId=None, password=None):
+        try:
+            with open(SETTINGS, "r") as fs:                
+                self.settings = json.loads(fs.read())   
+        except Exception:
+            print("Problem in loading settings")
+        if userId != self.settings["admin_user"] or password != self.settings["admin_password"]:
+            return "<h3>Login failed: Invalid credentials</h3><a href='/login'>Try again</a>"
+        cherrypy.session['authenticated'] = True
+        raise cherrypy.HTTPRedirect("/")
+
 class Webserver(object):
 
     @cherrypy.expose
@@ -466,9 +483,18 @@ class Webserver(object):
             'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
             'tools.sessions.on':True,
             'tools.CORS.on': True
+            },
+            '/static': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': str(P)  # This is the current directory where logo.png lives
             }
         }
         cherrypy.tree.mount(self,'/',conf)
+        cherrypy.tree.mount(LoginHandler(), '/login', {
+            '/': {
+                'tools.sessions.on': True
+            }
+        })
         cherrypy.config.update({'server.socket_port':8081})
         cherrypy.config.update({'server.socket_host':'0.0.0.0'})
         cherrypy.tools.CORS = cherrypy.Tool('before_handler', CORS)
@@ -479,11 +505,14 @@ class Webserver(object):
             self.cat = Catalog()
         except Exception:
             print("Problem in loading settings")
+    
 
     def GET(self, *uri, **params):
         self.cat.load_file()
         if len(uri) == 0:
-            return open(INDEX)
+            if not cherrypy.session.get('authenticated'):
+                raise cherrypy.HTTPRedirect("/login")
+            return open(INDEX, 'rb').read()
         else:
             #GET Devices from catalog            
             if uri[0] == 'devices':
