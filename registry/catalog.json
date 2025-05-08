@@ -26,6 +26,38 @@
         "apartment1",
         "apartment3"
       ]
+    },
+    {
+      "userId": "1C",
+      "password": "1C",
+      "permissions": "Base",
+      "apartments": [
+        "apartment2"
+      ]
+    },
+    {
+      "userId": "Terza",
+      "password": "Terza",
+      "permissions": "Base",
+      "apartments": [
+        "apartment4"
+      ]
+    },
+    {
+      "userId": "2C",
+      "password": "2C",
+      "permissions": "Base",
+      "apartments": [
+        "apartment5"
+      ]
+    },
+    {
+      "userId": "1D",
+      "password": "1D",
+      "permissions": "Base",
+      "apartments": [
+        "apartment6"
+      ]
     }
   ],
   "apartments": [
@@ -47,8 +79,11 @@
           "sensors": [
             {
               "sensorId": "sensor0",
-              "measurements" :["Temperature","Humidity"],
-              "lastUpdate": "2025-04-26T21:21:09.729743Z"
+              "measurements": [
+                "Temperature",
+                "Humidity"
+              ],
+              "lastUpdate": "2025-05-08T07:20:38.823009Z"
             }
           ],
           "suggestions": [
@@ -203,8 +238,11 @@
           "sensors": [
             {
               "sensorId": "sensor1",
-              "measurements" :["Temperature","Humidity"],
-              "lastUpdate": "2025-04-26T21:21:09.730400Z"
+              "measurements": [
+                "Temperature",
+                "Humidity"
+              ],
+              "lastUpdate": "2025-05-08T07:20:38.823288Z"
             }
           ],
           "suggestions": [
@@ -384,8 +422,12 @@
           "sensors": [
             {
               "sensorId": "70:ee:50:af:8a:ea",
-              "measurements" :["Temperature","Humidity","CO2"],
-              "lastUpdate": 0
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "CO2"
+              ],
+              "lastUpdate": "2025-05-08T06:33:38Z"
             }
           ],
           "suggestions": [
@@ -540,8 +582,12 @@
           "sensors": [
             {
               "sensorId": "03:00:00:0d:34:20",
-              "measurements" :["Temperature","Humidity","CO2"],
-              "lastUpdate": 0
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "CO2"
+              ],
+              "lastUpdate": "2025-05-08T06:33:38Z"
             }
           ],
           "suggestions": [
@@ -696,8 +742,12 @@
           "sensors": [
             {
               "sensorId": "02:00:00:af:60:ee",
-              "measurements" :["Temperature","Humidity","CO2"],
-              "lastUpdate": 0
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "CO2"
+              ],
+              "lastUpdate": "2025-05-08T06:33:38Z"
             }
           ],
           "suggestions": [
@@ -852,8 +902,12 @@
           "sensors": [
             {
               "sensorId": "03:00:00:0c:e0:b2",
-              "measurements" :["Temperature","Humidity","CO2"],
-              "lastUpdate": 0
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "CO2"
+              ],
+              "lastUpdate": "2025-05-08T06:33:38Z"
             }
           ],
           "suggestions": [
@@ -1156,8 +1210,13 @@
           "sensors": [
             {
               "sensorId": "0000F269",
-              "measurements" :["Temperature","Humidity","CO2","Pressure"],
-              "lastUpdate": "2025-04-25T03:15:57Z"
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "CO2",
+                "Pressure"
+              ],
+              "lastUpdate": "2025-05-08T08:59:39Z"
             }
           ],
           "suggestions": [
@@ -1312,13 +1371,22 @@
           "sensors": [
             {
               "sensorId": "0000B323",
-              "measurements" :["Temperature","Humidity","CO2"],
-              "lastUpdate": "2025-04-25T03:17:55Z"
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "CO2"
+              ],
+              "lastUpdate": "2025-05-08T08:57:25Z"
             },
             {
               "sensorId": "0000F258",
-              "measurements" :["Temperature","PM10.0","CO2","PM2.5"],
-              "lastUpdate": "2025-04-25T03:14:55Z"
+              "measurements": [
+                "Temperature",
+                "PM10.0",
+                "CO2",
+                "PM2.5"
+              ],
+              "lastUpdate": "2025-05-08T08:28:35Z"
             }
           ],
           "suggestions": [
@@ -1473,8 +1541,13 @@
           "sensors": [
             {
               "sensorId": "0000F26B",
-              "measurements" :["Temperature","Humidity","CO2","Pressure"],
-              "lastUpdate": "2025-04-25T03:20:32Z"
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "CO2",
+                "Pressure"
+              ],
+              "lastUpdate": "2025-05-08T08:59:14Z"
             }
           ],
           "suggestions": [
@@ -1629,8 +1702,13 @@
           "sensors": [
             {
               "sensorId": "0000F26C",
-              "measurements" :["Temperature","Humidity","CO2","Pressure"],
-              "lastUpdate": "2025-04-25T03:16:33Z"
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "CO2",
+                "Pressure"
+              ],
+              "lastUpdate": "2025-05-08T08:53:37Z"
             }
           ],
           "suggestions": [
@@ -1785,13 +1863,22 @@
           "sensors": [
             {
               "sensorId": "0000F26A",
-              "measurements" :["Temperature","Humidity","CO2","Pressure"],
-              "lastUpdate": "2025-04-25T03:19:14Z"
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "CO2",
+                "Pressure"
+              ],
+              "lastUpdate": "2025-05-08T08:57:56Z"
             },
             {
               "sensorId": "0000F264",
-              "measurements" :["Temperature","Humidity","VOC"],
-              "lastUpdate": "2025-04-25T03:17:37Z"
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "VOC"
+              ],
+              "lastUpdate": "2025-05-08T08:57:37Z"
             }
           ],
           "suggestions": [
@@ -1946,8 +2033,1267 @@
           "sensors": [
             {
               "sensorId": "0000F257",
-              "measurements" :["Temperature","PM10.0","CO2","PM2.5"],
-              "lastUpdate": "2025-04-25T03:14:45Z"
+              "measurements": [
+                "Temperature",
+                "PM10.0",
+                "CO2",
+                "PM2.5"
+              ],
+              "lastUpdate": "2025-05-08T08:24:45Z"
+            }
+          ],
+          "suggestions": [
+            {
+              "suggestionId": "S0",
+              "state": 1
+            },
+            {
+              "suggestionId": "S1",
+              "state": 1
+            },
+            {
+              "suggestionId": "S2",
+              "state": 1
+            },
+            {
+              "suggestionId": "S3",
+              "state": 1
+            },
+            {
+              "suggestionId": "S4",
+              "state": 1
+            },
+            {
+              "suggestionId": "S5",
+              "state": 1
+            },
+            {
+              "suggestionId": "S6",
+              "state": 1
+            },
+            {
+              "suggestionId": "S7",
+              "state": 1
+            },
+            {
+              "suggestionId": "S8",
+              "state": 1
+            },
+            {
+              "suggestionId": "S9",
+              "state": 1
+            },
+            {
+              "suggestionId": "S10",
+              "state": 1
+            },
+            {
+              "suggestionId": "S11",
+              "state": 1
+            },
+            {
+              "suggestionId": "S12",
+              "state": 1
+            },
+            {
+              "suggestionId": "S13",
+              "state": 1
+            },
+            {
+              "suggestionId": "S14",
+              "state": 1
+            },
+            {
+              "suggestionId": "S15",
+              "state": 1
+            },
+            {
+              "suggestionId": "S17",
+              "state": 1
+            },
+            {
+              "suggestionId": "S18",
+              "state": 1
+            },
+            {
+              "suggestionId": "S19",
+              "state": 1
+            },
+            {
+              "suggestionId": "S20",
+              "state": 1
+            },
+            {
+              "suggestionId": "S21",
+              "state": 1
+            },
+            {
+              "suggestionId": "S22",
+              "state": 1
+            },
+            {
+              "suggestionId": "S23",
+              "state": 1
+            },
+            {
+              "suggestionId": "S24",
+              "state": 1
+            },
+            {
+              "suggestionId": "S25",
+              "state": 1
+            },
+            {
+              "suggestionId": "S26",
+              "state": 1
+            },
+            {
+              "suggestionId": "S27",
+              "state": 1
+            },
+            {
+              "suggestionId": "S28",
+              "state": 1
+            },
+            {
+              "suggestionId": "S29",
+              "state": 1
+            },
+            {
+              "suggestionId": "S31",
+              "state": 1
+            },
+            {
+              "suggestionId": "S32",
+              "state": 1
+            },
+            {
+              "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
+              "state": 1
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "thresholds": {
+          "adaptive_temp_category": 2,
+          "mechanical_temp_warm": {
+            "G": [
+              22.0,
+              26.0
+            ],
+            "Y": [
+              20.0,
+              27.0
+            ],
+            "R": [
+              0.0,
+              20.0,
+              27.0,
+              100.0
+            ]
+          },
+          "mechanical_temp_cold": {
+            "G": [
+              20.0,
+              23.0
+            ],
+            "Y": [
+              18.0,
+              26.0
+            ],
+            "R": [
+              0.0,
+              18.0,
+              26.0,
+              100.0
+            ]
+          },
+          "humidity": {
+            "G": [
+              40,
+              60
+            ],
+            "Y": [
+              30,
+              70
+            ],
+            "R": [
+              0,
+              30,
+              70,
+              100
+            ]
+          },
+          "co2_natural": {
+            "G": 1200,
+            "Y": 1500,
+            "R": 10000
+          },
+          "co2_mechanical": {
+            "Too Good": 600,
+            "G": 1200,
+            "Y": 1700,
+            "R": 2500,
+            "Extreme": 10000
+          },
+          "overall_score_classification": {
+            "G": 100,
+            "Y": 70,
+            "R": 40
+          },
+          "ieqi_classification": {
+            "G": 1.0,
+            "Y": 2.0,
+            "R": 4.0
+          },
+          "icone_classification": {
+            "G": 1.0,
+            "Y": 2.0,
+            "R": 4.0
+          },
+          "ppd_classification": {
+            "G": 10,
+            "Y": 25,
+            "R": 75
+          },
+          "pmv_classification": {
+            "Very Cold": -2.5,
+            "Cold": -1.5,
+            "Slightly Cold": -0.5,
+            "Neutral": 0.5,
+            "Slightly Warm": 1.5,
+            "Warm": 2.5,
+            "Very Warm": 3.0
+          }
+        },
+        "values": {
+          "met": 1.2,
+          "clo_warm": 0.5,
+          "clo_cold": 1.0,
+          "ventilation": "nat",
+          "temp_opt": 22,
+          "hum_opt": 50
+        },
+        "label_to_score": {
+          "Too Good": 3,
+          "G": 3,
+          "Y": 2,
+          "R": 1,
+          "Extreme": 0,
+          "Unknown": 0,
+          "Very Cold": 0,
+          "Cold": 1,
+          "Slightly Cold": 2,
+          "Neutral": 3,
+          "Slightly Warm": 2,
+          "Warm": 1,
+          "Very Warm": 0
+        },
+        "weights": {
+          "temperature": 15.0,
+          "humidity": 10.0,
+          "co2": 20.0,
+          "pmv": 15.0,
+          "ppd": 10.0,
+          "icone": 15.0,
+          "ieqi": 15.0
+        }
+      }
+    },
+    {
+      "users": [
+        "1C"
+      ],
+      "apartmentId": "apartment2",
+      "apartmentName": "1C",
+      "type": "House",
+      "coordinates": {
+        "long": 7.742615,
+        "lat": 45.116177
+      },
+      "timezone": "Europe/Rome",
+      "MAC": [
+        {
+          "name": "capetti",
+          "MAC": "0000B2E6"
+        }
+      ],
+      "rooms": [
+        {
+          "roomId": "1C",
+          "sensors": [
+            {
+              "sensorId": "0000F269",
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "Pressure"
+              ],
+              "lastUpdate": "2025-05-08T08:59:39Z"
+            }
+          ],
+          "suggestions": [
+            {
+              "suggestionId": "S0",
+              "state": 1
+            },
+            {
+              "suggestionId": "S1",
+              "state": 1
+            },
+            {
+              "suggestionId": "S2",
+              "state": 1
+            },
+            {
+              "suggestionId": "S3",
+              "state": 1
+            },
+            {
+              "suggestionId": "S4",
+              "state": 1
+            },
+            {
+              "suggestionId": "S5",
+              "state": 1
+            },
+            {
+              "suggestionId": "S6",
+              "state": 1
+            },
+            {
+              "suggestionId": "S7",
+              "state": 1
+            },
+            {
+              "suggestionId": "S8",
+              "state": 1
+            },
+            {
+              "suggestionId": "S9",
+              "state": 1
+            },
+            {
+              "suggestionId": "S10",
+              "state": 1
+            },
+            {
+              "suggestionId": "S11",
+              "state": 1
+            },
+            {
+              "suggestionId": "S12",
+              "state": 1
+            },
+            {
+              "suggestionId": "S13",
+              "state": 1
+            },
+            {
+              "suggestionId": "S14",
+              "state": 1
+            },
+            {
+              "suggestionId": "S15",
+              "state": 1
+            },
+            {
+              "suggestionId": "S17",
+              "state": 1
+            },
+            {
+              "suggestionId": "S18",
+              "state": 1
+            },
+            {
+              "suggestionId": "S19",
+              "state": 1
+            },
+            {
+              "suggestionId": "S20",
+              "state": 1
+            },
+            {
+              "suggestionId": "S21",
+              "state": 1
+            },
+            {
+              "suggestionId": "S22",
+              "state": 1
+            },
+            {
+              "suggestionId": "S23",
+              "state": 1
+            },
+            {
+              "suggestionId": "S24",
+              "state": 1
+            },
+            {
+              "suggestionId": "S25",
+              "state": 1
+            },
+            {
+              "suggestionId": "S26",
+              "state": 1
+            },
+            {
+              "suggestionId": "S27",
+              "state": 1
+            },
+            {
+              "suggestionId": "S28",
+              "state": 1
+            },
+            {
+              "suggestionId": "S29",
+              "state": 1
+            },
+            {
+              "suggestionId": "S31",
+              "state": 1
+            },
+            {
+              "suggestionId": "S32",
+              "state": 1
+            },
+            {
+              "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
+              "state": 1
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "thresholds": {
+          "adaptive_temp_category": 2,
+          "mechanical_temp_warm": {
+            "G": [
+              22.0,
+              26.0
+            ],
+            "Y": [
+              20.0,
+              27.0
+            ],
+            "R": [
+              0.0,
+              20.0,
+              27.0,
+              100.0
+            ]
+          },
+          "mechanical_temp_cold": {
+            "G": [
+              20.0,
+              23.0
+            ],
+            "Y": [
+              18.0,
+              26.0
+            ],
+            "R": [
+              0.0,
+              18.0,
+              26.0,
+              100.0
+            ]
+          },
+          "humidity": {
+            "G": [
+              40,
+              60
+            ],
+            "Y": [
+              30,
+              70
+            ],
+            "R": [
+              0,
+              30,
+              70,
+              100
+            ]
+          },
+          "co2_natural": {
+            "G": 1200,
+            "Y": 1500,
+            "R": 10000
+          },
+          "co2_mechanical": {
+            "Too Good": 600,
+            "G": 1200,
+            "Y": 1700,
+            "R": 2500,
+            "Extreme": 10000
+          },
+          "overall_score_classification": {
+            "G": 100,
+            "Y": 70,
+            "R": 40
+          },
+          "ieqi_classification": {
+            "G": 1.0,
+            "Y": 2.0,
+            "R": 4.0
+          },
+          "icone_classification": {
+            "G": 1.0,
+            "Y": 2.0,
+            "R": 4.0
+          },
+          "ppd_classification": {
+            "G": 10,
+            "Y": 25,
+            "R": 75
+          },
+          "pmv_classification": {
+            "Very Cold": -2.5,
+            "Cold": -1.5,
+            "Slightly Cold": -0.5,
+            "Neutral": 0.5,
+            "Slightly Warm": 1.5,
+            "Warm": 2.5,
+            "Very Warm": 3.0
+          }
+        },
+        "values": {
+          "met": 1.2,
+          "clo_warm": 0.5,
+          "clo_cold": 1.0,
+          "ventilation": "nat",
+          "temp_opt": 22,
+          "hum_opt": 50
+        },
+        "label_to_score": {
+          "Too Good": 3,
+          "G": 3,
+          "Y": 2,
+          "R": 1,
+          "Extreme": 0,
+          "Unknown": 0,
+          "Very Cold": 0,
+          "Cold": 1,
+          "Slightly Cold": 2,
+          "Neutral": 3,
+          "Slightly Warm": 2,
+          "Warm": 1,
+          "Very Warm": 0
+        },
+        "weights": {
+          "temperature": 15.0,
+          "humidity": 10.0,
+          "co2": 20.0,
+          "pmv": 15.0,
+          "ppd": 10.0,
+          "icone": 15.0,
+          "ieqi": 15.0
+        }
+      }
+    },
+    {
+      "users": [
+        "Terza"
+      ],
+      "apartmentId": "apartment4",
+      "apartmentName": "Terza",
+      "type": "House",
+      "coordinates": {
+        "long": 7.742615,
+        "lat": 45.116177
+      },
+      "timezone": "Europe/Rome",
+      "MAC": [
+        {
+          "name": "capetti",
+          "MAC": "0000B2E6"
+        }
+      ],
+      "rooms": [
+        {
+          "roomId": "Terza",
+          "sensors": [
+            {
+              "sensorId": "0000F26C",
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "Pressure"
+              ],
+              "lastUpdate": "2025-05-08T08:53:37Z"
+            },
+            {
+              "sensorId": "0000F26B",
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "Pressure"
+              ],
+              "lastUpdate": "2025-05-08T08:59:14Z"
+            }
+          ],
+          "suggestions": [
+            {
+              "suggestionId": "S0",
+              "state": 1
+            },
+            {
+              "suggestionId": "S1",
+              "state": 1
+            },
+            {
+              "suggestionId": "S2",
+              "state": 1
+            },
+            {
+              "suggestionId": "S3",
+              "state": 1
+            },
+            {
+              "suggestionId": "S4",
+              "state": 1
+            },
+            {
+              "suggestionId": "S5",
+              "state": 1
+            },
+            {
+              "suggestionId": "S6",
+              "state": 1
+            },
+            {
+              "suggestionId": "S7",
+              "state": 1
+            },
+            {
+              "suggestionId": "S8",
+              "state": 1
+            },
+            {
+              "suggestionId": "S9",
+              "state": 1
+            },
+            {
+              "suggestionId": "S10",
+              "state": 1
+            },
+            {
+              "suggestionId": "S11",
+              "state": 1
+            },
+            {
+              "suggestionId": "S12",
+              "state": 1
+            },
+            {
+              "suggestionId": "S13",
+              "state": 1
+            },
+            {
+              "suggestionId": "S14",
+              "state": 1
+            },
+            {
+              "suggestionId": "S15",
+              "state": 1
+            },
+            {
+              "suggestionId": "S17",
+              "state": 1
+            },
+            {
+              "suggestionId": "S18",
+              "state": 1
+            },
+            {
+              "suggestionId": "S19",
+              "state": 1
+            },
+            {
+              "suggestionId": "S20",
+              "state": 1
+            },
+            {
+              "suggestionId": "S21",
+              "state": 1
+            },
+            {
+              "suggestionId": "S22",
+              "state": 1
+            },
+            {
+              "suggestionId": "S23",
+              "state": 1
+            },
+            {
+              "suggestionId": "S24",
+              "state": 1
+            },
+            {
+              "suggestionId": "S25",
+              "state": 1
+            },
+            {
+              "suggestionId": "S26",
+              "state": 1
+            },
+            {
+              "suggestionId": "S27",
+              "state": 1
+            },
+            {
+              "suggestionId": "S28",
+              "state": 1
+            },
+            {
+              "suggestionId": "S29",
+              "state": 1
+            },
+            {
+              "suggestionId": "S31",
+              "state": 1
+            },
+            {
+              "suggestionId": "S32",
+              "state": 1
+            },
+            {
+              "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
+              "state": 1
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "thresholds": {
+          "adaptive_temp_category": 2,
+          "mechanical_temp_warm": {
+            "G": [
+              22.0,
+              26.0
+            ],
+            "Y": [
+              20.0,
+              27.0
+            ],
+            "R": [
+              0.0,
+              20.0,
+              27.0,
+              100.0
+            ]
+          },
+          "mechanical_temp_cold": {
+            "G": [
+              20.0,
+              23.0
+            ],
+            "Y": [
+              18.0,
+              26.0
+            ],
+            "R": [
+              0.0,
+              18.0,
+              26.0,
+              100.0
+            ]
+          },
+          "humidity": {
+            "G": [
+              40,
+              60
+            ],
+            "Y": [
+              30,
+              70
+            ],
+            "R": [
+              0,
+              30,
+              70,
+              100
+            ]
+          },
+          "co2_natural": {
+            "G": 1200,
+            "Y": 1500,
+            "R": 10000
+          },
+          "co2_mechanical": {
+            "Too Good": 600,
+            "G": 1200,
+            "Y": 1700,
+            "R": 2500,
+            "Extreme": 10000
+          },
+          "overall_score_classification": {
+            "G": 100,
+            "Y": 70,
+            "R": 40
+          },
+          "ieqi_classification": {
+            "G": 1.0,
+            "Y": 2.0,
+            "R": 4.0
+          },
+          "icone_classification": {
+            "G": 1.0,
+            "Y": 2.0,
+            "R": 4.0
+          },
+          "ppd_classification": {
+            "G": 10,
+            "Y": 25,
+            "R": 75
+          },
+          "pmv_classification": {
+            "Very Cold": -2.5,
+            "Cold": -1.5,
+            "Slightly Cold": -0.5,
+            "Neutral": 0.5,
+            "Slightly Warm": 1.5,
+            "Warm": 2.5,
+            "Very Warm": 3.0
+          }
+        },
+        "values": {
+          "met": 1.2,
+          "clo_warm": 0.5,
+          "clo_cold": 1.0,
+          "ventilation": "nat",
+          "temp_opt": 22,
+          "hum_opt": 50
+        },
+        "label_to_score": {
+          "Too Good": 3,
+          "G": 3,
+          "Y": 2,
+          "R": 1,
+          "Extreme": 0,
+          "Unknown": 0,
+          "Very Cold": 0,
+          "Cold": 1,
+          "Slightly Cold": 2,
+          "Neutral": 3,
+          "Slightly Warm": 2,
+          "Warm": 1,
+          "Very Warm": 0
+        },
+        "weights": {
+          "temperature": 15.0,
+          "humidity": 10.0,
+          "co2": 20.0,
+          "pmv": 15.0,
+          "ppd": 10.0,
+          "icone": 15.0,
+          "ieqi": 15.0
+        }
+      }
+    },
+    {
+      "users": [
+        "2C"
+      ],
+      "apartmentId": "apartment5",
+      "apartmentName": "2C",
+      "type": "House",
+      "coordinates": {
+        "long": 45.116177,
+        "lat": 7.742615
+      },
+      "timezone": "Africa/Addis_Ababa",
+      "MAC": [
+        {
+          "name": "capetti",
+          "MAC": "0000B2E6"
+        }
+      ],
+      "rooms": [
+        {
+          "roomId": "2C",
+          "sensors": [
+            {
+              "sensorId": "0000F26A",
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "Pressure"
+              ],
+              "lastUpdate": "2025-05-08T08:57:56Z"
+            },
+            {
+              "sensorId": "0000F264",
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "VOC"
+              ],
+              "lastUpdate": "2025-05-08T08:57:37Z"
+            }
+          ],
+          "suggestions": [
+            {
+              "suggestionId": "S0",
+              "state": 1
+            },
+            {
+              "suggestionId": "S1",
+              "state": 1
+            },
+            {
+              "suggestionId": "S2",
+              "state": 1
+            },
+            {
+              "suggestionId": "S3",
+              "state": 1
+            },
+            {
+              "suggestionId": "S4",
+              "state": 1
+            },
+            {
+              "suggestionId": "S5",
+              "state": 1
+            },
+            {
+              "suggestionId": "S6",
+              "state": 1
+            },
+            {
+              "suggestionId": "S7",
+              "state": 1
+            },
+            {
+              "suggestionId": "S8",
+              "state": 1
+            },
+            {
+              "suggestionId": "S9",
+              "state": 1
+            },
+            {
+              "suggestionId": "S10",
+              "state": 1
+            },
+            {
+              "suggestionId": "S11",
+              "state": 1
+            },
+            {
+              "suggestionId": "S12",
+              "state": 1
+            },
+            {
+              "suggestionId": "S13",
+              "state": 1
+            },
+            {
+              "suggestionId": "S14",
+              "state": 1
+            },
+            {
+              "suggestionId": "S15",
+              "state": 1
+            },
+            {
+              "suggestionId": "S17",
+              "state": 1
+            },
+            {
+              "suggestionId": "S18",
+              "state": 1
+            },
+            {
+              "suggestionId": "S19",
+              "state": 1
+            },
+            {
+              "suggestionId": "S20",
+              "state": 1
+            },
+            {
+              "suggestionId": "S21",
+              "state": 1
+            },
+            {
+              "suggestionId": "S22",
+              "state": 1
+            },
+            {
+              "suggestionId": "S23",
+              "state": 1
+            },
+            {
+              "suggestionId": "S24",
+              "state": 1
+            },
+            {
+              "suggestionId": "S25",
+              "state": 1
+            },
+            {
+              "suggestionId": "S26",
+              "state": 1
+            },
+            {
+              "suggestionId": "S27",
+              "state": 1
+            },
+            {
+              "suggestionId": "S28",
+              "state": 1
+            },
+            {
+              "suggestionId": "S29",
+              "state": 1
+            },
+            {
+              "suggestionId": "S31",
+              "state": 1
+            },
+            {
+              "suggestionId": "S32",
+              "state": 1
+            },
+            {
+              "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
+              "state": 1
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "thresholds": {
+          "adaptive_temp_category": 2,
+          "mechanical_temp_warm": {
+            "G": [
+              22.0,
+              26.0
+            ],
+            "Y": [
+              20.0,
+              27.0
+            ],
+            "R": [
+              0.0,
+              20.0,
+              27.0,
+              100.0
+            ]
+          },
+          "mechanical_temp_cold": {
+            "G": [
+              20.0,
+              23.0
+            ],
+            "Y": [
+              18.0,
+              26.0
+            ],
+            "R": [
+              0.0,
+              18.0,
+              26.0,
+              100.0
+            ]
+          },
+          "humidity": {
+            "G": [
+              40,
+              60
+            ],
+            "Y": [
+              30,
+              70
+            ],
+            "R": [
+              0,
+              30,
+              70,
+              100
+            ]
+          },
+          "co2_natural": {
+            "G": 1200,
+            "Y": 1500,
+            "R": 10000
+          },
+          "co2_mechanical": {
+            "Too Good": 600,
+            "G": 1200,
+            "Y": 1700,
+            "R": 2500,
+            "Extreme": 10000
+          },
+          "overall_score_classification": {
+            "G": 100,
+            "Y": 70,
+            "R": 40
+          },
+          "ieqi_classification": {
+            "G": 1.0,
+            "Y": 2.0,
+            "R": 4.0
+          },
+          "icone_classification": {
+            "G": 1.0,
+            "Y": 2.0,
+            "R": 4.0
+          },
+          "ppd_classification": {
+            "G": 10,
+            "Y": 25,
+            "R": 75
+          },
+          "pmv_classification": {
+            "Very Cold": -2.5,
+            "Cold": -1.5,
+            "Slightly Cold": -0.5,
+            "Neutral": 0.5,
+            "Slightly Warm": 1.5,
+            "Warm": 2.5,
+            "Very Warm": 3.0
+          }
+        },
+        "values": {
+          "met": 1.2,
+          "clo_warm": 0.5,
+          "clo_cold": 1.0,
+          "ventilation": "nat",
+          "temp_opt": 22,
+          "hum_opt": 50
+        },
+        "label_to_score": {
+          "Too Good": 3,
+          "G": 3,
+          "Y": 2,
+          "R": 1,
+          "Extreme": 0,
+          "Unknown": 0,
+          "Very Cold": 0,
+          "Cold": 1,
+          "Slightly Cold": 2,
+          "Neutral": 3,
+          "Slightly Warm": 2,
+          "Warm": 1,
+          "Very Warm": 0
+        },
+        "weights": {
+          "temperature": 15.0,
+          "humidity": 10.0,
+          "co2": 20.0,
+          "pmv": 15.0,
+          "ppd": 10.0,
+          "icone": 15.0,
+          "ieqi": 15.0
+        }
+      }
+    },
+    {
+      "users": [
+        "1D"
+      ],
+      "apartmentId": "apartment6",
+      "apartmentName": "1D",
+      "type": "House",
+      "coordinates": {
+        "long": 7.742615,
+        "lat": 45.116177
+      },
+      "timezone": "Europe/Rome",
+      "MAC": [
+        {
+          "name": "capetti",
+          "MAC": "0000B2E6"
+        }
+      ],
+      "rooms": [
+        {
+          "roomId": "1D",
+          "sensors": [
+            {
+              "sensorId": "0000B323",
+              "measurements": [
+                "Temperature",
+                "Humidity"
+              ],
+              "lastUpdate": "2025-05-08T08:57:25Z"
+            },
+            {
+              "sensorId": "0000F258",
+              "measurements": [
+                "Temperature",
+                "PM10.0",
+                "PM2.5"
+              ],
+              "lastUpdate": "2025-05-08T08:28:35Z"
             }
           ],
           "suggestions": [
@@ -2353,222 +3699,222 @@
     }
   },
   "tenant_suggestions": [
-  {
-    "suggestionId": "S0",
-    "suggestionName": "co2",
-    "text": "Avoid prolonged ventilation: it's too cold outside. Open briefly or use mechanical ventilation.",
-    "testo": "Evita la ventilazione prolungata: fa troppo freddo fuori. Apri brevemente o usa la ventilazione meccanica."
-  },
-  {
-    "suggestionId": "S1",
-    "suggestionName": "co2_trend",
-    "text": "CO₂ is rising: consider preventive ventilation.",
-    "testo": "Il CO₂ è in aumento: valuta una ventilazione preventiva."
-  },
-  {
-    "suggestionId": "S2",
-    "suggestionName": "co2_night",
-    "text": "High CO₂ levels detected at night. Remember to ventilate early in the morning to refresh the air.",
-    "testo": "Alti livelli di CO₂ rilevati di notte. Ricorda di ventilare presto al mattino per rinfrescare l'aria."
-  },
-  {
-    "suggestionId": "S3",
-    "suggestionName": "co2_weather",
-    "text": "Difficult to ventilate due to rain: prefer mechanical systems.",
-    "testo": "Difficile ventilare a causa della pioggia: preferisci sistemi meccanici."
-  },
-  {
-    "suggestionId": "S4",
-    "suggestionName": "temperature",
-    "text": "Slightly outside comfort range. Adjust heating/cooling slightly.",
-    "testo": "Leggermente fuori dall'intervallo di comfort. Regola leggermente il riscaldamento o il raffreddamento."
-  },
-  {
-    "suggestionId": "S5",
-    "suggestionName": "temp_trend_heat",
-    "text": "Temperature is borderline and rising: monitor the environment to prevent overheating.",
-    "testo": "La temperatura è al limite e in aumento: monitora l'ambiente per evitare il surriscaldamento."
-  },
-  {
-    "suggestionId": "S6",
-    "suggestionName": "temp_trend_cold",
-    "text": "Temperature is borderline and dropping: monitor to avoid excessive cooling.",
-    "testo": "La temperatura è al limite e in calo: monitora per evitare un raffreddamento eccessivo."
-  },
-  {
-    "suggestionId": "S7",
-    "suggestionName": "cold_pmv",
-    "text": "Severe cold discomfort: increase heating and check insulation.",
-    "testo": "Forte disagio da freddo: aumenta il riscaldamento e controlla l'isolamento."
-  },
-  {
-    "suggestionId": "S8",
-    "suggestionName": "hot_pmv",
-    "text": "Severe heat discomfort: ventilate or cool immediately.",
-    "testo": "Forte disagio da caldo: ventila o raffredda immediatamente."
-  },
-  {
-    "suggestionId": "S9",
-    "suggestionName": "heat_sun",
-    "text": "Sunny and hot: use shading or activate cooling.",
-    "testo": "Sole e caldo: usa schermature o attiva il raffrescamento."
-  },
-  {
-    "suggestionId": "S10",
-    "suggestionName": "cold_cloudy",
-    "text": "Cold and cloudy: keep indoor temperature slightly higher.",
-    "testo": "Freddo e nuvoloso: mantieni una temperatura interna leggermente più alta."
-  },
-  {
-    "suggestionId": "S11",
-    "suggestionName": "extreme_cold",
-    "text": "Extreme cold outside: avoid prolonged natural ventilation.",
-    "testo": "Freddo estremo all'esterno: evita la ventilazione naturale prolungata."
-  },
-  {
-    "suggestionId": "S12",
-    "suggestionName": "pmv_heat_border",
-    "text": "It is starting to get warmer. Adjust the temperature early to stay comfortable.",
-    "testo": "Sta iniziando a fare più caldo. Regola la temperatura in anticipo per rimanere comodo."
-  },
-  {
-    "suggestionId": "S13",
-    "suggestionName": "pmv_cold_border",
-    "text": "It is starting to get cooler. Turn up the heating if needed to stay comfortable.",
-    "testo": "Sta iniziando a fare più freddo. Aumenta il riscaldamento se necessario per rimanere comodo."
-  },
-  {
-    "suggestionId": "S14",
-    "suggestionName": "night_cooling",
-    "text": "Forecasted temperature drop: ventilate in the evening to cool down.",
-    "testo": "Prevista diminuzione della temperatura: ventila la sera per rinfrescare l'ambiente."
-  },
-  {
-    "suggestionId": "S15",
-    "suggestionName": "comfort",
-    "text": "Thermal comfort not ideal: check clothing or airflow.",
-    "testo": "Comfort termico non ideale: controlla l'abbigliamento o il flusso d'aria."
-  },
-  {
-    "suggestionId": "S17",
-    "suggestionName": "ppd",
-    "text": "High discomfort perception: check all parameters (T, RH, airflow).",
-    "testo": "Alta percezione di disagio: controlla tutti i parametri (T, UR, flusso d'aria)."
-  },
-  {
-    "suggestionId": "S18",
-    "suggestionName": "humidity",
-    "text": "The air is very dry: consider using a humidifier or adding some plants.",
-    "testo": "L'aria è molto secca: considera l'uso di un umidificatore o l'aggiunta di piante."
-  },
-  {
-    "suggestionId": "S19",
-    "suggestionName": "humidity_weather",
-    "text": "It is raining and the air is already humid: avoid opening windows and use mechanical ventilation or a dehumidifier.",
-    "testo": "Sta piovendo e l'aria è già umida: evita di aprire le finestre e usa la ventilazione meccanica o un deumidificatore."
-  },
-  {
-    "suggestionId": "S20",
-    "suggestionName": "voc",
-    "text": "High VOC levels detected: reduce the use of chemicals and ventilate the space well.",
-    "testo": "Alti livelli di VOC rilevati: riduci l'uso di sostanze chimiche e ventila bene l'ambiente."
-  },
-  {
-    "suggestionId": "S21",
-    "suggestionName": "pm10",
-    "text": "High PM10 levels: keep windows closed and use an air purifier if possible.",
-    "testo": "Alti livelli di PM10: tieni le finestre chiuse e usa un purificatore d'aria se possibile."
-  },
-  {
-    "suggestionId": "S22",
-    "suggestionName": "pm10_trend",
-    "text": "PM10 levels are rising: get ready to close windows or use a purifier.",
-    "testo": "I livelli di PM10 sono in aumento: preparati a chiudere le finestre o usare un purificatore."
-  },
-  {
-    "suggestionId": "S23",
-    "suggestionName": "iaq",
-    "text": "Critical air quality: consider air purifiers or targeted ventilation.",
-    "testo": "Qualità dell'aria critica: valuta l'uso di purificatori o ventilazione mirata."
-  },
-  {
-    "suggestionId": "S24",
-    "suggestionName": "iaq_persist",
-    "text": "Poor air quality is expected to persist: consider long-term solutions like ventilation systems or purifiers.",
-    "testo": "Si prevede che la scarsa qualità dell'aria persista: valuta soluzioni a lungo termine come sistemi di ventilazione o purificatori."
-  },
-  {
-    "suggestionId": "S25",
-    "suggestionName": "draft",
-    "text": "Cold and dry air detected with natural ventilation: try reducing drafts and adding humidity.",
-    "testo": "Aria fredda e secca rilevata con ventilazione naturale: prova a ridurre gli spifferi e aumentare l'umidità."
-  },
-  {
-    "suggestionId": "S26",
-    "suggestionName": "score_metric_temperature",
-    "text": "Overall conditions are good, but attention needed: {metric} is critical. Please act accordingly.",
-    "testo": "Le condizioni generali sono buone, ma occorre attenzione: {metric} è critica. Agisci di conseguenza."
-  },
-  {
-    "suggestionId": "S27",
-    "suggestionName": "voc_score",
-    "text": "Air pollution is high and will persist. Purify the air or ventilate well as soon as possible.",
-    "testo": "L'inquinamento dell'aria è alto e persisterà. Purifica l'aria o ventila bene il prima possibile."
-  },
-  {
-    "suggestionId": "S28",
-    "suggestionName": "score_improving",
-    "text": "Conditions are improving: keep current actions or settings.",
-    "testo": "Le condizioni stanno migliorando: mantieni le azioni o impostazioni attuali."
-  },
-  {
-    "suggestionId": "S29",
-    "suggestionName": "score_co2_night",
-    "text": "CO_2 is high at night despite good score: ventilate in the morning.",
-    "testo": "Il CO₂ è alto di notte nonostante un buon punteggio: ventila al mattino."
-  },
-  {
-    "suggestionId": "S31",
-    "suggestionName": "score_borderline",
-    "text": "Several parameters are borderline and worsening: intervene before it gets worse.",
-    "testo": "Diversi parametri sono al limite e in peggioramento: intervieni prima che peggiorino."
-  },
-  {
-    "suggestionId": "S32",
-    "suggestionName": "score_pollutants",
-    "text": "Air seems fine, but pollutants are rising: act before they become critical.",
-    "testo": "L'aria sembra buona, ma gli inquinanti stanno aumentando: agisci prima che diventino critici."
-  },
-  {
-    "suggestionId": "S33",
-    "suggestionName": "voc_trend",
-    "text": "VOCs are rising: ventilate early or remove sources.",
-    "testo": "I VOC sono in aumento: ventila in anticipo o rimuovi le fonti."
-  },
-  {
-    "suggestionId": "S34",
-    "suggestionName": "co2_norm",
-    "text": "Open windows to improve air quality, or adjust your mechanical system if available.",
-    "testo": "Apri le finestre per migliorare la qualità dell'aria o regola il sistema meccanico se disponibile."
-  },
-  {
-    "suggestionId": "S35",
-    "suggestionName": "temperature_cold",
-    "text": "Cold discomfort detected: increase indoor temperature.",
-    "testo": "Disagio da freddo rilevato: aumenta la temperatura interna."
-  },
-  {
-    "suggestionId": "S36",
-    "suggestionName": "temperature_hot",
-    "text": "Heat discomfort detected: lower temperature or improve airflow.",
-    "testo": "Disagio da caldo rilevato: abbassa la temperatura o migliora il flusso d'aria."
-  },
-  {
-    "suggestionId": "S16",
-    "suggestionName": "humidity_high",
-    "text": "The air is too humid: use a dehumidifier or ventilate more.",
-    "testo": "L'aria è troppo umida: usa un deumidificatore o ventila di più."
-  }
+    {
+      "suggestionId": "S0",
+      "suggestionName": "co2",
+      "text": "Avoid prolonged ventilation: it's too cold outside. Open briefly or use mechanical ventilation.",
+      "testo": "Evita la ventilazione prolungata: fa troppo freddo fuori. Apri brevemente o usa la ventilazione meccanica."
+    },
+    {
+      "suggestionId": "S1",
+      "suggestionName": "co2_trend",
+      "text": "CO₂ is rising: consider preventive ventilation.",
+      "testo": "Il CO₂ è in aumento: valuta una ventilazione preventiva."
+    },
+    {
+      "suggestionId": "S2",
+      "suggestionName": "co2_night",
+      "text": "High CO₂ levels detected at night. Remember to ventilate early in the morning to refresh the air.",
+      "testo": "Alti livelli di CO₂ rilevati di notte. Ricorda di ventilare presto al mattino per rinfrescare l'aria."
+    },
+    {
+      "suggestionId": "S3",
+      "suggestionName": "co2_weather",
+      "text": "Difficult to ventilate due to rain: prefer mechanical systems.",
+      "testo": "Difficile ventilare a causa della pioggia: preferisci sistemi meccanici."
+    },
+    {
+      "suggestionId": "S4",
+      "suggestionName": "temperature",
+      "text": "Slightly outside comfort range. Adjust heating/cooling slightly.",
+      "testo": "Leggermente fuori dall'intervallo di comfort. Regola leggermente il riscaldamento o il raffreddamento."
+    },
+    {
+      "suggestionId": "S5",
+      "suggestionName": "temp_trend_heat",
+      "text": "Temperature is borderline and rising: monitor the environment to prevent overheating.",
+      "testo": "La temperatura è al limite e in aumento: monitora l'ambiente per evitare il surriscaldamento."
+    },
+    {
+      "suggestionId": "S6",
+      "suggestionName": "temp_trend_cold",
+      "text": "Temperature is borderline and dropping: monitor to avoid excessive cooling.",
+      "testo": "La temperatura è al limite e in calo: monitora per evitare un raffreddamento eccessivo."
+    },
+    {
+      "suggestionId": "S7",
+      "suggestionName": "cold_pmv",
+      "text": "Severe cold discomfort: increase heating and check insulation.",
+      "testo": "Forte disagio da freddo: aumenta il riscaldamento e controlla l'isolamento."
+    },
+    {
+      "suggestionId": "S8",
+      "suggestionName": "hot_pmv",
+      "text": "Severe heat discomfort: ventilate or cool immediately.",
+      "testo": "Forte disagio da caldo: ventila o raffredda immediatamente."
+    },
+    {
+      "suggestionId": "S9",
+      "suggestionName": "heat_sun",
+      "text": "Sunny and hot: use shading or activate cooling.",
+      "testo": "Sole e caldo: usa schermature o attiva il raffrescamento."
+    },
+    {
+      "suggestionId": "S10",
+      "suggestionName": "cold_cloudy",
+      "text": "Cold and cloudy: keep indoor temperature slightly higher.",
+      "testo": "Freddo e nuvoloso: mantieni una temperatura interna leggermente più alta."
+    },
+    {
+      "suggestionId": "S11",
+      "suggestionName": "extreme_cold",
+      "text": "Extreme cold outside: avoid prolonged natural ventilation.",
+      "testo": "Freddo estremo all'esterno: evita la ventilazione naturale prolungata."
+    },
+    {
+      "suggestionId": "S12",
+      "suggestionName": "pmv_heat_border",
+      "text": "It is starting to get warmer. Adjust the temperature early to stay comfortable.",
+      "testo": "Sta iniziando a fare più caldo. Regola la temperatura in anticipo per rimanere comodo."
+    },
+    {
+      "suggestionId": "S13",
+      "suggestionName": "pmv_cold_border",
+      "text": "It is starting to get cooler. Turn up the heating if needed to stay comfortable.",
+      "testo": "Sta iniziando a fare più freddo. Aumenta il riscaldamento se necessario per rimanere comodo."
+    },
+    {
+      "suggestionId": "S14",
+      "suggestionName": "night_cooling",
+      "text": "Forecasted temperature drop: ventilate in the evening to cool down.",
+      "testo": "Prevista diminuzione della temperatura: ventila la sera per rinfrescare l'ambiente."
+    },
+    {
+      "suggestionId": "S15",
+      "suggestionName": "comfort",
+      "text": "Thermal comfort not ideal: check clothing or airflow.",
+      "testo": "Comfort termico non ideale: controlla l'abbigliamento o il flusso d'aria."
+    },
+    {
+      "suggestionId": "S17",
+      "suggestionName": "ppd",
+      "text": "High discomfort perception: check all parameters (T, RH, airflow).",
+      "testo": "Alta percezione di disagio: controlla tutti i parametri (T, UR, flusso d'aria)."
+    },
+    {
+      "suggestionId": "S18",
+      "suggestionName": "humidity",
+      "text": "The air is very dry: consider using a humidifier or adding some plants.",
+      "testo": "L'aria è molto secca: considera l'uso di un umidificatore o l'aggiunta di piante."
+    },
+    {
+      "suggestionId": "S19",
+      "suggestionName": "humidity_weather",
+      "text": "It is raining and the air is already humid: avoid opening windows and use mechanical ventilation or a dehumidifier.",
+      "testo": "Sta piovendo e l'aria è già umida: evita di aprire le finestre e usa la ventilazione meccanica o un deumidificatore."
+    },
+    {
+      "suggestionId": "S20",
+      "suggestionName": "voc",
+      "text": "High VOC levels detected: reduce the use of chemicals and ventilate the space well.",
+      "testo": "Alti livelli di VOC rilevati: riduci l'uso di sostanze chimiche e ventila bene l'ambiente."
+    },
+    {
+      "suggestionId": "S21",
+      "suggestionName": "pm10",
+      "text": "High PM10 levels: keep windows closed and use an air purifier if possible.",
+      "testo": "Alti livelli di PM10: tieni le finestre chiuse e usa un purificatore d'aria se possibile."
+    },
+    {
+      "suggestionId": "S22",
+      "suggestionName": "pm10_trend",
+      "text": "PM10 levels are rising: get ready to close windows or use a purifier.",
+      "testo": "I livelli di PM10 sono in aumento: preparati a chiudere le finestre o usare un purificatore."
+    },
+    {
+      "suggestionId": "S23",
+      "suggestionName": "iaq",
+      "text": "Critical air quality: consider air purifiers or targeted ventilation.",
+      "testo": "Qualità dell'aria critica: valuta l'uso di purificatori o ventilazione mirata."
+    },
+    {
+      "suggestionId": "S24",
+      "suggestionName": "iaq_persist",
+      "text": "Poor air quality is expected to persist: consider long-term solutions like ventilation systems or purifiers.",
+      "testo": "Si prevede che la scarsa qualità dell'aria persista: valuta soluzioni a lungo termine come sistemi di ventilazione o purificatori."
+    },
+    {
+      "suggestionId": "S25",
+      "suggestionName": "draft",
+      "text": "Cold and dry air detected with natural ventilation: try reducing drafts and adding humidity.",
+      "testo": "Aria fredda e secca rilevata con ventilazione naturale: prova a ridurre gli spifferi e aumentare l'umidità."
+    },
+    {
+      "suggestionId": "S26",
+      "suggestionName": "score_metric_temperature",
+      "text": "Overall conditions are good, but attention needed: {metric} is critical. Please act accordingly.",
+      "testo": "Le condizioni generali sono buone, ma occorre attenzione: {metric} è critica. Agisci di conseguenza."
+    },
+    {
+      "suggestionId": "S27",
+      "suggestionName": "voc_score",
+      "text": "Air pollution is high and will persist. Purify the air or ventilate well as soon as possible.",
+      "testo": "L'inquinamento dell'aria è alto e persisterà. Purifica l'aria o ventila bene il prima possibile."
+    },
+    {
+      "suggestionId": "S28",
+      "suggestionName": "score_improving",
+      "text": "Conditions are improving: keep current actions or settings.",
+      "testo": "Le condizioni stanno migliorando: mantieni le azioni o impostazioni attuali."
+    },
+    {
+      "suggestionId": "S29",
+      "suggestionName": "score_co2_night",
+      "text": "CO_2 is high at night despite good score: ventilate in the morning.",
+      "testo": "Il CO₂ è alto di notte nonostante un buon punteggio: ventila al mattino."
+    },
+    {
+      "suggestionId": "S31",
+      "suggestionName": "score_borderline",
+      "text": "Several parameters are borderline and worsening: intervene before it gets worse.",
+      "testo": "Diversi parametri sono al limite e in peggioramento: intervieni prima che peggiorino."
+    },
+    {
+      "suggestionId": "S32",
+      "suggestionName": "score_pollutants",
+      "text": "Air seems fine, but pollutants are rising: act before they become critical.",
+      "testo": "L'aria sembra buona, ma gli inquinanti stanno aumentando: agisci prima che diventino critici."
+    },
+    {
+      "suggestionId": "S33",
+      "suggestionName": "voc_trend",
+      "text": "VOCs are rising: ventilate early or remove sources.",
+      "testo": "I VOC sono in aumento: ventila in anticipo o rimuovi le fonti."
+    },
+    {
+      "suggestionId": "S34",
+      "suggestionName": "co2_norm",
+      "text": "Open windows to improve air quality, or adjust your mechanical system if available.",
+      "testo": "Apri le finestre per migliorare la qualità dell'aria o regola il sistema meccanico se disponibile."
+    },
+    {
+      "suggestionId": "S35",
+      "suggestionName": "temperature_cold",
+      "text": "Cold discomfort detected: increase indoor temperature.",
+      "testo": "Disagio da freddo rilevato: aumenta la temperatura interna."
+    },
+    {
+      "suggestionId": "S36",
+      "suggestionName": "temperature_hot",
+      "text": "Heat discomfort detected: lower temperature or improve airflow.",
+      "testo": "Disagio da caldo rilevato: abbassa la temperatura o migliora il flusso d'aria."
+    },
+    {
+      "suggestionId": "S16",
+      "suggestionName": "humidity_high",
+      "text": "The air is too humid: use a dehumidifier or ventilate more.",
+      "testo": "L'aria è troppo umida: usa un deumidificatore o ventila di più."
+    }
   ],
   "technical_suggestions": [
     {
