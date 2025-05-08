@@ -2344,9 +2344,171 @@
               "measurements": [
                 "Temperature",
                 "Humidity",
-                "Pressure"
+                "Pressure", 
+                "CO2"
               ],
               "lastUpdate": "2025-05-08T08:59:39Z"
+            }
+          ],
+          "suggestions": [
+            {
+              "suggestionId": "S0",
+              "state": 1
+            },
+            {
+              "suggestionId": "S1",
+              "state": 1
+            },
+            {
+              "suggestionId": "S2",
+              "state": 1
+            },
+            {
+              "suggestionId": "S3",
+              "state": 1
+            },
+            {
+              "suggestionId": "S4",
+              "state": 1
+            },
+            {
+              "suggestionId": "S5",
+              "state": 1
+            },
+            {
+              "suggestionId": "S6",
+              "state": 1
+            },
+            {
+              "suggestionId": "S7",
+              "state": 1
+            },
+            {
+              "suggestionId": "S8",
+              "state": 1
+            },
+            {
+              "suggestionId": "S9",
+              "state": 1
+            },
+            {
+              "suggestionId": "S10",
+              "state": 1
+            },
+            {
+              "suggestionId": "S11",
+              "state": 1
+            },
+            {
+              "suggestionId": "S12",
+              "state": 1
+            },
+            {
+              "suggestionId": "S13",
+              "state": 1
+            },
+            {
+              "suggestionId": "S14",
+              "state": 1
+            },
+            {
+              "suggestionId": "S15",
+              "state": 1
+            },
+            {
+              "suggestionId": "S17",
+              "state": 1
+            },
+            {
+              "suggestionId": "S18",
+              "state": 1
+            },
+            {
+              "suggestionId": "S19",
+              "state": 1
+            },
+            {
+              "suggestionId": "S20",
+              "state": 1
+            },
+            {
+              "suggestionId": "S21",
+              "state": 1
+            },
+            {
+              "suggestionId": "S22",
+              "state": 1
+            },
+            {
+              "suggestionId": "S23",
+              "state": 1
+            },
+            {
+              "suggestionId": "S24",
+              "state": 1
+            },
+            {
+              "suggestionId": "S25",
+              "state": 1
+            },
+            {
+              "suggestionId": "S26",
+              "state": 1
+            },
+            {
+              "suggestionId": "S27",
+              "state": 1
+            },
+            {
+              "suggestionId": "S28",
+              "state": 1
+            },
+            {
+              "suggestionId": "S29",
+              "state": 1
+            },
+            {
+              "suggestionId": "S31",
+              "state": 1
+            },
+            {
+              "suggestionId": "S32",
+              "state": 1
+            },
+            {
+              "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
+              "state": 1
+            }
+          ]
+        },
+        {
+          "roomId": "exterior",
+          "sensors": [
+            {
+              "sensorId": "0000F257",
+              "measurements": [
+                "Temperature",
+                "PM10.0",
+                "CO2",
+                "PM2.5"
+              ],
+              "lastUpdate": "2025-05-08T08:24:45Z"
             }
           ],
           "suggestions": [
@@ -2651,7 +2813,8 @@
               "measurements": [
                 "Temperature",
                 "Humidity",
-                "Pressure"
+                "Pressure",
+                "CO2"
               ],
               "lastUpdate": "2025-05-08T08:53:37Z"
             },
@@ -2660,9 +2823,171 @@
               "measurements": [
                 "Temperature",
                 "Humidity",
-                "Pressure"
+                "Pressure",
+                "CO2"
               ],
               "lastUpdate": "2025-05-08T08:59:14Z"
+            }
+          ],
+          "suggestions": [
+            {
+              "suggestionId": "S0",
+              "state": 1
+            },
+            {
+              "suggestionId": "S1",
+              "state": 1
+            },
+            {
+              "suggestionId": "S2",
+              "state": 1
+            },
+            {
+              "suggestionId": "S3",
+              "state": 1
+            },
+            {
+              "suggestionId": "S4",
+              "state": 1
+            },
+            {
+              "suggestionId": "S5",
+              "state": 1
+            },
+            {
+              "suggestionId": "S6",
+              "state": 1
+            },
+            {
+              "suggestionId": "S7",
+              "state": 1
+            },
+            {
+              "suggestionId": "S8",
+              "state": 1
+            },
+            {
+              "suggestionId": "S9",
+              "state": 1
+            },
+            {
+              "suggestionId": "S10",
+              "state": 1
+            },
+            {
+              "suggestionId": "S11",
+              "state": 1
+            },
+            {
+              "suggestionId": "S12",
+              "state": 1
+            },
+            {
+              "suggestionId": "S13",
+              "state": 1
+            },
+            {
+              "suggestionId": "S14",
+              "state": 1
+            },
+            {
+              "suggestionId": "S15",
+              "state": 1
+            },
+            {
+              "suggestionId": "S17",
+              "state": 1
+            },
+            {
+              "suggestionId": "S18",
+              "state": 1
+            },
+            {
+              "suggestionId": "S19",
+              "state": 1
+            },
+            {
+              "suggestionId": "S20",
+              "state": 1
+            },
+            {
+              "suggestionId": "S21",
+              "state": 1
+            },
+            {
+              "suggestionId": "S22",
+              "state": 1
+            },
+            {
+              "suggestionId": "S23",
+              "state": 1
+            },
+            {
+              "suggestionId": "S24",
+              "state": 1
+            },
+            {
+              "suggestionId": "S25",
+              "state": 1
+            },
+            {
+              "suggestionId": "S26",
+              "state": 1
+            },
+            {
+              "suggestionId": "S27",
+              "state": 1
+            },
+            {
+              "suggestionId": "S28",
+              "state": 1
+            },
+            {
+              "suggestionId": "S29",
+              "state": 1
+            },
+            {
+              "suggestionId": "S31",
+              "state": 1
+            },
+            {
+              "suggestionId": "S32",
+              "state": 1
+            },
+            {
+              "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
+              "state": 1
+            }
+          ]
+        },
+        {
+          "roomId": "exterior",
+          "sensors": [
+            {
+              "sensorId": "0000F257",
+              "measurements": [
+                "Temperature",
+                "PM10.0",
+                "CO2",
+                "PM2.5"
+              ],
+              "lastUpdate": "2025-05-08T08:24:45Z"
             }
           ],
           "suggestions": [
@@ -2948,10 +3273,10 @@
       "apartmentName": "2C",
       "type": "House",
       "coordinates": {
-        "long": 45.116177,
-        "lat": 7.742615
+        "long": 7.742615,
+        "lat": 45.116177
       },
-      "timezone": "Africa/Addis_Ababa",
+      "timezone": "Europe/Rome",
       "MAC": [
         {
           "name": "capetti",
@@ -2967,7 +3292,8 @@
               "measurements": [
                 "Temperature",
                 "Humidity",
-                "Pressure"
+                "Pressure",
+                "CO2"
               ],
               "lastUpdate": "2025-05-08T08:57:56Z"
             },
@@ -2979,6 +3305,167 @@
                 "VOC"
               ],
               "lastUpdate": "2025-05-08T08:57:37Z"
+            }
+          ],
+          "suggestions": [
+            {
+              "suggestionId": "S0",
+              "state": 1
+            },
+            {
+              "suggestionId": "S1",
+              "state": 1
+            },
+            {
+              "suggestionId": "S2",
+              "state": 1
+            },
+            {
+              "suggestionId": "S3",
+              "state": 1
+            },
+            {
+              "suggestionId": "S4",
+              "state": 1
+            },
+            {
+              "suggestionId": "S5",
+              "state": 1
+            },
+            {
+              "suggestionId": "S6",
+              "state": 1
+            },
+            {
+              "suggestionId": "S7",
+              "state": 1
+            },
+            {
+              "suggestionId": "S8",
+              "state": 1
+            },
+            {
+              "suggestionId": "S9",
+              "state": 1
+            },
+            {
+              "suggestionId": "S10",
+              "state": 1
+            },
+            {
+              "suggestionId": "S11",
+              "state": 1
+            },
+            {
+              "suggestionId": "S12",
+              "state": 1
+            },
+            {
+              "suggestionId": "S13",
+              "state": 1
+            },
+            {
+              "suggestionId": "S14",
+              "state": 1
+            },
+            {
+              "suggestionId": "S15",
+              "state": 1
+            },
+            {
+              "suggestionId": "S17",
+              "state": 1
+            },
+            {
+              "suggestionId": "S18",
+              "state": 1
+            },
+            {
+              "suggestionId": "S19",
+              "state": 1
+            },
+            {
+              "suggestionId": "S20",
+              "state": 1
+            },
+            {
+              "suggestionId": "S21",
+              "state": 1
+            },
+            {
+              "suggestionId": "S22",
+              "state": 1
+            },
+            {
+              "suggestionId": "S23",
+              "state": 1
+            },
+            {
+              "suggestionId": "S24",
+              "state": 1
+            },
+            {
+              "suggestionId": "S25",
+              "state": 1
+            },
+            {
+              "suggestionId": "S26",
+              "state": 1
+            },
+            {
+              "suggestionId": "S27",
+              "state": 1
+            },
+            {
+              "suggestionId": "S28",
+              "state": 1
+            },
+            {
+              "suggestionId": "S29",
+              "state": 1
+            },
+            {
+              "suggestionId": "S31",
+              "state": 1
+            },
+            {
+              "suggestionId": "S32",
+              "state": 1
+            },
+            {
+              "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
+              "state": 1
+            }
+          ]
+        },
+        {
+          "roomId": "exterior",
+          "sensors": [
+            {
+              "sensorId": "0000F257",
+              "measurements": [
+                "Temperature",
+                "PM10.0",
+                "CO2",
+                "PM2.5"
+              ],
+              "lastUpdate": "2025-05-08T08:24:45Z"
             }
           ],
           "suggestions": [
@@ -3282,7 +3769,8 @@
               "sensorId": "0000B323",
               "measurements": [
                 "Temperature",
-                "Humidity"
+                "Humidity",
+                "CO2"
               ],
               "lastUpdate": "2025-05-08T08:57:25Z"
             },
@@ -3290,10 +3778,172 @@
               "sensorId": "0000F258",
               "measurements": [
                 "Temperature",
+                "CO2",
                 "PM10.0",
                 "PM2.5"
               ],
               "lastUpdate": "2025-05-08T08:28:35Z"
+            }
+          ],
+          "suggestions": [
+            {
+              "suggestionId": "S0",
+              "state": 1
+            },
+            {
+              "suggestionId": "S1",
+              "state": 1
+            },
+            {
+              "suggestionId": "S2",
+              "state": 1
+            },
+            {
+              "suggestionId": "S3",
+              "state": 1
+            },
+            {
+              "suggestionId": "S4",
+              "state": 1
+            },
+            {
+              "suggestionId": "S5",
+              "state": 1
+            },
+            {
+              "suggestionId": "S6",
+              "state": 1
+            },
+            {
+              "suggestionId": "S7",
+              "state": 1
+            },
+            {
+              "suggestionId": "S8",
+              "state": 1
+            },
+            {
+              "suggestionId": "S9",
+              "state": 1
+            },
+            {
+              "suggestionId": "S10",
+              "state": 1
+            },
+            {
+              "suggestionId": "S11",
+              "state": 1
+            },
+            {
+              "suggestionId": "S12",
+              "state": 1
+            },
+            {
+              "suggestionId": "S13",
+              "state": 1
+            },
+            {
+              "suggestionId": "S14",
+              "state": 1
+            },
+            {
+              "suggestionId": "S15",
+              "state": 1
+            },
+            {
+              "suggestionId": "S17",
+              "state": 1
+            },
+            {
+              "suggestionId": "S18",
+              "state": 1
+            },
+            {
+              "suggestionId": "S19",
+              "state": 1
+            },
+            {
+              "suggestionId": "S20",
+              "state": 1
+            },
+            {
+              "suggestionId": "S21",
+              "state": 1
+            },
+            {
+              "suggestionId": "S22",
+              "state": 1
+            },
+            {
+              "suggestionId": "S23",
+              "state": 1
+            },
+            {
+              "suggestionId": "S24",
+              "state": 1
+            },
+            {
+              "suggestionId": "S25",
+              "state": 1
+            },
+            {
+              "suggestionId": "S26",
+              "state": 1
+            },
+            {
+              "suggestionId": "S27",
+              "state": 1
+            },
+            {
+              "suggestionId": "S28",
+              "state": 1
+            },
+            {
+              "suggestionId": "S29",
+              "state": 1
+            },
+            {
+              "suggestionId": "S31",
+              "state": 1
+            },
+            {
+              "suggestionId": "S32",
+              "state": 1
+            },
+            {
+              "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
+              "state": 1
+            }
+          ]
+        },
+        {
+          "roomId": "exterior",
+          "sensors": [
+            {
+              "sensorId": "0000F257",
+              "measurements": [
+                "Temperature",
+                "PM10.0",
+                "CO2",
+                "PM2.5"
+              ],
+              "lastUpdate": "2025-05-08T08:24:45Z"
             }
           ],
           "suggestions": [
