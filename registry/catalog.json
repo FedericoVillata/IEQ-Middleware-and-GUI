@@ -58,6 +58,14 @@
       "apartments": [
         "apartment6"
       ]
+    },
+    {
+      "userId": "Technical",
+      "password": "Technical",
+      "permissions": "Technical",
+      "apartments": [
+        "apartment7"
+      ]
     }
   ],
   "apartments": [
@@ -83,7 +91,7 @@
                 "Temperature",
                 "Humidity"
               ],
-              "lastUpdate": "2025-05-08T07:20:38.823009Z"
+              "lastUpdate": "2025-05-08T15:28:18.858867Z"
             }
           ],
           "suggestions": [
@@ -242,7 +250,7 @@
                 "Temperature",
                 "Humidity"
               ],
-              "lastUpdate": "2025-05-08T07:20:38.823288Z"
+              "lastUpdate": "2025-05-08T15:28:18.859029Z"
             }
           ],
           "suggestions": [
@@ -427,7 +435,7 @@
                 "Humidity",
                 "CO2"
               ],
-              "lastUpdate": "2025-05-08T06:33:38Z"
+              "lastUpdate": "2025-05-08T14:35:10Z"
             }
           ],
           "suggestions": [
@@ -587,7 +595,7 @@
                 "Humidity",
                 "CO2"
               ],
-              "lastUpdate": "2025-05-08T06:33:38Z"
+              "lastUpdate": "2025-05-08T14:35:10Z"
             }
           ],
           "suggestions": [
@@ -747,7 +755,7 @@
                 "Humidity",
                 "CO2"
               ],
-              "lastUpdate": "2025-05-08T06:33:38Z"
+              "lastUpdate": "2025-05-08T14:35:10Z"
             }
           ],
           "suggestions": [
@@ -907,7 +915,7 @@
                 "Humidity",
                 "CO2"
               ],
-              "lastUpdate": "2025-05-08T06:33:38Z"
+              "lastUpdate": "2025-05-08T14:35:10Z"
             }
           ],
           "suggestions": [
@@ -1216,7 +1224,7 @@
                 "CO2",
                 "Pressure"
               ],
-              "lastUpdate": "2025-05-08T08:59:39Z"
+              "lastUpdate": "2025-05-08T13:59:39Z"
             }
           ],
           "suggestions": [
@@ -1376,7 +1384,7 @@
                 "Humidity",
                 "CO2"
               ],
-              "lastUpdate": "2025-05-08T08:57:25Z"
+              "lastUpdate": "2025-05-08T13:57:25Z"
             },
             {
               "sensorId": "0000F258",
@@ -1386,7 +1394,7 @@
                 "CO2",
                 "PM2.5"
               ],
-              "lastUpdate": "2025-05-08T08:28:35Z"
+              "lastUpdate": "2025-05-08T12:58:35Z"
             }
           ],
           "suggestions": [
@@ -1547,7 +1555,7 @@
                 "CO2",
                 "Pressure"
               ],
-              "lastUpdate": "2025-05-08T08:59:14Z"
+              "lastUpdate": "2025-05-08T13:59:14Z"
             }
           ],
           "suggestions": [
@@ -1708,7 +1716,7 @@
                 "CO2",
                 "Pressure"
               ],
-              "lastUpdate": "2025-05-08T08:53:37Z"
+              "lastUpdate": "2025-05-08T14:00:36Z"
             }
           ],
           "suggestions": [
@@ -1869,7 +1877,7 @@
                 "CO2",
                 "Pressure"
               ],
-              "lastUpdate": "2025-05-08T08:57:56Z"
+              "lastUpdate": "2025-05-08T13:57:56Z"
             },
             {
               "sensorId": "0000F264",
@@ -1878,7 +1886,7 @@
                 "Humidity",
                 "VOC"
               ],
-              "lastUpdate": "2025-05-08T08:57:37Z"
+              "lastUpdate": "2025-05-08T13:57:37Z"
             }
           ],
           "suggestions": [
@@ -2039,7 +2047,7 @@
                 "CO2",
                 "PM2.5"
               ],
-              "lastUpdate": "2025-05-08T08:24:45Z"
+              "lastUpdate": "2025-05-08T12:54:45Z"
             }
           ],
           "suggestions": [
@@ -2344,10 +2352,10 @@
               "measurements": [
                 "Temperature",
                 "Humidity",
-                "Pressure", 
+                "Pressure",
                 "CO2"
               ],
-              "lastUpdate": "2025-05-08T08:59:39Z"
+              "lastUpdate": "2025-05-08T13:59:39Z"
             }
           ],
           "suggestions": [
@@ -2508,7 +2516,7 @@
                 "CO2",
                 "PM2.5"
               ],
-              "lastUpdate": "2025-05-08T08:24:45Z"
+              "lastUpdate": "2025-05-08T12:54:45Z"
             }
           ],
           "suggestions": [
@@ -2816,7 +2824,7 @@
                 "Pressure",
                 "CO2"
               ],
-              "lastUpdate": "2025-05-08T08:53:37Z"
+              "lastUpdate": "2025-05-08T14:00:36Z"
             },
             {
               "sensorId": "0000F26B",
@@ -2826,7 +2834,7 @@
                 "Pressure",
                 "CO2"
               ],
-              "lastUpdate": "2025-05-08T08:59:14Z"
+              "lastUpdate": "2025-05-08T13:59:14Z"
             }
           ],
           "suggestions": [
@@ -2987,7 +2995,7 @@
                 "CO2",
                 "PM2.5"
               ],
-              "lastUpdate": "2025-05-08T08:24:45Z"
+              "lastUpdate": "2025-05-08T12:54:45Z"
             }
           ],
           "suggestions": [
@@ -3295,7 +3303,7 @@
                 "Pressure",
                 "CO2"
               ],
-              "lastUpdate": "2025-05-08T08:57:56Z"
+              "lastUpdate": "2025-05-08T13:57:56Z"
             },
             {
               "sensorId": "0000F264",
@@ -3304,7 +3312,7 @@
                 "Humidity",
                 "VOC"
               ],
-              "lastUpdate": "2025-05-08T08:57:37Z"
+              "lastUpdate": "2025-05-08T13:57:37Z"
             }
           ],
           "suggestions": [
@@ -3465,7 +3473,7 @@
                 "CO2",
                 "PM2.5"
               ],
-              "lastUpdate": "2025-05-08T08:24:45Z"
+              "lastUpdate": "2025-05-08T12:54:45Z"
             }
           ],
           "suggestions": [
@@ -3772,7 +3780,7 @@
                 "Humidity",
                 "CO2"
               ],
-              "lastUpdate": "2025-05-08T08:57:25Z"
+              "lastUpdate": "2025-05-08T13:57:25Z"
             },
             {
               "sensorId": "0000F258",
@@ -3782,7 +3790,7 @@
                 "PM10.0",
                 "PM2.5"
               ],
-              "lastUpdate": "2025-05-08T08:28:35Z"
+              "lastUpdate": "2025-05-08T12:58:35Z"
             }
           ],
           "suggestions": [
@@ -3943,7 +3951,335 @@
                 "CO2",
                 "PM2.5"
               ],
-              "lastUpdate": "2025-05-08T08:24:45Z"
+              "lastUpdate": "2025-05-08T12:54:45Z"
+            }
+          ],
+          "suggestions": [
+            {
+              "suggestionId": "S0",
+              "state": 1
+            },
+            {
+              "suggestionId": "S1",
+              "state": 1
+            },
+            {
+              "suggestionId": "S2",
+              "state": 1
+            },
+            {
+              "suggestionId": "S3",
+              "state": 1
+            },
+            {
+              "suggestionId": "S4",
+              "state": 1
+            },
+            {
+              "suggestionId": "S5",
+              "state": 1
+            },
+            {
+              "suggestionId": "S6",
+              "state": 1
+            },
+            {
+              "suggestionId": "S7",
+              "state": 1
+            },
+            {
+              "suggestionId": "S8",
+              "state": 1
+            },
+            {
+              "suggestionId": "S9",
+              "state": 1
+            },
+            {
+              "suggestionId": "S10",
+              "state": 1
+            },
+            {
+              "suggestionId": "S11",
+              "state": 1
+            },
+            {
+              "suggestionId": "S12",
+              "state": 1
+            },
+            {
+              "suggestionId": "S13",
+              "state": 1
+            },
+            {
+              "suggestionId": "S14",
+              "state": 1
+            },
+            {
+              "suggestionId": "S15",
+              "state": 1
+            },
+            {
+              "suggestionId": "S17",
+              "state": 1
+            },
+            {
+              "suggestionId": "S18",
+              "state": 1
+            },
+            {
+              "suggestionId": "S19",
+              "state": 1
+            },
+            {
+              "suggestionId": "S20",
+              "state": 1
+            },
+            {
+              "suggestionId": "S21",
+              "state": 1
+            },
+            {
+              "suggestionId": "S22",
+              "state": 1
+            },
+            {
+              "suggestionId": "S23",
+              "state": 1
+            },
+            {
+              "suggestionId": "S24",
+              "state": 1
+            },
+            {
+              "suggestionId": "S25",
+              "state": 1
+            },
+            {
+              "suggestionId": "S26",
+              "state": 1
+            },
+            {
+              "suggestionId": "S27",
+              "state": 1
+            },
+            {
+              "suggestionId": "S28",
+              "state": 1
+            },
+            {
+              "suggestionId": "S29",
+              "state": 1
+            },
+            {
+              "suggestionId": "S31",
+              "state": 1
+            },
+            {
+              "suggestionId": "S32",
+              "state": 1
+            },
+            {
+              "suggestionId": "S33",
+              "state": 1
+            },
+            {
+              "suggestionId": "S34",
+              "state": 1
+            },
+            {
+              "suggestionId": "S35",
+              "state": 1
+            },
+            {
+              "suggestionId": "S36",
+              "state": 1
+            },
+            {
+              "suggestionId": "S16",
+              "state": 1
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "thresholds": {
+          "adaptive_temp_category": 2,
+          "mechanical_temp_warm": {
+            "G": [
+              22.0,
+              26.0
+            ],
+            "Y": [
+              20.0,
+              27.0
+            ],
+            "R": [
+              0.0,
+              20.0,
+              27.0,
+              100.0
+            ]
+          },
+          "mechanical_temp_cold": {
+            "G": [
+              20.0,
+              23.0
+            ],
+            "Y": [
+              18.0,
+              26.0
+            ],
+            "R": [
+              0.0,
+              18.0,
+              26.0,
+              100.0
+            ]
+          },
+          "humidity": {
+            "G": [
+              40,
+              60
+            ],
+            "Y": [
+              30,
+              70
+            ],
+            "R": [
+              0,
+              30,
+              70,
+              100
+            ]
+          },
+          "co2_natural": {
+            "G": 1200,
+            "Y": 1500,
+            "R": 10000
+          },
+          "co2_mechanical": {
+            "Too Good": 600,
+            "G": 1200,
+            "Y": 1700,
+            "R": 2500,
+            "Extreme": 10000
+          },
+          "overall_score_classification": {
+            "G": 100,
+            "Y": 70,
+            "R": 40
+          },
+          "ieqi_classification": {
+            "G": 1.0,
+            "Y": 2.0,
+            "R": 4.0
+          },
+          "icone_classification": {
+            "G": 1.0,
+            "Y": 2.0,
+            "R": 4.0
+          },
+          "ppd_classification": {
+            "G": 10,
+            "Y": 25,
+            "R": 75
+          },
+          "pmv_classification": {
+            "Very Cold": -2.5,
+            "Cold": -1.5,
+            "Slightly Cold": -0.5,
+            "Neutral": 0.5,
+            "Slightly Warm": 1.5,
+            "Warm": 2.5,
+            "Very Warm": 3.0
+          }
+        },
+        "values": {
+          "met": 1.2,
+          "clo_warm": 0.5,
+          "clo_cold": 1.0,
+          "ventilation": "nat",
+          "temp_opt": 22,
+          "hum_opt": 50
+        },
+        "label_to_score": {
+          "Too Good": 3,
+          "G": 3,
+          "Y": 2,
+          "R": 1,
+          "Extreme": 0,
+          "Unknown": 0,
+          "Very Cold": 0,
+          "Cold": 1,
+          "Slightly Cold": 2,
+          "Neutral": 3,
+          "Slightly Warm": 2,
+          "Warm": 1,
+          "Very Warm": 0
+        },
+        "weights": {
+          "temperature": 15.0,
+          "humidity": 10.0,
+          "co2": 20.0,
+          "pmv": 15.0,
+          "ppd": 10.0,
+          "icone": 15.0,
+          "ieqi": 15.0
+        }
+      }
+    },
+    {
+      "users": [
+        "Technical"
+      ],
+      "apartmentId": "apartment7",
+      "apartmentName": "Valentino",
+      "type": "School",
+      "coordinates": {
+        "long": 7.742615,
+        "lat": 45.116177
+      },
+      "timezone": "Europe/Rome",
+      "MAC": [
+        {
+          "name": "capetti",
+          "MAC": "0000D37A"
+        }
+      ],
+      "rooms": [
+        {
+          "roomId": "Office",
+          "sensors": [
+            {
+              "sensorId": "0000D368",
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "Pressure",
+                "CO2"
+              ],
+              "lastUpdate": 0
+            },
+            {
+              "sensorId": "0000D369",
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "Pressure",
+                "CO2"
+              ],
+              "lastUpdate": 0
+            },
+            {
+              "sensorId": "0000D36B",
+              "measurements": [
+                "Temperature",
+                "Humidity",
+                "Pressure",
+                "CO2"
+              ],
+              "lastUpdate": 0
             }
           ],
           "suggestions": [
