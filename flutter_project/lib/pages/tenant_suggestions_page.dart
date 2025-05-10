@@ -131,10 +131,16 @@ if (isSameRoom && isValid && isSameDay) {
     const SizedBox(height: 8),
     Expanded(
       child: suggestions.isEmpty
-          ? const Center(
-              child: Text('No suggestions received today for the selected room.',
-                  style: TextStyle(fontSize: 16)),
-            )
+          ? const SizedBox.expand(
+    child: Center(
+      child: Text(
+        'No suggestions received today for the selected room.',
+        style: TextStyle(fontSize: 16),
+        textAlign: TextAlign.center,
+      ),
+    ),
+  )
+
           : ListView.builder(
               physics: const AlwaysScrollableScrollPhysics(), 
               padding: const EdgeInsets.all(16),
