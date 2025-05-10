@@ -20,6 +20,8 @@ class HomePage extends StatefulWidget {
   final Map<String, int> overallScores;
   final Function(String) onRoomChanged;
   final Function(String) onApartmentChanged;
+  final Map<String, String> apartmentNames;
+
 
   const HomePage({
     super.key,
@@ -31,6 +33,7 @@ class HomePage extends StatefulWidget {
     required this.overallScores,
     required this.onRoomChanged,
     required this.onApartmentChanged,
+    required this.apartmentNames, 
   });
 
   @override
@@ -280,8 +283,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('$selectedApartment - $selectedRoom',
-                  style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w500)),
+              Text('${widget.apartmentNames[selectedApartment] ?? selectedApartment} - $selectedRoom', style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w500)),
               GestureDetector(
                 onTap: () => setState(() => showDropdown = !showDropdown),
                 child: Container(
@@ -324,7 +326,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
               items: options
                   .map((e) => DropdownMenuItem(
                         value: e,
-                        child: Text(e, style: const TextStyle(fontSize: 16)),
+                        child: Text(widget.apartmentNames[e] ?? e, style: const TextStyle(fontSize: 16)),
                       ))
                   .toList(),
             ),

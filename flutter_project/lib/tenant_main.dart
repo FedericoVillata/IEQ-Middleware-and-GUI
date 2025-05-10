@@ -83,6 +83,8 @@ class _TenantMainPageState extends State<TenantMainPage> {
   late String selectedRoom;
   final Map<String, List<String>> apartmentRooms = {};
   final Map<String, int> overallScores = {};
+  final Map<String, String> apartmentNames = {};
+
 
   bool loading = true;
 
@@ -109,6 +111,8 @@ class _TenantMainPageState extends State<TenantMainPage> {
       for (final apt in data) {
         if (widget.apartments.contains(apt['apartmentId'])) {
           final aptId = apt['apartmentId'];
+          final aptName = apt['apartmentName'];
+          apartmentNames[aptId] = aptName;
           final rooms = List<String>.from(
               (apt['rooms'] as List<dynamic>).map((r) => r['roomId']));
           apartmentRooms[aptId] = rooms;
@@ -155,6 +159,7 @@ class _TenantMainPageState extends State<TenantMainPage> {
         overallScores: overallScores,
         onRoomChanged: updateSelectedRoom,
         onApartmentChanged: updateSelectedApartment,
+        apartmentNames: apartmentNames,
       ),
       suggestions.TenantSuggestionsPage(
         username: widget.username,
