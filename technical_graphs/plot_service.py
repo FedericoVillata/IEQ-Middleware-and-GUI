@@ -169,6 +169,10 @@ class PlotService:
             except Exception as e:
                 print(f"Error adjusting duration: {e}")
 
+        EXTRA_BUFFER_HOURS = 4
+        duration_hours += EXTRA_BUFFER_HOURS
+        duration = str(duration_hours)
+
         # 1) Fetch data from the adaptor
         data = self._fetch_data(userId, apartmentId, measure, start, end, duration, room)
         if room and any("room" in d for d in data):
@@ -219,48 +223,61 @@ class PlotService:
 
         # ----------------------------------------------------------------
         #  FILL MIDNIGHT (slot 0)
-        #     • riempi SOLO se esiste prev_sample entro 4 h
-        #     • se anche next_sample è entro 4 h ⇒ media
-        #     • altrimenti ⇒ valore di prev_sample
+        #     • if both neighbours (prev & next) are within 4 h  → average
+        #     • else if only one neighbour is within 4 h        → copy it
+        #     • otherwise                                       → leave NaN
         # ----------------------------------------------------------------
-        all_days = sorted(day_dict.keys())          # usato anche più avanti
+        MAX_GAP = timedelta(hours=4)
+
+        all_days = sorted(day_dict.keys())          # used later for plotting
         for day_str in all_days:
             if not np.isnan(day_dict[day_str][0]):
-                continue                            # slot già valorizzato
+                continue                            # slot already filled
 
             midnight = datetime.strptime(day_str, "%Y-%m-%d")
 
-            # ultimo campione prima di mezzanotte (se esiste)
+            # closest sample BEFORE 00:00
             prev_sample = next(
                 ((dt, v) for dt, v in reversed(interpolated_pairs) if dt < midnight),
                 None
             )
-            if not prev_sample:
-                continue                            # niente valore prima → lasciamo NaN
-
-            gap_prev = midnight - prev_sample[0]
-            if gap_prev > timedelta(hours=4):
-                continue                            # troppo lontano → lasciamo NaN
-
-            # primo campione dopo/uguale mezzanotte (se esiste)
+            # closest sample AT/AFTER 00:00
             next_sample = next(
                 ((dt, v) for dt, v in interpolated_pairs if dt >= midnight),
                 None
             )
 
-            if next_sample and (next_sample[0] - prev_sample[0]) <= timedelta(hours=4):
-                fill_val = (prev_sample[1] + next_sample[1]) / 2
-            else:
+            # compute gaps (if neighbour exists)
+            gap_prev = midnight - prev_sample[0] if prev_sample else None
+            gap_next = next_sample[0] - midnight if next_sample else None
+
+            # decide how to fill the slot
+            if (
+                prev_sample and gap_prev <= MAX_GAP
+                and next_sample and gap_next <= MAX_GAP
+            ):
+                fill_val = (prev_sample[1] + next_sample[1]) / 2.0
+            elif prev_sample and gap_prev <= MAX_GAP:
                 fill_val = prev_sample[1]
+            elif next_sample and gap_next <= MAX_GAP:
+                fill_val = next_sample[1]
+            else:
+                continue                             # leave as NaN (no close neighbour)
 
             day_dict[day_str][0] = fill_val
         # ----------------------------------------------------------------
 
+        # Keep only the days that belong to the user‑requested window.
+        window_start = (now - timedelta(hours=duration_hours - EXTRA_BUFFER_HOURS)) \
+                        .replace(hour=0, minute=0, second=0, microsecond=0) \
+                        .strftime("%Y-%m-%d")
+
+        display_days = [d for d in all_days if d >= window_start]
 
         # build the matrix
-        n_days = len(all_days)
+        n_days = len(display_days)
         matrix = np.zeros((48, n_days), dtype=float)
-        for col, dStr in enumerate(all_days):
+        for col, dStr in enumerate(display_days):
             matrix[:, col] = day_dict[dStr]
 
 
@@ -314,7 +331,7 @@ class PlotService:
         # Show ~8 ticks across
         step_x = max(1, n_days // 8)
         ax.set_xticks(x_vals[::step_x])
-        ax.set_xticklabels([all_days[i] for i in x_vals[::step_x]], rotation=45)
+        ax.set_xticklabels([display_days[i] for i in x_vals[::step_x]], rotation=45)
 
         ax.set_xlabel("Date")
         ax.set_ylabel("Time of Day")
