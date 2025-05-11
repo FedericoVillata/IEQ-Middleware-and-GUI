@@ -420,8 +420,8 @@
         {
           "name": "netatmo",
           "MAC": "70:ee:50:af:8a:ea",
-          "accessToken": "67251bc704bee2bc3e05de23|a942fd44d412b7cc51e23b629acc2038",
-          "refreshToken": "67251bc704bee2bc3e05de23|666efca314989ea2126d19d8b5853d44"
+          "accessToken": "67251bc704bee2bc3e05de23|132f44fd824542cc75922f633ac594c8",
+          "refreshToken": "67251bc704bee2bc3e05de23|863cfbf8c4321ac2c4d1b0abb7ca3a9e"
         }
       ],
       "rooms": [
