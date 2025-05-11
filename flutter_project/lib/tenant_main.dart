@@ -12,6 +12,8 @@ import 'package:provider/provider.dart';
 import 'mqtt_suggestions_manager.dart';          //  ← aggiungi questo
 import 'package:flutter/gestures.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'mqtt_alert_manager.dart';
+
 
 
 class MyAppTenant extends StatelessWidget {
@@ -26,7 +28,9 @@ class MyAppTenant extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-return ChangeNotifierProvider<MqttSuggestionsManager>(
+return MultiProvider(
+  providers: [
+    ChangeNotifierProvider<MqttSuggestionsManager>(
       create: (_) {
         final mgr = MqttSuggestionsManager();
         mgr.initMqtt(
@@ -37,12 +41,27 @@ return ChangeNotifierProvider<MqttSuggestionsManager>(
         );
         return mgr;
       },
-      child: TenantMainPage(
-  username: username,
-  apartments: apartments,
-),
+    ),
+    ChangeNotifierProvider<MqttAlertManager>(
+      create: (_) {
+        final mgr = MqttAlertManager();
+        mgr.syncFromRest(AppConfig.suggestionsRestUrl, apartments); // <-- usa lo stesso endpoint
+        mgr.init(
+          broker: AppConfig.mqttBroker,
+          port: AppConfig.mqttPort,
+          topicBase: 'IEQmidAndGUI',
+          apartments: apartments,
+        );
+        return mgr;
+      },
+    ),
+  ],
+  child: TenantMainPage(
+    username: username,
+    apartments: apartments,
+  ),
+);
 
-    );
   }
 }
 
@@ -88,7 +107,7 @@ class _TenantMainPageState extends State<TenantMainPage> {
     super.initState();
     selectedApartment = widget.apartments.first;
     selectedRoom = '';
-    fetchApartmentData().then((_) => _fetchInitialSuggestions());
+    fetchApartmentData().then((_) => _fetchInitialSuggestions());_fetchInitialAlerts(); 
   }
 
   // ---------------- public helper for SuggestionsBell -------
@@ -129,6 +148,12 @@ class _TenantMainPageState extends State<TenantMainPage> {
   final mgr = context.read<MqttSuggestionsManager>();
   await mgr.syncFromRest(AppConfig.suggestionsRestUrl, widget.apartments);
 }
+
+Future<void> _fetchInitialAlerts() async {
+  final mgr = context.read<MqttAlertManager>();
+  await mgr.syncFromRest(AppConfig.suggestionsRestUrl, widget.apartments);
+}
+
 
 
   // ---------------- callbacks from child ----------------

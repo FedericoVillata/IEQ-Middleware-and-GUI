@@ -390,7 +390,7 @@ Widget _buildAlertBanner(AlertMessage alert, MqttAlertManager manager) {
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            'Room ${alert.roomId.toUpperCase()}: ${alert.message}',
+            '${_fmt(alert.timestamp)} • Room ${alert.roomId.toUpperCase()}: ${alert.message}',
             style: const TextStyle(color: Colors.white, fontSize: 16),
           ),
         ),
@@ -404,6 +404,7 @@ Widget _buildAlertBanner(AlertMessage alert, MqttAlertManager manager) {
     ),
   );
 }
+
 
 
 
@@ -459,10 +460,17 @@ Widget _buildAlertBanner(AlertMessage alert, MqttAlertManager manager) {
         : (loc?.indoorTemperature         ?? 'Indoor Temperature');
   final tWelcome         = loc?.welcome                    ?? 'Welcome';
     final alertManager = Provider.of<MqttAlertManager>(context);
-final relevantAlerts = alertManager.allAlerts.where((a) =>
-  a.apartmentId == selectedApartment &&
-  (apartmentType == 'House' || a.roomId == selectedRoom)
-).toList();
+final now = DateTime.now();
+final relevantAlerts = alertManager.allAlerts.where((a) {
+  final sameApartment = a.apartmentId == selectedApartment;
+  final correctRoom = apartmentType == 'House' || a.roomId == selectedRoom;
+  final sameDay = a.timestamp.year == now.year &&
+                  a.timestamp.month == now.month &&
+                  a.timestamp.day == now.day;
+  return sameApartment && correctRoom && sameDay;
+}).toList()
+  ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
 
 
     
@@ -581,4 +589,7 @@ final relevantAlerts = alertManager.allAlerts.where((a) =>
   }
 }
 
-
+String _fmt(DateTime dt) {
+  final local = dt.toLocal();
+  return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+}

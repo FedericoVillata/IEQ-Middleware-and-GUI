@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_browser_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
+import 'package:http/http.dart' as http;
+
 
 class AlertMessage {
   final String apartmentId;
@@ -27,6 +29,63 @@ class MqttAlertManager extends ChangeNotifier {
   late final MqttClient _client;
   bool _initialized = false;
   final Set<String> _subscribed = {};
+
+  Future<void> syncFromRest(String restUrl, List<String> apartments) async {
+  try {
+    final res = await http.get(Uri.parse(restUrl));
+    if (res.statusCode != 200) {
+      debugPrint('[ALERT REST] Unexpected status ${res.statusCode}');
+      return;
+    }
+
+    if (res.body.trim().isEmpty) {
+      debugPrint('[ALERT REST] Empty response body');
+      return;
+    }
+
+    final Map<String, dynamic> json = jsonDecode(res.body);
+
+    for (final apt in apartments) {
+      final aptData = json[apt];
+      if (aptData == null || aptData['alerts'] == null) continue;
+
+      final alertsMap = Map<String, dynamic>.from(aptData['alerts']);
+
+      for (final entry in alertsMap.entries) {
+        final roomId = entry.key;
+        final alerts = entry.value as List<dynamic>;
+
+        for (final a in alerts) {
+          final msg   = a['text']?.toString() ?? '';
+          final tsSec = (a['ts'] ?? 0).toDouble();
+
+          final alert = AlertMessage(
+            apartmentId: apt,
+            roomId: roomId,
+            message: msg,
+            timestamp: DateTime.fromMillisecondsSinceEpoch((tsSec * 1000).round()),
+          );
+
+          final isDuplicate = _alerts.any((x) =>
+              x.apartmentId == alert.apartmentId &&
+              x.roomId == alert.roomId &&
+              x.message == alert.message);
+
+          if (!isDuplicate) {
+            _alerts.add(alert);
+          }
+        }
+      }
+    }
+
+    notifyListeners();
+    debugPrint('[ALERT REST] Bootstrap completed with ${_alerts.length} items');
+  } catch (e) {
+    debugPrint('[ALERT REST] Error while fetching initial alerts → $e');
+  }
+}
+
+
 
   Future<void> init({
     required String broker,
