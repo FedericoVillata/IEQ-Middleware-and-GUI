@@ -177,6 +177,7 @@ if (isSameRoom && isValid && isSameDay) {
 }
 
 
+
   void _cleanupVotes(List<TenantSuggestion> current) {
     final keys = current.map(_key).toSet();
     _downVotes.removeWhere((k, _) => !keys.contains(k));
@@ -319,6 +320,12 @@ _showSnack('${AppLocalizations.of(context)!.usefulVote} • ${_upVotes[k]} 👍'
   }
 }
 
+String _fmt(DateTime dt) {
+  final local = dt.toLocal();
+  return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+}
+
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 class _SuggestionCard extends StatelessWidget {
@@ -353,9 +360,10 @@ class _SuggestionCard extends StatelessWidget {
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 2),
                   Text(
-                    '${suggestion.roomId}/${suggestion.code} • ${suggestion.timestamp.toLocal().toString().substring(11, 16)}',
-                    style: const TextStyle(fontSize: 13, color: Colors.grey),
-                  ),
+  '${suggestion.roomId}/${suggestion.code} • ${_fmt(suggestion.timestamp)}',
+  style: const TextStyle(fontSize: 13, color: Colors.grey),
+),
+
                 ],
               ),
             ),
@@ -404,5 +412,6 @@ class _VoteButton extends StatelessWidget {
     );
   }
 }
+
 
 

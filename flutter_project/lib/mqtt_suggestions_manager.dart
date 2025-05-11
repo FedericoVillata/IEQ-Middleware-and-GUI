@@ -9,6 +9,8 @@ import 'package:flutter/foundation.dart' show ChangeNotifier, debugPrint, kIsWeb
 import 'package:mqtt_client/mqtt_browser_client.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
+import 'package:http/http.dart' as http;
+import 'dart:async';
 
 /// ---------------------------------------------------------------------------
 ///  Model that represents a single *technical* suggestion received via MQTT
@@ -76,10 +78,74 @@ class MqttSuggestionsManager extends ChangeNotifier {
   final List<TechnicalSuggestion> _technical = [];
   final List<TenantSuggestion>     _tenant    = [];
 
+  bool _restSynced = false;
+  bool _isDisposed = false;
+  StreamSubscription<List<MqttReceivedMessage<MqttMessage>>>? _mqttSubscription;
+
+
   List<TechnicalSuggestion> get allTechnicalSuggestions =>
       List.unmodifiable(_technical);
   List<TenantSuggestion> get allTenantSuggestions =>
       List.unmodifiable(_tenant);
+
+  Future<void> syncFromRest(String restUrl, List<String> apartments) async {
+  if (_restSynced) return;
+  _restSynced = true;
+
+  try {
+    final res = await http.get(Uri.parse(restUrl));
+    if (res.statusCode != 200) {
+      debugPrint('[REST] Unexpected status ${res.statusCode}');
+      return;
+    }
+
+    final Map<String, dynamic> json = jsonDecode(res.body);
+    for (final apt in apartments) {
+      // ── Technical Suggestions ──
+      final tech = (json[apt]?['technical'] ?? []) as List<dynamic>;
+      for (final obj in tech) {
+        final double tsSec = (obj['ts'] ?? 0).toDouble();
+        addTechnicalSuggestion(
+          TechnicalSuggestion(
+            apartmentId: apt,
+            roomId: '',
+            code: obj['id'].toString(),
+            message: obj['text'].toString(),
+            timestamp: DateTime.fromMillisecondsSinceEpoch(
+                (tsSec * 1000).round()),
+          ),
+        );
+      }
+
+      // ── Tenant Suggestions ──
+      final tenantMap = Map<String, dynamic>.from(json[apt]?['tenant'] ?? {});
+      tenantMap.forEach((roomId, suggestionsList) {
+        if (suggestionsList is List) {
+          for (final obj in suggestionsList) {
+            final double tsSec = (obj['ts'] ?? 0).toDouble();
+            addTenantSuggestion(
+              TenantSuggestion(
+                apartmentId: apt,
+                roomId: roomId,
+                code: obj['id'].toString(),
+                message: obj['text'].toString(),
+                timestamp: DateTime.fromMillisecondsSinceEpoch(
+                    (tsSec * 1000).round()),
+              ),
+            );
+          }
+        }
+      });
+    }
+
+    debugPrint('[REST] Bootstrap completed with '
+        '${_technical.length} technical and ${_tenant.length} tenant items');
+  } catch (e) {
+    debugPrint('[REST] Error while fetching initial suggestions → $e');
+  }
+}
+
+
 
   // ──────────────────────────────────────────────────────────────────────────
   //  Read/unread tracking & deduplication
@@ -186,21 +252,23 @@ class MqttSuggestionsManager extends ChangeNotifier {
   //  Add / remove suggestions
   // ──────────────────────────────────────────────────────────────────────────
   /// Add a new technical suggestion, ignoring duplicates by key.
-  void addTechnicalSuggestion(TechnicalSuggestion suggestion) {
-    final key = _cKey(suggestion);
-    if (_activeTechKeys.contains(key)) return;
-    _technical.add(suggestion);
-    _activeTechKeys.add(key);
-    _techRead.remove(key); // new → unread
-    notifyListeners();
-  }
+ void addTechnicalSuggestion(TechnicalSuggestion suggestion) {
+  if (_isDisposed) return;
+  final key = _cKey(suggestion);
+  if (_activeTechKeys.contains(key)) return;
+  _technical.add(suggestion);
+  _activeTechKeys.add(key);
+  _techRead.remove(key);
+  notifyListeners();
+}
 
   /// Add a new tenant suggestion.
-  void addTenantSuggestion(TenantSuggestion suggestion) {
-    _tenant.add(suggestion);
-    _tenRead.remove(_tKey(suggestion)); // new → unread
-    notifyListeners();
-  }
+ void addTenantSuggestion(TenantSuggestion suggestion) {
+  if (_isDisposed) return;
+  _tenant.add(suggestion);
+  _tenRead.remove(_tKey(suggestion));
+  notifyListeners();
+}
 
   /// Remove (acknowledge) a technical suggestion.
   void removeTechnicalSuggestion(TechnicalSuggestion suggestion) {
@@ -265,7 +333,8 @@ class MqttSuggestionsManager extends ChangeNotifier {
     }
 
     // Listen for publications
-    _client.updates?.listen((messages) {
+    _mqttSubscription = _client.updates?.listen((messages) {
+      if (_isDisposed) return;
       final rec         = messages.first;
       final topic       = rec.topic;
       final apartmentId = topic.split('/').elementAtOrNull(1) ?? '';
@@ -335,4 +404,14 @@ class MqttSuggestionsManager extends ChangeNotifier {
       ));
     }
   }
+
+  @override
+void dispose() {
+  _isDisposed = true;
+  _mqttSubscription?.cancel();
+  _client.disconnect();
+  super.dispose();
 }
+
+}
+

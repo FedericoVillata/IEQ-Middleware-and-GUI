@@ -15,4 +15,5 @@ class AppConfig {
   static String get mqttBroker => _settings["MQTT_BROKER"] as String;
   static int get mqttPort => _settings["MQTT_PORT"] as int;
   static String get mqttTopicBase => _settings["MQTT_TOPIC_BASE"] as String;
+  static String get suggestionsRestUrl => _settings["SUGGESTIONS_REST_URL"] as String;
 }

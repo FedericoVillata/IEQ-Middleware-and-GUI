@@ -80,6 +80,12 @@ class _SuggestionCard extends StatelessWidget {
     required this.mgr,
   });
 
+  // formats the timestamp as HH:mm (e.g., 09:30)
+  String _fmt(DateTime dt) {
+    final local = dt.toLocal();
+    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -89,6 +95,10 @@ class _SuggestionCard extends StatelessWidget {
         title: Text(
           suggestion.message,
           style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+        ),
+        subtitle: Text(
+          _fmt(suggestion.timestamp),
+          style: const TextStyle(color: Colors.grey),
         ),
         trailing: ElevatedButton.icon(
           onPressed: () => mgr.removeTechnicalSuggestion(suggestion),
@@ -106,3 +116,4 @@ class _SuggestionCard extends StatelessWidget {
     );
   }
 }
+

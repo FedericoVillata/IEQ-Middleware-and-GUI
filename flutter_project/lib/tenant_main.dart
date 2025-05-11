@@ -88,7 +88,7 @@ class _TenantMainPageState extends State<TenantMainPage> {
     super.initState();
     selectedApartment = widget.apartments.first;
     selectedRoom = '';
-    fetchApartmentData();
+    fetchApartmentData().then((_) => _fetchInitialSuggestions());
   }
 
   // ---------------- public helper for SuggestionsBell -------
@@ -124,6 +124,12 @@ class _TenantMainPageState extends State<TenantMainPage> {
       debugPrint('fetchApartmentData error: $e');
     }
   }
+
+  Future<void> _fetchInitialSuggestions() async {
+  final mgr = context.read<MqttSuggestionsManager>();
+  await mgr.syncFromRest(AppConfig.suggestionsRestUrl, widget.apartments);
+}
+
 
   // ---------------- callbacks from child ----------------
   void updateSelectedRoom(String room) {
@@ -224,4 +230,5 @@ return Scaffold(
 
   }
 }
+
 

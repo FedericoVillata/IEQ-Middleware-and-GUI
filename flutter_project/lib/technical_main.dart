@@ -7,6 +7,9 @@ import 'pages/technical_deleted_suggestions.dart';
 import 'pages/technical_suggestions_page.dart';
 import 'pages/technical_advanced_page.dart';
 import 'login_page.dart';
+import 'package:provider/provider.dart';                  
+import 'app_config.dart';                                     
+import 'mqtt_suggestions_manager.dart';                     
 
 class TechnicalMainPage extends StatefulWidget {
   final String username;
@@ -23,12 +26,11 @@ class TechnicalMainPage extends StatefulWidget {
 class _TechnicalMainPageState extends State<TechnicalMainPage> {
   String? selectedLocation;
   int _currentIndex = 0;
+  /// Pages are (re)built once a location is chosen
+  late List<Widget> pages = List.filled(6, const Placeholder());
 
   /// Makes the Suggestions page visible from anywhere
   void goToSuggestions() => setState(() => _currentIndex = 5);
-
-  /// Pages are (re)built once a location is chosen
-  late List<Widget> pages = List.filled(6, const Placeholder());
 
   /* ---------- location handling ---------- */
   void _buildPagesFor(String loc) {
@@ -42,12 +44,21 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
     ];
   }
 
-  void _onLocationSelected(String loc) {
+  Future<void> _fetchInitialSuggestions(String apt) async {
+    // one‑time bootstrap from REST service
+    final mgr = context.read<MqttSuggestionsManager>();
+    await mgr.syncFromRest(AppConfig.suggestionsRestUrl, [apt]);
+  }
+
+  void _onLocationSelected(String loc) async {
     setState(() {
       selectedLocation = loc;
       _currentIndex = 0;
       _buildPagesFor(loc);
     });
+
+    // kick off the REST bootstrap (does nothing if already synced)
+    await _fetchInitialSuggestions(loc);
   }
 
   /* ---------------- build ---------------- */
@@ -195,3 +206,4 @@ class _Sidebar extends StatelessWidget {
     );
   }
 }
+
