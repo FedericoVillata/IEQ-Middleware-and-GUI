@@ -9,6 +9,8 @@ import '../widgets/suggestions_bell.dart';
 import '../app_config.dart';
 import '../mqtt_alert_manager.dart';
 import 'package:provider/provider.dart'; 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 
 
 class HomePage extends StatefulWidget {
@@ -266,6 +268,8 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
 
   Widget _buildHeader() {
+    final localizations = AppLocalizations.of(context);
+    final welcomeText = localizations?.welcome ?? 'Welcome';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
@@ -277,7 +281,8 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Welcome, ${widget.username}!',
+           Text('$welcomeText, ${widget.username}!',
+
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 8),
           Row(
@@ -411,7 +416,7 @@ Widget _buildAlertBanner(AlertMessage alert, MqttAlertManager manager) {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const Text('Overall Score', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.of(context)?.overallScore ?? 'Overall Score', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             Stack(
               alignment: Alignment.center,
@@ -440,6 +445,19 @@ Widget _buildAlertBanner(AlertMessage alert, MqttAlertManager manager) {
   // ─────────────────────────────── build
   @override
   Widget build(BuildContext context) {
+    // 1️⃣  Localizzazione (può essere null al primo frame)
+  final loc = AppLocalizations.of(context);
+
+  // 2️⃣  Etichette tradotte con fallback di default
+  final tSelectApartment = loc?.selectApartment            ?? 'Select Apartment';
+  final tSelectRoom      = loc?.selectRoom                 ?? 'Select Room';
+  final tHumidity        = loc?.humidityLevel              ?? 'Humidity Level';
+  final tAirQuality      = loc?.airQuality                 ?? 'Air Quality';
+  final tExtMeteo        = loc?.externalTemperatureMeteo   ?? 'External Temperature • Open-Meteo';
+  final tTempRoom        = selectedRoom.toLowerCase() == 'exterior'
+        ? (loc?.externalTemperatureSensor ?? 'External Temperature • Sensor')
+        : (loc?.indoorTemperature         ?? 'Indoor Temperature');
+  final tWelcome         = loc?.welcome                    ?? 'Welcome';
     final alertManager = Provider.of<MqttAlertManager>(context);
 final relevantAlerts = alertManager.allAlerts.where((a) =>
   a.apartmentId == selectedApartment &&
@@ -452,6 +470,7 @@ final relevantAlerts = alertManager.allAlerts.where((a) =>
     return Scaffold(
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
+        automaticallyImplyLeading: false, 
         backgroundColor: Colors.white,
         elevation: 2,
         title: null,
@@ -479,7 +498,7 @@ final relevantAlerts = alertManager.allAlerts.where((a) =>
             // dropdown se visibile
             if (showDropdown) ...[
               _buildDropdown(
-              'Select Apartment',
+              tSelectApartment,
               selectedApartment,
               widget.apartments,
               (v) async {
@@ -507,7 +526,7 @@ final relevantAlerts = alertManager.allAlerts.where((a) =>
 
               const SizedBox(height: 10),
               _buildDropdown(
-                'Select Room',
+                tSelectRoom,
                 selectedRoom,
                 widget.rooms[selectedApartment] ?? ['Unknown'],
                 (v) {
@@ -525,32 +544,28 @@ final relevantAlerts = alertManager.allAlerts.where((a) =>
             ],
 
             _buildInfoCard(
-              'External Temperature • Open-Meteo',
+              tExtMeteo,
               externalTemp,
               _getWeatherIcon(weatherCode),
               _getWeatherColor(weatherCode),
             ),
             const SizedBox(height: 12),
             _buildInfoCard(
-              selectedRoom.toLowerCase() == 'exterior'
-                  ? 'External Temperature • Sensor'
-                  : 'Indoor Temperature',
-              indoorTemp,
+              tTempRoom,  indoorTemp,
               Icons.thermostat,
               _colorFromClass(tempClass),
             ),
 
             const SizedBox(height: 12),
             _buildInfoCard(
-              'Humidity Level',
+              tHumidity,
               humidity,
               Icons.water_drop,
               _colorFromClass(humidityClass),
             ),
             const SizedBox(height: 12),
             _buildInfoCard(
-              'Air Quality',
-              co2,
+              tAirQuality, co2,
               Icons.air,
               _colorFromClass(co2Class),
             ),

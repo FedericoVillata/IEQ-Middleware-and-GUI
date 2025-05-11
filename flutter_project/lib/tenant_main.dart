@@ -11,6 +11,7 @@ import 'app_config.dart';
 import 'package:provider/provider.dart';
 import 'mqtt_suggestions_manager.dart';          //  ← aggiungi questo
 import 'package:flutter/gestures.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 
 class MyAppTenant extends StatelessWidget {
@@ -36,18 +37,11 @@ return ChangeNotifierProvider<MqttSuggestionsManager>(
         );
         return mgr;
       },
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'IEQ Tenant Interface',
-        theme: ThemeData(primarySwatch: Colors.blue),
-        scrollBehavior: const MaterialScrollBehavior().copyWith(
-        dragDevices: {
-          PointerDeviceKind.touch,
-          PointerDeviceKind.mouse,
-        },
-      ),
-      home: TenantMainPage(username: username, apartments: apartments),
-      ),
+      child: TenantMainPage(
+  username: username,
+  apartments: apartments,
+),
+
     );
   }
 }
@@ -187,7 +181,8 @@ class _TenantMainPageState extends State<TenantMainPage> {
     // tenant_main.dart  →  _TenantMainPageState.build
 return Scaffold(
   appBar: AppBar(
-    title: const Text('Tenant Interface'),
+    automaticallyImplyLeading: false, 
+    title: Text(AppLocalizations.of(context)?.tenantInterface ?? 'Tenant Interface'),
     actions: [
       IconButton(
         icon: const Icon(Icons.logout),

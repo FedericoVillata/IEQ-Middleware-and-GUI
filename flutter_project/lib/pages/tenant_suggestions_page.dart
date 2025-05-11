@@ -8,6 +8,8 @@ import '../mqtt_suggestions_manager.dart';
 import '../app_config.dart';
 import '../suggestion_vote_mqtt_publisher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 
 
 
@@ -92,9 +94,14 @@ if (isSameRoom && isValid && isSameDay) {
     return Scaffold(
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
+        automaticallyImplyLeading: false, 
         backgroundColor: Colors.white,
         elevation: 2,
-        title: const Text('Daily Suggestions History', style: TextStyle(color: Colors.black)),
+        title: Text(
+  AppLocalizations.of(context)!.dailySuggestionsHistory,
+  style: const TextStyle(color: Colors.black),
+),
+
         centerTitle: true,
       ),
       
@@ -129,17 +136,17 @@ if (isSameRoom && isValid && isSameDay) {
       ),
     ),
     const SizedBox(height: 8),
-    Expanded(
-      child: suggestions.isEmpty
-          ? const SizedBox.expand(
-    child: Center(
-      child: Text(
-        'No suggestions received today for the selected room.',
-        style: TextStyle(fontSize: 16),
-        textAlign: TextAlign.center,
-      ),
-    ),
-  )
+   Expanded(
+  child: suggestions.isEmpty
+      ? SizedBox.expand(
+          child: Center(
+            child: Text(
+              AppLocalizations.of(context)!.noSuggestionsToday,
+              style: const TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        )
 
           : ListView.builder(
               physics: const AlwaysScrollableScrollPhysics(), 
@@ -188,7 +195,7 @@ if (isSameRoom && isValid && isSameDay) {
 
   setState(() {}); // forzi aggiornamento visivo
 
-  _showSnack('Useful • ${_upVotes[k]} 👍', color: Colors.green);
+_showSnack('${AppLocalizations.of(context)!.usefulVote} • ${_upVotes[k]} 👍', color: Colors.green);
   await _sendVoteMQTT(s, 1);
 }
  Future<void> _loadVotesForRoom(String roomId) async {
@@ -244,7 +251,7 @@ if (isSameRoom && isValid && isSameDay) {
     _downVotes[k] = (_downVotes[k] ?? 0) + 1;
   });
 
-  _showSnack('Not useful • ${_downVotes[k]} 👎', color: Colors.red);
+ _showSnack('${AppLocalizations.of(context)!.notUsefulVote} • ${_downVotes[k]} 👎', color: Colors.red);
   await _sendVoteMQTT(s, -1);
 
   // Controlla se deve essere disattivata
@@ -285,12 +292,13 @@ if (isSameRoom && isValid && isSameDay) {
           headers: {'Content-Type': 'application/json'}, body: jsonEncode(body));
 
       if (r.statusCode == 200) {
-        _showSnack('Suggestion deactivated', color: Colors.red);
+        _showSnack(AppLocalizations.of(context)!.suggestionDeactivated, color: Colors.red);
         return true;
       }
-      _showSnack('Error ${r.statusCode}: ${r.body}', color: Colors.red);
+      _showSnack('${AppLocalizations.of(context)!.error}: ${r.statusCode}: ${r.body}', color: Colors.red);
+
     } catch (e) {
-      _showSnack('Network error: $e', color: Colors.red);
+      _showSnack('${AppLocalizations.of(context)!.networkError}: $e', color: Colors.red);
     }
     return false;
   }

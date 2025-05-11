@@ -5,6 +5,9 @@ import 'package:http/http.dart' as http;
 import 'tenant_main.dart';
 import 'technical_main.dart';
 import 'app_config.dart';
+import 'main.dart'; // per MainSelectorApp.setLocale
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -85,81 +88,117 @@ class _LoginPageState extends State<LoginPage> {
 
 
   void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Login Failed'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          )
-        ],
-      ),
-    );
-  }
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: Text(AppLocalizations.of(context)!.login),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(AppLocalizations.of(context)!.confirm),
+        )
+      ],
+    ),
+  );
+}
+
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[200],
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.account_circle, size: 80, color: Color(0xFF236FC6)),
-              const SizedBox(height: 20),
-              const Text(
-                "Login",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF236FC6)),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _usernameController,
-                decoration: InputDecoration(
-                  labelText: 'Username',
-                  prefixIcon: const Icon(Icons.person, color: Color(0xFF236FC6)),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: const Icon(Icons.lock, color: Color(0xFF236FC6)),
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.grey[200],
+    body: Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 🔤 Language selector
+            Align(
+              alignment: Alignment.topRight,
+              child: DropdownButton<Locale>(
+                value: Localizations.localeOf(context),
+                icon: const Icon(Icons.language),
+                onChanged: (Locale? locale) {
+                  if (locale != null) {
+                    MainSelectorApp.setLocale(context, locale);
+                  }
+                },
+                items: const [
+                  DropdownMenuItem(
+                    value: Locale('en'),
+                    child: Text('English'),
                   ),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF236FC6),
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  DropdownMenuItem(
+                    value: Locale('it'),
+                    child: Text('Italiano'),
                   ),
-                  onPressed: _attemptLogin,
-                  child: const Text('Login', style: TextStyle(fontSize: 18, color: Colors.white)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            const Icon(Icons.account_circle, size: 80, color: Color(0xFF236FC6)),
+            const SizedBox(height: 20),
+            Text(
+              AppLocalizations.of(context)!.login,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF236FC6)),
+            ),
+            const SizedBox(height: 20),
+
+            // Username field
+            TextField(
+              controller: _usernameController,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.username,
+                prefixIcon: const Icon(Icons.person, color: Color(0xFF236FC6)),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Password field
+            TextField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.password,
+                prefixIcon: const Icon(Icons.lock, color: Color(0xFF236FC6)),
+                suffixIcon: IconButton(
+                  icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Login button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF236FC6),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                ),
+                onPressed: _attemptLogin,
+                child: Text(
+                  AppLocalizations.of(context)!.login,
+                  style: const TextStyle(fontSize: 18, color: Colors.white),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 }

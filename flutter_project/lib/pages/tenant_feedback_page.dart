@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../app_config.dart';
 import '../widgets/suggestions_bell.dart';
 import '../feedback_mqtt_publisher.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 
 class FeedbackPage extends StatefulWidget {
   final String username;
@@ -43,13 +45,16 @@ class _FeedbackPageState extends State<FeedbackPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Feedback'),
-        content: Text('Do you confirm a "$rating" rating for "$category"?'),
+        title: Text(AppLocalizations.of(context)!.confirmFeedback),
+content: Text(
+  AppLocalizations.of(context)!
+      .confirmFeedbackMessage('$rating', category),
+),
+actions: [
+  TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(AppLocalizations.of(context)!.cancel)),
+  TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(AppLocalizations.of(context)!.confirm)),
+],
 
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirm')),
-        ],
       ),
     );
 
@@ -86,14 +91,23 @@ class _FeedbackPageState extends State<FeedbackPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(rating == 0 ? '❎ Feedback reset!' : '✅ Feedback sent!'),
+            content: Text(rating == 0
+  ? AppLocalizations.of(context)!.feedbackReset
+  : AppLocalizations.of(context)!.feedbackSent),
+
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ MQTT error: $e')),
+          SnackBar(
+  content: Text(
+    AppLocalizations.of(context)!.mqttError('$e'),
+  ),
+),
+
+
         );
       }
     }
@@ -158,10 +172,11 @@ class _FeedbackPageState extends State<FeedbackPage> {
     return Scaffold(
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 2,
         centerTitle: true, 
-        title: const Text('Give Your Daily Feedback', style: TextStyle(color: Colors.black)),
+        title: Text(AppLocalizations.of(context)!.giveYourDailyFeedback, style: const TextStyle(color: Colors.black)),
         actions: [
           SuggestionsBell(
             username: widget.username,
@@ -177,21 +192,21 @@ class _FeedbackPageState extends State<FeedbackPage> {
         padding: const EdgeInsets.all(16),
         children: [
           buildRatingSection(
-            'Temperature Perception',
+            AppLocalizations.of(context)!.temperaturePerception,
             tempRating,
             (r) => setState(() => tempRating = r),
             icons: List.filled(5, Icons.device_thermostat),
           ),
           const SizedBox(height: 16),
           buildRatingSection(
-            'Humidity Perception',
+            AppLocalizations.of(context)!.humidityPerception,
             humRating,
             (r) => setState(() => humRating = r),
             icons: List.filled(5, Icons.water_drop),
           ),
           const SizedBox(height: 16),
           buildRatingSection(
-            'Environment Satisfaction',
+            AppLocalizations.of(context)!.environmentSatisfaction,
             envRating,
             (r) => setState(() => envRating = r),
             icons: const [
@@ -204,7 +219,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
           ),
           const SizedBox(height: 16),
           buildRatingSection(
-            'Service Rating',
+            AppLocalizations.of(context)!.serviceRating,
             serviceRating,
             (r) => setState(() => serviceRating = r),
             icons: const [
