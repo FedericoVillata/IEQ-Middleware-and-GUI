@@ -112,6 +112,18 @@ services:
         #ipv4_address: 192.68.0.30
     restart: on-failure
 
+  mqtt_aggregator:
+    build: ./mqtt_aggregator
+    depends_on:
+      - registry
+    restart: always
+    ports:
+      - 8085:8085
+    networks:
+      net:
+        ipv4_address: 192.68.0.31
+
+
 
 volumes:
   influxdb-storage:

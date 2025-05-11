@@ -1,0 +1,8 @@
+{
+    "messageBroker": "mqtt.eclipseprojects.io",
+    "brokerPort": 1883,
+    "base_topic": "IEQmidAndGUI",
+    "registry_url": "http://192.68.0.24:8081",
+    "rest_port": 8085
+  }
+  
