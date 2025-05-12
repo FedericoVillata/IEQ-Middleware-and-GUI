@@ -66,14 +66,19 @@ class MqttAlertManager extends ChangeNotifier {
             timestamp: DateTime.fromMillisecondsSinceEpoch((tsSec * 1000).round()),
           );
 
-          final isDuplicate = _alerts.any((x) =>
-              x.apartmentId == alert.apartmentId &&
-              x.roomId == alert.roomId &&
-              x.message == alert.message);
+          final normalized = _normalizeMessage(alert.message);
+final existingIndex = _alerts.indexWhere((x) =>
+  x.apartmentId == alert.apartmentId &&
+  x.roomId == alert.roomId &&
+  _normalizeMessage(x.message) == normalized,
+);
 
-          if (!isDuplicate) {
-            _alerts.add(alert);
-          }
+if (existingIndex != -1) {
+  _alerts[existingIndex] = alert;
+} else {
+  _alerts.add(alert);
+}
+
         }
       }
     }
@@ -145,17 +150,21 @@ class MqttAlertManager extends ChangeNotifier {
 );
 
 // ✅ evita duplicati identici (apt + room + message)
-final isDuplicate = _alerts.any((a) =>
+final normalized = _normalizeMessage(alert.message);
+final existingIndex = _alerts.indexWhere((a) =>
   a.apartmentId == alert.apartmentId &&
   a.roomId == alert.roomId &&
-  a.message == alert.message,
+  _normalizeMessage(a.message) == normalized,
 );
 
-if (!isDuplicate) {
+if (existingIndex != -1) {
+  _alerts[existingIndex] = alert; // aggiornamento (sovrascrive timestamp e messaggio)
+} else {
   latestAlert = alert;
   _alerts.add(alert);
-  notifyListeners();
 }
+notifyListeners();
+
 
         }
       } catch (e) {
@@ -180,6 +189,18 @@ if (!isDuplicate) {
   void removeAlert(AlertMessage alert) {
   _alerts.remove(alert);
   notifyListeners();
+}
+String _normalizeMessage(String message) {
+  return message
+      // Rimuove la durata "CO2 data received for 88h" → "CO2 data received for"
+      .replaceAll(RegExp(r'CO2 data received for \d+h(?: \d+min)?\.?'), 'CO2 data received for')
+
+      
+      // Rimuove codici tipo "03:00:00:0c:e0:b2"
+      .replaceAll(RegExp(r'\b(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\b'), '[DEVICE]')
+
+      // ⚠️ NON rimuove ppd_class / ieqi_class: li considera distinti
+      .trim();
 }
 
 }
