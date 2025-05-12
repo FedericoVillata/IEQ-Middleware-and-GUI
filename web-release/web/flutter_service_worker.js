@@ -3,11 +3,12 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"assets/AssetManifest.bin": "661f211875c34f397082b629327a3253",
-"assets/AssetManifest.bin.json": "b655297605f83ee27e240fb43212160b",
-"assets/AssetManifest.json": "4403c54217ca86f83c289633929c6669",
+const RESOURCES = {"assets/AssetManifest.bin": "dccd6110ff89d21142fb231b0943ecb8",
+"assets/AssetManifest.bin.json": "7d9233ac899616d9ccdbf4c503989adf",
+"assets/AssetManifest.json": "f52721638909083392a7a4d127de890e",
+"assets/assets/alerts_catalog.json": "03fa35ecdcee32b4e70b1f1300fc33d9",
 "assets/assets/flutter_settings.json": "95272f8fd4217d307b43e89b156054eb",
-"assets/assets/suggestions_catalog.json": "2ae04d2aa18fdbc18d214ee0d79a2667",
+"assets/assets/suggestions_catalog.json": "e83e47ba0bf47f3d5465585509284e49",
 "assets/FontManifest.json": "dc3d03800ccca4601324923c0b1d6d57",
 "assets/fonts/MaterialIcons-Regular.otf": "4919249a6d7cadfc045fd8035b561399",
 "assets/NOTICES": "45de2b6360b7d98ff63d24f3cecb1bd0",
@@ -27,14 +28,14 @@ const RESOURCES = {"assets/AssetManifest.bin": "661f211875c34f397082b629327a3253
 "canvaskit/skwasm_st.wasm": "56c3973560dfcbf28ce47cebe40f3206",
 "favicon.png": "5dcef449791fa27946b3d35ad8803796",
 "flutter.js": "76f08d47ff9f5715220992f993002504",
-"flutter_bootstrap.js": "e833c42f8513e71ae68e486cdb5783a5",
+"flutter_bootstrap.js": "2ee390df332da4117a417763e9c5520f",
 "icons/Icon-192.png": "ac9a721a12bbc803b44f645561ecb1e1",
 "icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
 "icons/Icon-maskable-192.png": "c457ef57daa1d16f64b27b786ec2ea3c",
 "icons/Icon-maskable-512.png": "301a7604d45b3e739efc881eb04896ea",
 "index.html": "dd7b4f9c508292e33ec706d7443447ed",
 "/": "dd7b4f9c508292e33ec706d7443447ed",
-"main.dart.js": "83a6b83f34d17d99aa56d84e74518c0b",
+"main.dart.js": "d2b640b42a3ad68a6b8cf351f828ed14",
 "manifest.json": "c2573c593deb313598e160ef926c1efd",
 "version.json": "eb25b2f87ab0f7f2cb7e2a7dda5fab84"};
 // The application shell files that are downloaded before a service worker can
