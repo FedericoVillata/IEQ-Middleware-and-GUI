@@ -213,13 +213,19 @@ _safeNotifyListeners();
 }
 String _normalizeMessage(String message) {
   return message
-      // Rimuove frasi come: "VOC data received for 34h 8min"
-      .replaceAll(RegExp(r'(?:Temperature|Humidity|Pressure|CO2|VOC|PM10) data received for \d+h(?: \d+min)?'), '')
+      // Rende omogenee tutte le liste di sensori "No X, Y, Z data received for NN h"
+      .replaceAll(
+        RegExp(r'No ((?:Temperature|Humidity|Pressure|CO2|VOC|PM10)(?:, )?)+data received for \d+h(?: \d+min)?'),
+        'Missing sensor data received recently',
+      )
 
-      // Rimuove sequenze "No Temperature, Humidity, ..."
-      .replaceAll(RegExp(r'No (?:Temperature|Humidity|Pressure|CO2|VOC|PM10)(?:, )?'), 'No DATA ')
+      // Rimuove messaggi singoli come "VOC data received for 34h 8min"
+      .replaceAll(
+        RegExp(r'(?:Temperature|Humidity|Pressure|CO2|VOC|PM10) data received for \d+h(?: \d+min)?'),
+        'Sensor data delay',
+      )
 
-      // Rimuove MAC address tipo 03:00:00:0c:e0:b2
+      // Rende omogenee le mac address
       .replaceAll(RegExp(r'\b(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\b'), '[DEVICE]')
 
       // Rimuove spazi multipli
@@ -227,5 +233,6 @@ String _normalizeMessage(String message) {
 
       .trim();
 }
+
 
 }
