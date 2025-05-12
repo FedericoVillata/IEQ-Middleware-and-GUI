@@ -116,27 +116,39 @@ Widget build(BuildContext context) {
           children: [
             // 🔤 Language selector
             Align(
-              alignment: Alignment.topRight,
-              child: DropdownButton<Locale>(
-                value: Localizations.localeOf(context),
-                icon: const Icon(Icons.language),
-                onChanged: (Locale? locale) {
-                  if (locale != null) {
-                    MainSelectorApp.setLocale(context, locale);
-                  }
-                },
-                items: const [
-                  DropdownMenuItem(
-                    value: Locale('en'),
-                    child: Text('English'),
-                  ),
-                  DropdownMenuItem(
-                    value: Locale('it'),
-                    child: Text('Italiano'),
-                  ),
-                ],
-              ),
-            ),
+  alignment: Alignment.topRight,
+  child: PopupMenuButton<Locale>(
+    icon: Text(
+      Localizations.localeOf(context).languageCode == 'it' ? '🇮🇹' : '🇬🇧',
+      style: const TextStyle(fontSize: 24),
+    ),
+    tooltip: 'Change language',
+    onSelected: (locale) => MainSelectorApp.setLocale(context, locale),
+    itemBuilder: (_) => [
+      PopupMenuItem(
+        value: const Locale('en'),
+        child: Row(
+          children: const [
+            Text('🇬🇧', style: TextStyle(fontSize: 18)),
+            SizedBox(width: 8),
+            Text('English'),
+          ],
+        ),
+      ),
+      PopupMenuItem(
+        value: const Locale('it'),
+        child: Row(
+          children: const [
+            Text('🇮🇹', style: TextStyle(fontSize: 18)),
+            SizedBox(width: 8),
+            Text('Italiano'),
+          ],
+        ),
+      ),
+    ],
+  ),
+),
+
             const SizedBox(height: 20),
 
             const Icon(Icons.account_circle, size: 80, color: Color(0xFF236FC6)),
