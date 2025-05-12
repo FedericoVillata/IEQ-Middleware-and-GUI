@@ -60,7 +60,7 @@ class SuggestionVoteMqttPublisher {
       'bn': topic,
       'e': [
         {
-          'n': 'score/tenant_suggestion_votes/${suggestionId}_$roomId\_$username',
+          'n': 'suggestion_votes/$roomId/$suggestionId',
           't': DateTime.now().millisecondsSinceEpoch / 1000.0,
           'u': 'score',
           'v': score > 0 ? '+1' : '-1',

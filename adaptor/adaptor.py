@@ -399,7 +399,7 @@ class MySubscriber:
     
     def checkIfNotSuggestionorAlert(self, topic):
         if len(topic.split("/")) > 2:
-            if "suggestion" in topic.split('/')[2] or topic.split("/")[2] == "alert":
+             if topic.split("/")[2] == "alert":
                 return False
         return True
     def myOnMessageReceived(self, paho_mqtt, userdata, msg):
