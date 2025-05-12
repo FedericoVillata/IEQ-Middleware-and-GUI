@@ -43,6 +43,7 @@
   "newTenantSuggestion": "There is 1 suggestion in room {roomId}.",
   "newTenantSuggestions": "There are {count} suggestions in room {roomId}.",
   "close": "Close",
-  "seeNow": "See now"
+  "seeNow": "See now",
+  "alertRoomLabel": "Room"
 
 }

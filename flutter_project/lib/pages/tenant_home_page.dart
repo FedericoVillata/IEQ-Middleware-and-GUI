@@ -10,6 +10,8 @@ import '../app_config.dart';
 import '../mqtt_alert_manager.dart';
 import 'package:provider/provider.dart'; 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../utils/alert_catalog.dart';
+
 
 
 
@@ -374,7 +376,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   );
 }
 
-Widget _buildAlertBanner(AlertMessage alert, MqttAlertManager manager) {
+Widget _buildAlertBanner(AlertMessage alert, MqttAlertManager manager, String roomLabel) {
   return Container(
     width: double.infinity,
     margin: const EdgeInsets.only(bottom: 12),
@@ -390,7 +392,7 @@ Widget _buildAlertBanner(AlertMessage alert, MqttAlertManager manager) {
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            '${_fmt(alert.timestamp)} • Room ${alert.roomId.toUpperCase()}: ${alert.message}',
+            '${_fmt(alert.timestamp)} • $roomLabel ${alert.roomId.toUpperCase()}: ${AlertCatalog.translate(alert.message, Localizations.localeOf(context))}',
             style: const TextStyle(color: Colors.white, fontSize: 16),
           ),
         ),
@@ -448,6 +450,7 @@ Widget _buildAlertBanner(AlertMessage alert, MqttAlertManager manager) {
   Widget build(BuildContext context) {
     // 1️⃣  Localizzazione (può essere null al primo frame)
   final loc = AppLocalizations.of(context);
+  final roomLabel = loc?.alertRoomLabel ?? 'Room';
 
   // 2️⃣  Etichette tradotte con fallback di default
   final tSelectApartment = loc?.selectApartment            ?? 'Select Apartment';
@@ -497,7 +500,8 @@ final relevantAlerts = alertManager.allAlerts.where((a) {
       padding: const EdgeInsets.all(16),
       child: Column(
   children: [
-    ...relevantAlerts.map((a) => _buildAlertBanner(a, alertManager)).toList(),
+    ...relevantAlerts.map((a) => _buildAlertBanner(a, alertManager, roomLabel)),
+
 
             _buildHeader(),
 

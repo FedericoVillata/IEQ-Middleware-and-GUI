@@ -43,5 +43,6 @@
   "newTenantSuggestion": "C'è 1 suggerimento nella stanza {roomId}.",
   "newTenantSuggestions": "Ci sono {count} suggerimenti nella stanza {roomId}.",
   "close": "Chiudi",
-  "seeNow": "Vedi ora"
+  "seeNow": "Vedi ora",
+  "alertRoomLabel": "Stanza"
 }

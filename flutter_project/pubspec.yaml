@@ -65,6 +65,7 @@ flutter:
   assets:
     - assets/flutter_settings.json
     - assets/suggestions_catalog.json
+    - assets/alerts_catalog.json
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

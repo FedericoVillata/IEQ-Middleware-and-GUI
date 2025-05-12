@@ -13,8 +13,6 @@ import '../utils/suggestion_catalog.dart';
 
 
 
-
-
 class TenantSuggestionsPage extends StatefulWidget {
   final String username;
   final String apartmentId;
