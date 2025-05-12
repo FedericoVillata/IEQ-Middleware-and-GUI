@@ -213,14 +213,18 @@ _safeNotifyListeners();
 }
 String _normalizeMessage(String message) {
   return message
-      // Rimuove la durata "CO2 data received for 88h" → "CO2 data received for"
-      .replaceAll(RegExp(r'CO2 data received for \d+h(?: \d+min)?\.?'), 'CO2 data received for')
+      // Rimuove frasi come: "VOC data received for 34h 8min"
+      .replaceAll(RegExp(r'(?:Temperature|Humidity|Pressure|CO2|VOC|PM10) data received for \d+h(?: \d+min)?'), '')
 
-      
-      // Rimuove codici tipo "03:00:00:0c:e0:b2"
+      // Rimuove sequenze "No Temperature, Humidity, ..."
+      .replaceAll(RegExp(r'No (?:Temperature|Humidity|Pressure|CO2|VOC|PM10)(?:, )?'), 'No DATA ')
+
+      // Rimuove MAC address tipo 03:00:00:0c:e0:b2
       .replaceAll(RegExp(r'\b(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\b'), '[DEVICE]')
 
-      // ⚠️ NON rimuove ppd_class / ieqi_class: li considera distinti
+      // Rimuove spazi multipli
+      .replaceAll(RegExp(r'\s+'), ' ')
+
       .trim();
 }
 
