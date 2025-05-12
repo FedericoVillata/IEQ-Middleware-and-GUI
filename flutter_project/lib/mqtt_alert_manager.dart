@@ -30,6 +30,21 @@ class MqttAlertManager extends ChangeNotifier {
   bool _initialized = false;
   final Set<String> _subscribed = {};
 
+  bool _isDisposed = false;
+
+@override
+void dispose() {
+  _isDisposed = true;
+  super.dispose();
+}
+
+void _safeNotifyListeners() {
+  if (!_isDisposed) {
+    notifyListeners();
+  }
+}
+
+
   Future<void> syncFromRest(String restUrl, List<String> apartments) async {
   try {
     final res = await http.get(Uri.parse(restUrl));
@@ -83,7 +98,8 @@ if (existingIndex != -1) {
       }
     }
 
-    notifyListeners();
+    _safeNotifyListeners();
+
     debugPrint('[ALERT REST] Bootstrap completed with ${_alerts.length} items');
   } catch (e) {
     debugPrint('[ALERT REST] Error while fetching initial alerts → $e');
@@ -127,6 +143,7 @@ if (existingIndex != -1) {
     }
 
     _client.updates?.listen((events) {
+      if (events.isEmpty) return;
       final rec = events.first;
       final topic = rec.topic;
       final payloadStr = MqttPublishPayload.bytesToStringAsString(
@@ -163,7 +180,8 @@ if (existingIndex != -1) {
   latestAlert = alert;
   _alerts.add(alert);
 }
-notifyListeners();
+_safeNotifyListeners();
+
 
 
         }
@@ -184,11 +202,13 @@ notifyListeners();
 
   void clearLatestAlert() {
     latestAlert = null;
-    notifyListeners();
+    _safeNotifyListeners();
+
   }
   void removeAlert(AlertMessage alert) {
   _alerts.remove(alert);
-  notifyListeners();
+  _safeNotifyListeners();
+
 }
 String _normalizeMessage(String message) {
   return message
