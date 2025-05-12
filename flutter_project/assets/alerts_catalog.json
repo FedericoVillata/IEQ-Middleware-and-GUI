@@ -1,0 +1,17 @@
+{
+    "tenant_alerts": [
+      {
+        "alertId": "missing_data",
+        "pattern": "Check the status of sensor (.+?) \\(battery, device failure\\)\\. No Temperature, Humidity, CO2 data received for (.+?)\\.",
+        "text": "Check the status of sensor {sensor} (battery, device failure). No Temperature, Humidity, CO2 data received for {duration}.",
+        "testo": "Controlla lo stato del sensore {sensor} (batteria, guasto dispositivo). Nessun dato di Temperatura, Umidità o CO₂ ricevuto da {duration}."
+      },
+      {
+        "alertId": "classified_param",
+        "pattern": "(\\w+_class) classified as R",
+        "text": "{param} classified as R",
+        "testo": "{param} classificato come R"
+      }
+    ]
+  }
+  
