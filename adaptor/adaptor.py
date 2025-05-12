@@ -297,7 +297,7 @@ class Adaptor(object):
                             tz = requests.get(f"{self.registryBaseUrl}/apartments/{uri[2]}").json()["timezone"]
                             for table in tables:
                                 for row in table.records:
-                                    line = {"t": row.get_time().astimezone(ZoneInfo(tz)).strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"]}
+                                    line = {"t": row.get_time().astimezone(ZoneInfo(tz)).strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value(), "room": row["_measurement"], "ID": row["MAC"]}
                                     out.append(line)
                             return json.dumps(out)
                     else:
