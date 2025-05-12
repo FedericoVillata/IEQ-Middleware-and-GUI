@@ -7,6 +7,7 @@ import '../pages/technical_suggestions_page.dart';
 import '../pages/tenant_suggestions_page.dart';
 import '../technical_main.dart';
 import '../tenant_main.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 /// Notification bell with popup and red badge indicator.
 ///
@@ -42,6 +43,7 @@ class SuggestionsBell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mgr = context.watch<MqttSuggestionsManager>();
+    final loc = AppLocalizations.of(context)!;
 
     // Count of unread suggestions
     final int unread = isTechnical
@@ -57,32 +59,33 @@ class SuggestionsBell extends StatelessWidget {
           _openSuggestions(context, mgr);
           return;
         }
-
         // Show popup if there are unread suggestions
         final message = isTechnical
-            ? (unread == 1
-                ? 'There is 1 technical suggestion in $apartmentId.'
-                : 'There are $unread technical suggestions in $apartmentId.')
-            : (unread == 1
-                ? 'There is 1 suggestion in room $roomId.'
-                : 'There are $unread suggestions in room $roomId.');
+    ? (unread == 1
+        ? loc.newTechnicalSuggestion(apartmentId)
+        : loc.newTechnicalSuggestions(unread, apartmentId))
+    : (unread == 1
+        ? loc.newTenantSuggestion(roomId ?? '')
+        : loc.newTenantSuggestions(unread, roomId ?? ''));
+
+
 
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('New suggestion arrived!'),
+            title: Text(loc.newSuggestionTitle),
             content: Text(message),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Close'),
+                child: Text(loc.close),
               ),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(ctx);
                   _openSuggestions(context, mgr);
                 },
-                child: const Text('See now'),
+                child: Text(loc.seeNow),
               ),
             ],
           ),

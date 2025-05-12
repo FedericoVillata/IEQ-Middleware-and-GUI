@@ -36,5 +36,13 @@
   "mqttError": "❌ MQTT error: {error}",
   "overallScore": "Overall Score",
   "tenantInterface": "Tenant Interface",
-  "error": "Error"
+  "error": "Error",
+  "newSuggestionTitle": "New suggestion arrived!",
+  "newTechnicalSuggestion": "There is 1 technical suggestion in {apartmentId}.",
+  "newTechnicalSuggestions": "There are {count} technical suggestions in {apartmentId}.",
+  "newTenantSuggestion": "There is 1 suggestion in room {roomId}.",
+  "newTenantSuggestions": "There are {count} suggestions in room {roomId}.",
+  "close": "Close",
+  "seeNow": "See now"
+
 }

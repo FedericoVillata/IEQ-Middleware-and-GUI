@@ -36,5 +36,12 @@
   "mqttError": "❌ Errore MQTT: {error}",
   "overallScore": "Punteggio Complessivo",
   "tenantInterface": "Interfaccia Utente Base",
-  "error": "Errore"
+  "error": "Errore",
+  "newSuggestionTitle": "Nuovo suggerimento ricevuto!",
+  "newTechnicalSuggestion": "C'è 1 suggerimento tecnico in {apartmentId}.",
+  "newTechnicalSuggestions": "Ci sono {count} suggerimenti tecnici in {apartmentId}.",
+  "newTenantSuggestion": "C'è 1 suggerimento nella stanza {roomId}.",
+  "newTenantSuggestions": "Ci sono {count} suggerimenti nella stanza {roomId}.",
+  "close": "Chiudi",
+  "seeNow": "Vedi ora"
 }
