@@ -263,12 +263,33 @@ class MqttSuggestionsManager extends ChangeNotifier {
 }
 
   /// Add a new tenant suggestion.
- void addTenantSuggestion(TenantSuggestion suggestion) {
+void addTenantSuggestion(TenantSuggestion suggestion) {
   if (_isDisposed) return;
-  _tenant.add(suggestion);
-  _tenRead.remove(_tKey(suggestion));
+
+  final key = _tKey(suggestion);
+  final existingIndex = _tenant.indexWhere((s) =>
+    s.apartmentId == suggestion.apartmentId &&
+    s.roomId == suggestion.roomId &&
+    s.code == suggestion.code &&
+    s.message == suggestion.message
+  );
+
+  if (existingIndex != -1) {
+    _tenant[existingIndex] = TenantSuggestion(
+      apartmentId: suggestion.apartmentId,
+      roomId: suggestion.roomId,
+      code: suggestion.code,
+      message: suggestion.message,
+      timestamp: suggestion.timestamp,
+    );
+  } else {
+    _tenant.add(suggestion);
+  }
+
+  _tenRead.remove(key);
   notifyListeners();
 }
+
 
   /// Remove (acknowledge) a technical suggestion.
   void removeTechnicalSuggestion(TechnicalSuggestion suggestion) {
