@@ -1,10 +1,10 @@
 {
-    "tenant_suggestions": [
+  "tenant_suggestions": [
     {
       "suggestionId": "S0",
       "suggestionName": "co2",
-      "text": "Avoid prolonged ventilation: it's too cold outside. Open briefly or use mechanical ventilation.",
-      "testo": "Evita la ventilazione prolungata: fa troppo freddo fuori. Apri brevemente o usa la ventilazione meccanica."
+      "text": "Avoid prolonged ventilation: it’s too cold outside. Open briefly or use your mechanical system to improve air exchange.",
+      "testo": "Evita la ventilazione prolungata: fa troppo freddo fuori. Apri brevemente o usa il sistema meccanico per migliorare il ricambio d’aria."
     },
     {
       "suggestionId": "S1",
@@ -27,8 +27,8 @@
     {
       "suggestionId": "S4",
       "suggestionName": "temperature",
-      "text": "Slightly outside comfort range. Adjust heating/cooling slightly.",
-      "testo": "Leggermente fuori dall'intervallo di comfort. Regola leggermente il riscaldamento o il raffreddamento."
+      "text": "Comfort slightly outside optimal range: adjust heating or cooling slightly.",
+      "testo": "Comfort leggermente fuori dall'intervallo ottimale: regola leggermente il riscaldamento o il raffreddamento."
     },
     {
       "suggestionId": "S5",
@@ -45,8 +45,8 @@
     {
       "suggestionId": "S7",
       "suggestionName": "cold_pmv",
-      "text": "Severe cold discomfort: increase heating and check insulation.",
-      "testo": "Forte disagio da freddo: aumenta il riscaldamento e controlla l'isolamento."
+      "text": "It’s starting to get cooler. Turn up the heating if needed to stay comfortable.",
+      "testo": "Sta iniziando a fare più freddo: alza il riscaldamento se necessario per mantenere il comfort."
     },
     {
       "suggestionId": "S8",
@@ -58,7 +58,7 @@
       "suggestionId": "S9",
       "suggestionName": "heat_sun",
       "text": "Sunny and hot: use shading or activate cooling.",
-      "testo": "Sole e caldo: usa schermature o attiva il raffrescamento."
+      "testo": "Giornata calda e soleggiata: abbassa le tapparelle o attiva il raffrescamento."
     },
     {
       "suggestionId": "S10",
@@ -70,19 +70,19 @@
       "suggestionId": "S11",
       "suggestionName": "extreme_cold",
       "text": "Extreme cold outside: avoid prolonged natural ventilation.",
-      "testo": "Freddo estremo all'esterno: evita la ventilazione naturale prolungata."
+      "testo": "Fa molto freddo fuori: evita di tenere le finestre aperte troppo a lungo."
     },
     {
       "suggestionId": "S12",
       "suggestionName": "pmv_heat_border",
       "text": "It is starting to get warmer. Adjust the temperature early to stay comfortable.",
-      "testo": "Sta iniziando a fare più caldo. Regola la temperatura in anticipo per rimanere comodo."
+      "testo": "Sta iniziando a fare caldo: regola subito la temperatura per mantenere il comfort."
     },
     {
       "suggestionId": "S13",
       "suggestionName": "pmv_cold_border",
-      "text": "It is starting to get cooler. Turn up the heating if needed to stay comfortable.",
-      "testo": "Sta iniziando a fare più freddo. Aumenta il riscaldamento se necessario per rimanere comodo."
+      "text": "Comfort zone at risk due to cooling: increase heating if needed.",
+      "testo": "Il comfort è a rischio per via del raffreddamento: aumenta il riscaldamento se necessario."
     },
     {
       "suggestionId": "S14",
@@ -97,10 +97,16 @@
       "testo": "Comfort termico non ideale: controlla l'abbigliamento o il flusso d'aria."
     },
     {
+      "suggestionId": "S16",
+      "suggestionName": "humidity_high",
+      "text": "L’aria è troppo umida: usa un deumidificatore o aumenta la ventilazione.",
+      "testo": "Comfort termico non ideale: controlla l'abbigliamento o il flusso d'aria."
+    },
+    {
       "suggestionId": "S17",
       "suggestionName": "ppd",
-      "text": "High discomfort perception: check all parameters (T, RH, airflow).",
-      "testo": "Alta percezione di disagio: controlla tutti i parametri (T, UR, flusso d'aria)."
+      "text": "Many people might feel uncomfortable: check if temperature, humidity or ventilation need adjustments.",
+      "testo": "Diverse persone potrebbero sentirsi a disagio: verifica se è necessario regolare temperatura, umidità o ventilazione."
     },
     {
       "suggestionId": "S18",
@@ -165,8 +171,8 @@
     {
       "suggestionId": "S28",
       "suggestionName": "score_improving",
-      "text": "Conditions are improving: keep current actions or settings.",
-      "testo": "Le condizioni stanno migliorando: mantieni le azioni o impostazioni attuali."
+      "text": "Conditions are improving: keep your current actions.",
+      "testo": "Le condizioni stanno migliorando: mantieni le azioni attuali."
     },
     {
       "suggestionId": "S29",
