@@ -31,10 +31,12 @@ import 'start_screen.dart';
 import 'app_config.dart';
 import 'mqtt_suggestions_manager.dart';
 import 'mqtt_alert_manager.dart';
+import 'utils/suggestion_catalog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppConfig.load();
+  await SuggestionCatalog.load();
 
   runApp(
     MultiProvider(

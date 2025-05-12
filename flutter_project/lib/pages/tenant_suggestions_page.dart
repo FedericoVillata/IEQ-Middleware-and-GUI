@@ -9,6 +9,8 @@ import '../app_config.dart';
 import '../suggestion_vote_mqtt_publisher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../utils/suggestion_catalog.dart';
+
 
 
 
@@ -356,8 +358,11 @@ class _SuggestionCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(suggestion.message,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(
+  SuggestionCatalog.translate(suggestion.code, Localizations.localeOf(context)),
+  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+),
+
                   const SizedBox(height: 2),
                   Text(
   '${suggestion.roomId}/${suggestion.code} • ${_fmt(suggestion.timestamp)}',
