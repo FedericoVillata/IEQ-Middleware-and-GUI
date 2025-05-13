@@ -39,6 +39,7 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
   // -----------------------------------------------------------------------
   static String get _adaptorUrl => AppConfig.adaptorUrl;
   static String get _plotServiceUrl => AppConfig.plotServiceUrl;
+  static String get _registryUrl => AppConfig.registryUrl;
 
   final List<String> _feedbackTypes = [
     "Temperature Perception",
@@ -65,10 +66,17 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  // ── Room selector state ──
+List<String> _availableRooms = [];
+String?      _selectedRoom;
+bool         _isLoadingRooms = false;
+String?      _roomError;
+
   @override
   void initState() {
     super.initState();
     _fetchFeedbackData();
+    _fetchRoomsForApartment(widget.location ?? "apartment0");
   }
 
   // -----------------------------------------------------------------------
@@ -128,6 +136,45 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
     }
   }
 
+  Future<void> _fetchRoomsForApartment(String apartmentId) async {
+  setState(() {
+    _isLoadingRooms = true;
+    _roomError      = null;
+    _availableRooms = [];
+    _selectedRoom   = null;
+  });
+
+  try {
+    final resp = await http.get(Uri.parse("$_registryUrl/apartments"));
+    if (resp.statusCode == 200) {
+      final List<dynamic> arr = jsonDecode(resp.body);
+      for (final apt in arr) {
+        if (apt["apartmentId"] == apartmentId) {
+          final rooms = (apt["rooms"] as List<dynamic>)
+              .map((r) => r["roomId"].toString())
+              .toList();
+          setState(() {
+            _availableRooms = rooms.isEmpty ? ["(No rooms)"] : rooms;
+            _selectedRoom   = rooms.isEmpty ? null : rooms.first;
+            _isLoadingRooms = false;
+          });
+          return;
+        }
+      }
+    }
+    setState(() {
+      _roomError      = "Unable to load rooms list.";
+      _isLoadingRooms = false;
+    });
+  } catch (e) {
+    setState(() {
+      _roomError      = "Connection error: $e";
+      _isLoadingRooms = false;
+    });
+  }
+}
+
+
   // -----------------------------------------------------------------------
   //  Data Fetch ------------------------------------------------------------
   // -----------------------------------------------------------------------
@@ -141,13 +188,16 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
 
     final String apartmentId = widget.location ?? "apartment0";
     final String fieldNeeded = _mapFeedbackToField(_selectedFeedback);
+    final String roomParam = (_selectedRoom != null && !_selectedRoom!.startsWith("("))
+                           ? "&room=$_selectedRoom"
+                           : "";
 
     final Uri url = Uri.parse(
     "$_plotServiceUrl/feedbackHistogram"
     "?userId=${widget.username}"
     "&apartmentId=$apartmentId"
     "&field=$fieldNeeded"
-    "&duration=$_selectedDuration",
+    "&duration=$_selectedDuration$roomParam",
   );
 
     try {
@@ -188,6 +238,30 @@ Widget build(BuildContext context) {
         // ── main content ────────────────────────────────────────────────
         Column(
           children: [
+            // Feedback-type selector -------------------------------------------
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _feedbackTypes.map((f) {
+                  final bool selected = (f == _selectedFeedback);
+                  return Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            selected ? Colors.indigo : Colors.blueGrey,
+                      ),
+                      onPressed: () async {
+                        setState(() => _selectedFeedback = f);
+                        await _fetchFeedbackData();
+                      },
+                      child:
+                          Text(f, style: const TextStyle(color: Colors.white)),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
             // Duration selector ------------------------------------------------
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -216,30 +290,7 @@ Widget build(BuildContext context) {
               ),
             ),
 
-            // Feedback-type selector -------------------------------------------
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _feedbackTypes.map((f) {
-                  final bool selected = (f == _selectedFeedback);
-                  return Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            selected ? Colors.indigo : Colors.blueGrey,
-                      ),
-                      onPressed: () async {
-                        setState(() => _selectedFeedback = f);
-                        await _fetchFeedbackData();
-                      },
-                      child:
-                          Text(f, style: const TextStyle(color: Colors.white)),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
+            if (_availableRooms.isNotEmpty) _roomSelector(),
 
             // Chart / loading / error ------------------------------------------
             Expanded(
@@ -257,18 +308,44 @@ Widget build(BuildContext context) {
 
         // ── Suggestions bell (top-right overlay) ─────────────────────────
         Positioned(
-          // push it just below the normal app-bar height (56 px) + a little padding
-          top: kToolbarHeight + 24,   // was: 12
-          right: 12,
-          child: SuggestionsBell(
-            location: widget.location,
-            username: widget.username,
+            top: 8,
+            right: 12,
+            child: SuggestionsBell(
+              location: widget.location,
+              username: widget.username,
+            ),
           ),
-        ),
       ],
     ),
   );
 }
+
+Widget _roomSelector() => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Card(
+        elevation: 2,
+        child: ListTile(
+          title: const Text("Select Room"),
+          trailing: _isLoadingRooms
+              ? const SizedBox(
+                  height: 24, width: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : DropdownButton<String>(
+                  focusColor: Colors.transparent,
+                  value: _selectedRoom,
+                  items: _availableRooms
+                      .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                      .toList(),
+                  onChanged: (val) async {
+                    setState(() => _selectedRoom = val);
+                    await _fetchFeedbackData();
+                  },
+                ),
+        ),
+      ),
+    );
+
 
   // -------------------------- Chart --------------------------------------
   Widget _buildBarChart() {
