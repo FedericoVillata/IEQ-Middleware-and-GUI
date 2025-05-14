@@ -268,19 +268,62 @@ def process_room(room, apartment_id, apartment_timezone, user_id, adaptor_base, 
     pmv = calculate_pmv(season, avg_values["avg_temp"], avg_values["avg_temp"], 0.1, avg_values["avg_humidity"], settings)
     ppd = calculate_ppd(pmv)
 
-    env_input = {
-        "temperature": classifications.get("temp_class"),
-        "humidity": classifications.get("hum_class"),
-        "co2": classifications.get("co2_class"),
-        "pmv": classifications.get("pmv_class"),
-        "ppd": classifications.get("ppd_class"),
+    kpi_values = {
+        "temperature": avg_values["avg_temp"],
+        "humidity": avg_values["avg_humidity"],
+        "co2": avg_values["avg_co2"],
+        "pmv": pmv,
+        "ppd": ppd,
+        "icone": icone,
+        "ieqi": ieqi
     }
-    if "icone_class" in classifications:
-        env_input["icone"] = classifications.get("icone_class")
-    if "ieqi_class" in classifications:
-        env_input["ieqi"] = classifications.get("ieqi_class")
 
-    env_score = overall_score(env_input, settings)
+    # Select the correct temperature/co2 thresholds based on ventilation and season
+    vent = settings["values"].get("ventilation")
+    if vent == "nat":
+        co2_thr = settings["thresholds"]["co2_natural"]
+        acceptable = adaptive_comfort["Acceptable Range"]
+        cat_num = settings["thresholds"].get("adaptive_temp_category", 2)
+
+        # Map category number to label
+        cat_label_map = {1: "Cat I", 2: "Cat II", 3: "Cat III"}
+        cat_label = cat_label_map.get(cat_num, "Cat II")
+
+        # Get G range from selected category
+        g_min, g_max = acceptable[cat_label]
+
+        # Try to get a wider range for Y (use Cat III as fallback)
+        if cat_label != "Cat III":
+            y_min, y_max = acceptable["Cat III"]
+        else:
+            # Expand artificially by ±1 if already at Cat III
+            y_min, y_max = g_min - 1, g_max + 1
+
+        # Define thresholds
+        temp_thr = {
+            "G": [g_min, g_max],
+            "Y": [y_min, y_max],
+            "R": [-50, y_min, y_max, 100]
+        }
+    else:
+        co2_thr = settings["thresholds"]["co2_mechanical"]
+        key = f"mechanical_temp_{season}"
+        temp_thr = settings["thresholds"][key]
+
+    cont_thresholds = {
+        "temperature": temp_thr,
+        "humidity": settings["thresholds"]["humidity"],
+        "co2": co2_thr,
+        "pmv": settings["thresholds"]["pmv_classification"],
+        "ppd": settings["thresholds"]["ppd_classification"],
+        "icone": settings["thresholds"]["icone_classification"],
+        "ieqi": settings["thresholds"]["ieqi_classification"]
+    }
+
+    new_settings=settings.copy()
+    new_settings["thresholds"]=cont_thresholds
+
+    env_score = overall_score_continuous(kpi_values, new_settings)
     env_class = classify_overall_score(env_score, settings)
 
     mapped_classifications["overall_score"] = env_class
@@ -327,7 +370,7 @@ def fetch_room_data(room_id, apartment_id, user_id, adaptor_base):
     measure_data = {}
 
     for measure in measures:
-        fetched = fetch_data(adaptor_base, user_id, apartment_id, measure, duration="168")
+        fetched = fetch_data(adaptor_base, user_id, apartment_id, measure)
         if not fetched:
             log(f"No data fetched for {measure}", level="WARN", context=f"{apartment_id}/{room_id}")
             continue

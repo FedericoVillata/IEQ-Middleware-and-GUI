@@ -300,6 +300,84 @@ def overall_score(classifications, settings):
 
     return round(normalized_total)
 
+def overall_score_continuous(kpi_values, settings):
+    """
+    Compute a continuous (0–100) overall score, using thresholds and weights per metric.
+    Requires: kpi_values = {"temperature": 22.3, "humidity": 40.1, ..., etc.}
+    settings must contain: weights + thresholds dict with G/Y/R ranges per metric.
+    """
+
+    weights = settings["weights"]
+    thresholds = settings["thresholds"]
+
+    total_score = 0.0
+    total_weight = 0.0
+
+    for metric, value in kpi_values.items():
+        if value is None or metric not in weights or metric not in thresholds:
+            continue
+
+        weight = weights[metric]
+        thr = thresholds[metric]
+
+        if metric == "pmv":
+            min_pmv = thr["Very Cold"]
+            max_pmv = thr["Very Warm"]
+            neutral_center = thr["Neutral"]
+
+            if min_pmv <= value <= neutral_center:
+                score = (value - min_pmv) / (neutral_center - min_pmv)
+            elif neutral_center < value <= max_pmv:
+                score = (max_pmv - value) / (max_pmv - neutral_center)
+            else:
+                score = 0.0
+
+            score = max(0.0, min(1.0, score))
+
+        # symmetric classification (with 2 "yellow" sides)
+        elif isinstance(thr.get("G"), list) and isinstance(thr.get("Y"), list) and isinstance(thr.get("R"), list):
+            g_min, g_max = thr["G"]
+            y1_min, y1_max = thr["Y"]
+            r1_min, r1_max, r2_min, r2_max = thr["R"]
+
+            if g_min <= value <= g_max:
+                score = 1.0
+            elif y1_min <= value < g_min:
+                score = (value - y1_min) / (g_min - y1_min) * 0.7
+            elif g_max < value <= y1_max:
+                score = (y1_max - value) / (y1_max - g_max) * 0.7
+            elif r1_min <= value < y1_min:
+                score = (value - r1_min) / (y1_min - r1_min) * 0.3
+            elif y1_max < value <= r2_max:
+                score = (r2_max - value) / (r2_max - y1_max) * 0.3
+            else:
+                score = 0.0
+
+        # monotonic classification (co2, ieqi, icone, etc.)
+        elif isinstance(thr.get("G"), (int, float)):
+            g = thr["G"]
+            y = thr["Y"]
+            r = thr["R"]
+
+            if value <= g:
+                score = 1.0
+            elif value <= y:
+                score = (y - value) / (y - g) * 0.7
+            elif value <= r:
+                score = (r - value) / (r - y) * 0.3
+            else:
+                score = 0.0
+        else:
+            score = 0.0  # fallback
+
+        total_score += score * weight
+        total_weight += weight
+
+    if total_weight == 0:
+        return 0
+
+    return round((total_score / total_weight) * 100)        
+
 
 def classify_overall_score(score, settings):
     thresholds = settings["thresholds"]["overall_score_classification"]

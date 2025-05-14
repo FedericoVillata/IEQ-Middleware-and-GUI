@@ -28,8 +28,8 @@ def get_catalog(registry_url, retries=10, delay=3):
     log("Failed to fetch catalog after several retries. Exiting.", level="ERROR")
     exit(1)
 
-
-def fetch_data(adaptor_base, user_id, apartment_id, measure, start=None, end=None, duration=None, retries=3, delay=2):
+#BE CAREFUL, if test=0 duration is in h, if test=1 duration is in m 
+def fetch_data(adaptor_base, user_id, apartment_id, measure, start=None, end=None, duration="1", retries=3, delay=2): #change duration as needed
     if start and end:
         url = f"{adaptor_base}/getDatainPeriod/{user_id}/{apartment_id}"
         params = {
@@ -38,7 +38,7 @@ def fetch_data(adaptor_base, user_id, apartment_id, measure, start=None, end=Non
             "stop": f"{end}T23:59:59Z",
         }
     else:
-        dur = duration if duration else "168"
+        dur = duration if duration else "1"
         url = f"{adaptor_base}/getApartmentData/{user_id}/{apartment_id}"
         params = {
             "measurement": measure,
