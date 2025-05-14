@@ -22,11 +22,13 @@ List<int> _decodeHistogram(String body) {
 class TechnicalFeedbackPage extends StatefulWidget {
   final String username;      // Technical user's ID
   final String? location;     // Selected apartment
+  final String? apartmentName;
 
   const TechnicalFeedbackPage({
     Key? key,
     required this.username,
     required this.location,
+    this.apartmentName
   }) : super(key: key);
 
   @override

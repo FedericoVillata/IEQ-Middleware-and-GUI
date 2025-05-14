@@ -25,6 +25,7 @@ class TechnicalMainPage extends StatefulWidget {
 
 class _TechnicalMainPageState extends State<TechnicalMainPage> {
   String? selectedLocation;
+  String? selectedLocationName;
   int _currentIndex = 0;
   /// Pages are (re)built once a location is chosen
   late List<Widget> pages = List.filled(6, const Placeholder());
@@ -50,12 +51,13 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
     await mgr.syncFromRest(AppConfig.suggestionsRestUrl, [apt]);
   }
 
-  void _onLocationSelected(String loc) async {
-    setState(() {
-      selectedLocation = loc;
-      _currentIndex = 0;
-      _buildPagesFor(loc);
-    });
+  Future<void> _onLocationSelected(String loc, String name) async {
+  setState(() {
+    selectedLocation      = loc;
+    selectedLocationName  = name;
+    _currentIndex         = 0;
+    _buildPagesFor(loc);                 
+  });
 
     // kick off the REST bootstrap (does nothing if already synced)
     await _fetchInitialSuggestions(loc);
@@ -80,7 +82,9 @@ class _TechnicalMainPageState extends State<TechnicalMainPage> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text('Technical Interface – $selectedLocation'),
+        title: Text(
+          'Technical Interface – ${selectedLocationName ?? selectedLocation}',
+        ),
         actions: [
           IconButton(
             tooltip: 'Logout',

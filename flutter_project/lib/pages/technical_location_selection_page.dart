@@ -1,31 +1,37 @@
+// pages/technical_location_selection_page.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../app_config.dart';
-import '../login_page.dart';           // ← aggiunto
+import '../login_page.dart';
 
 class LocationSelectionPage extends StatefulWidget {
-  final Function(String) onLocationSelected;
+  /// Callback now returns **both** id and name
+  final void Function(String /*apartmentId*/, String /*apartmentName*/)
+      onLocationSelected;
   final String username;
 
   const LocationSelectionPage({
-    super.key,
+    Key? key,
     required this.onLocationSelected,
     required this.username,
-  });
+  }) : super(key: key);
 
   @override
   State<LocationSelectionPage> createState() => _LocationSelectionPageState();
 }
 
 class _LocationSelectionPageState extends State<LocationSelectionPage> {
-  // Endpoint apartments
+  // ---------------------------------------------------------------------------
+  //  Config & State
+  // ---------------------------------------------------------------------------
   static String get _registryUrl => '${AppConfig.registryUrl}/apartments';
 
-  final _search = TextEditingController();
+  final TextEditingController _search = TextEditingController();
 
-  List<String> _all = [];
+  final List<String> _ids = [];                   
+  final Map<String, String> _id2name = {};         
   String _filter = '';
 
   bool _loading = false;
@@ -38,7 +44,9 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
     _search.addListener(() => setState(() => _filter = _search.text));
   }
 
-  /* ---------------- network ---------------- */
+  // ---------------------------------------------------------------------------
+  //  Network
+  // ---------------------------------------------------------------------------
   Future<void> _fetchLocations() async {
     setState(() {
       _loading = true;
@@ -46,45 +54,60 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
     });
 
     try {
-      final r = await http.get(Uri.parse(_registryUrl));
-      if (r.statusCode == 200) {
-        final data = json.decode(r.body) as List<dynamic>;
-
-        // solo gli appartamenti dove compare lo username
-        final locs = <String>[];
-        for (final apt in data) {
-          final users = apt['users'] as List<dynamic>? ?? [];
-          if (users.contains(widget.username)) locs.add(apt['apartmentId']);
-        }
-
+      final resp = await http.get(Uri.parse(_registryUrl));
+      if (resp.statusCode != 200) {
         setState(() {
-          _all = locs;
           _loading = false;
+          _error = 'Server error: ${resp.statusCode}';
         });
-      } else {
-        setState(() {
-          _error = 'Server error: ${r.statusCode}';
-          _loading = false;
-        });
+        return;
       }
+
+      final data = json.decode(resp.body) as List<dynamic>;
+
+      final ids = <String>[];
+      final names = <String, String>{};
+      for (final apt in data) {
+        final users = apt['users'] as List<dynamic>? ?? [];
+        if (!users.contains(widget.username)) continue;
+
+        final String id = apt['apartmentId'];
+        final String name = (apt['apartmentName'] as String?) ?? id;
+        ids.add(id);
+        names[id] = name;
+      }
+
+      setState(() {
+        _ids
+          ..clear()
+          ..addAll(ids);
+        _id2name
+          ..clear()
+          ..addAll(names);
+        _loading = false;
+      });
     } catch (e) {
       setState(() {
-        _error = 'Connection failed: $e';
         _loading = false;
+        _error = 'Connection failed: $e';
       });
     }
   }
 
-  /* ---------------- UI ---------------- */
+  // ---------------------------------------------------------------------------
+  //  UI
+  // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    final shown = _all
-        .where((l) => l.toLowerCase().contains(_filter.toLowerCase()))
-        .toList();
+    final lc = _filter.toLowerCase();
+    final shown = _ids.where((id) {
+      final name = _id2name[id] ?? id;
+      return id.toLowerCase().contains(lc) || name.toLowerCase().contains(lc);
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,          // ← niente freccia
+        automaticallyImplyLeading: false,
         title: const Text('Select Location'),
         centerTitle: true,
         actions: [
@@ -98,60 +121,71 @@ class _LocationSelectionPageState extends State<LocationSelectionPage> {
           ),
         ],
       ),
-      body: Container(
-        child: Column(
-          children: [
-            // search bar ---------------------------------------------------
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                child: TextField(
-                  controller: _search,
-                  decoration: InputDecoration(
-                    labelText: 'Search location…',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.all(12),
+      body: Column(
+        children: [
+          // ── search bar ───────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: TextField(
+                controller: _search,
+                decoration: InputDecoration(
+                  labelText: 'Search location…',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
                   ),
+                  contentPadding: const EdgeInsets.all(12),
                 ),
               ),
             ),
+          ),
 
-            if (_loading)
-              const Expanded(child: Center(child: CircularProgressIndicator()))
-            else if (_error != null)
-              Padding(
-                padding: const EdgeInsets.all(8),
-                child: Text(_error!, style: const TextStyle(color: Colors.red)),
-              )
-            else
-              Expanded(
-                child: ListView.builder(
-                  itemCount: shown.length,
-                  itemBuilder: (_, i) => _LocationTile(
-                    loc: shown[i],
+          if (_loading)
+            const Expanded(child: Center(child: CircularProgressIndicator()))
+          else if (_error != null)
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Text(_error!, style: const TextStyle(color: Colors.red)),
+            )
+          else
+            Expanded(
+              child: ListView.builder(
+                itemCount: shown.length,
+                itemBuilder: (_, i) {
+                  final id = shown[i];
+                  final name = _id2name[id] ?? id;
+                  return _LocationTile(
+                    id: id,
+                    name: name,
                     onTap: widget.onLocationSelected,
-                  ),
-                ),
+                  );
+                },
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
 }
 
-/* ---------------- tile helper ---------------- */
+// ---------------------------------------------------------------------------
+//  Helper tile
+// ---------------------------------------------------------------------------
 class _LocationTile extends StatelessWidget {
-  final String loc;
-  final void Function(String) onTap;
-  const _LocationTile({required this.loc, required this.onTap});
+  final String id;
+  final String name;
+  final void Function(String, String) onTap;
+
+  const _LocationTile({
+    required this.id,
+    required this.name,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) => Card(
@@ -159,9 +193,10 @@ class _LocationTile extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ListTile(
-          title: Text(loc, style: const TextStyle(fontWeight: FontWeight.w500)),
+          title: Text(name, style: const TextStyle(fontWeight: FontWeight.w500)),
+          subtitle: id != name ? Text(id) : null,
           trailing: const Icon(Icons.arrow_forward_ios),
-          onTap: () => onTap(loc),
+          onTap: () => onTap(id, name),
         ),
       );
 }

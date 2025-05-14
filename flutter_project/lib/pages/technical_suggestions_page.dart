@@ -10,14 +10,17 @@ import '../mqtt_suggestions_manager.dart'
 /// or with the legacy **location:** – one is required.
 class TechnicalSuggestionsPage extends StatefulWidget {
   final String username;
-  final String? apartmentId; // new parameter name
+  final String? apartmentId; 
   final String? location;    // legacy alias
+  final String? apartmentName;
+  
 
   const TechnicalSuggestionsPage({
     super.key,
     required this.username,
     this.apartmentId,
     this.location,
+    this.apartmentName,
   }) : assert(apartmentId != null || location != null,
           'You must specify apartmentId: or location:');
 
