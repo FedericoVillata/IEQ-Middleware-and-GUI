@@ -39,6 +39,9 @@ class _FeedbackPageState extends State<FeedbackPage> {
 
   late List<String?> temperatureLabels;
 late List<String?> humidityLabels;
+late List<String?> environmentLabels;
+late List<String?> serviceLabels;
+
 
 @override
 void didChangeDependencies() {
@@ -60,6 +63,22 @@ void didChangeDependencies() {
     null,
     loc.tooHumid,
   ];
+  environmentLabels = [
+  loc.veryUnssatisfied,
+  null,
+  null,
+  null,
+  loc.verySatisfied,
+];
+
+serviceLabels = [
+  loc.veryBadService,
+  null,
+  null,
+  null,
+  loc.excellentService,
+];
+
 }
 
 
@@ -201,25 +220,25 @@ final List<double> humiditySizes = [18.0, 24.0, 30.0, 36.0, 42.0];
               final int index = i + 1;
 
               Color color;
-if (categoryKey == 'temperaturePerception') {
-  color = [
-    Colors.blue[700],
-    Colors.lightBlue,
-    Colors.green,
-    Colors.orange,
-    Colors.red[700],
-  ][i]!;
-} else if (categoryKey == 'humidityPerception') {
-  color = [
-    Colors.blueGrey[200],
-    Colors.lightBlue[300],
-    Colors.green,
-    Colors.blue[600],
-    Colors.indigo[700],
-  ][i]!;
-} else {
-  color = ratingColors[i];
-}
+                  if (categoryKey == 'temperaturePerception') {
+                    color = [
+                      Colors.blue[700],
+                      Colors.lightBlue,
+                      Colors.green,
+                      Colors.orange,
+                      Colors.red[700],
+                    ][i]!;
+                  } else if (categoryKey == 'humidityPerception') {
+                    color = [
+                      Colors.blueGrey[200],
+                      Colors.lightBlue[300],
+                      Colors.green,
+                      Colors.blue[600],
+                      Colors.indigo[700],
+                    ][i]!;
+                  } else {
+                    color = ratingColors[i];
+                  }
 
 
               final bool selected = index <= rating;
@@ -238,21 +257,29 @@ if (categoryKey == 'temperaturePerception') {
         _submitFeedback(categoryKey, index, onConfirmed: onConfirmedRating);
       },
     ),
-  if (categoryKey == 'humidityPerception')
-  Text(
-    humidityLabels[i] ?? '',
-    style: const TextStyle(fontSize: 10),
-  ),
+    SizedBox(
+      height: 16,
+      child: () {
+        String? label;
+        if (categoryKey == 'humidityPerception') {
+          label = humidityLabels[i];
+        } else if (categoryKey == 'temperaturePerception') {
+          label = temperatureLabels[i];
+        } else if (categoryKey == 'environmentSatisfaction') {
+          label = environmentLabels[i];
+        } else if (categoryKey == 'serviceRating') {
+          label = serviceLabels[i];
+        }
 
-if (categoryKey == 'temperaturePerception')
-  Text(
-    temperatureLabels[i] ?? '',
-    style: const TextStyle(fontSize: 10),
-  ),
-
-
-
-
+        return Center(
+          child: Text(
+            label ?? '',
+            style: const TextStyle(fontSize: 10),
+            textAlign: TextAlign.center,
+          ),
+        );
+      }(),
+    ),
   ],
 );
 

@@ -48,5 +48,10 @@
   "tooCold": "Troppo freddo",
   "tooHot": "Troppo caldo",
   "tooDry": "Troppo secco",
-  "tooHumid": "Troppo umido"
+  "tooHumid": "Troppo umido",
+  "veryUnssatisfied": "Molto insoddisfatto",
+  "verySatisfied": "Molto soddisfatto",
+  "veryBadService": "Scarso",
+  "excellentService": "Eccellente"
+
 }
