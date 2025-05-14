@@ -44,6 +44,9 @@
   "newTenantSuggestions": "There are {count} suggestions in room {roomId}.",
   "close": "Close",
   "seeNow": "See now",
-  "alertRoomLabel": "Room"
-
+  "alertRoomLabel": "Room",
+  "tooCold": "Too cold",
+  "tooHot": "Too hot",
+  "tooDry": "Too dry",
+  "tooHumid": "Too humid"
 }

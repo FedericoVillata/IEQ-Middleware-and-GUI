@@ -192,15 +192,15 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         final data = jsonDecode(res.body) as List<dynamic>;
         for (final d in data) {
           switch (d['measurement']) {
-            case 'Temperature':
+            case 'avg_temperature':
               final v = d['v'] as num;
               indoorTemp = '${v.toStringAsFixed(1)}°C';
               break;
-            case 'Humidity':
+            case 'avg_humidity':
               final v = d['v'] as num;
               humidity = '${v.toStringAsFixed(1)}%';
               break;
-            case 'CO2':
+            case 'avg_co2':
               final v = d['v'] as num;
               co2 = '${v.toInt()} ppm';
               break;
@@ -597,3 +597,4 @@ String _fmt(DateTime dt) {
   final local = dt.toLocal();
   return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
 }
+

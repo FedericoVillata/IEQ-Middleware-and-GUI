@@ -44,5 +44,9 @@
   "newTenantSuggestions": "Ci sono {count} suggerimenti nella stanza {roomId}.",
   "close": "Chiudi",
   "seeNow": "Vedi ora",
-  "alertRoomLabel": "Stanza"
+  "alertRoomLabel": "Stanza",
+  "tooCold": "Troppo freddo",
+  "tooHot": "Troppo caldo",
+  "tooDry": "Troppo secco",
+  "tooHumid": "Troppo umido"
 }

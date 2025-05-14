@@ -37,6 +37,55 @@ class _FeedbackPageState extends State<FeedbackPage> {
     Colors.green,
   ];
 
+  late List<String?> temperatureLabels;
+late List<String?> humidityLabels;
+
+@override
+void didChangeDependencies() {
+  super.didChangeDependencies();
+  final loc = AppLocalizations.of(context)!;
+  
+  temperatureLabels = [
+    loc.tooCold,
+    null,
+    null,
+    null,
+    loc.tooHot,
+  ];
+
+  humidityLabels = [
+    loc.tooDry,
+    null,
+    null,
+    null,
+    loc.tooHumid,
+  ];
+}
+
+
+
+
+
+  final List<IconData> tempIcons = [
+  Icons.device_thermostat, // freddo
+  Icons.device_thermostat, 
+  Icons.device_thermostat,
+  Icons.device_thermostat,
+  Icons.device_thermostat, // caldo
+];
+
+final List<IconData> humidityIcons = [
+  Icons.water_drop_outlined,   // troppo secco
+  Icons.water_drop,            // secco
+  Icons.water_drop,            // confortevole
+  Icons.water_drop,            // umido
+  Icons.water_drop,            // troppo umido
+];
+
+final List<double> humiditySizes = [18.0, 24.0, 30.0, 36.0, 42.0];
+
+
+
   static const Map<String, String> categoryKeys = {
   'temperaturePerception': 'Temperature Perception',
   'humidityPerception': 'Humidity Perception',
@@ -152,30 +201,61 @@ class _FeedbackPageState extends State<FeedbackPage> {
               final int index = i + 1;
 
               Color color;
-              if (categoryKey == 'temperaturePerception' || categoryKey == 'humidityPerception') {
-                if (index == 1 || index == 5) {
-                  color = Colors.red;
-                } else if (index == 2 || index == 4) {
-                  color = Colors.yellow[700]!;
-                } else {
-                  color = Colors.green;
-                }
-              } else {
-                color = ratingColors[index - 1];
-              }
+if (categoryKey == 'temperaturePerception') {
+  color = [
+    Colors.blue[700],
+    Colors.lightBlue,
+    Colors.green,
+    Colors.orange,
+    Colors.red[700],
+  ][i]!;
+} else if (categoryKey == 'humidityPerception') {
+  color = [
+    Colors.blueGrey[200],
+    Colors.lightBlue[300],
+    Colors.green,
+    Colors.blue[600],
+    Colors.indigo[700],
+  ][i]!;
+} else {
+  color = ratingColors[i];
+}
+
 
               final bool selected = index <= rating;
 
-              return IconButton(
-                iconSize: 30,
-                icon: Icon(
-                  icons[i],
-                  color: color.withOpacity(selected ? 1.0 : 0.3),
-                ),
-                onPressed: () {
-                  _submitFeedback(categoryKey, index, onConfirmed: onConfirmedRating);
-                },
-              );
+              return Column(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    IconButton(
+      iconSize: 30,
+      icon: Icon(
+        icons[i],
+        size: categoryKey == 'humidityPerception' ? humiditySizes[i] : 30.0,
+        color: color.withOpacity(selected ? 1.0 : 0.3),
+      ),
+      onPressed: () {
+        _submitFeedback(categoryKey, index, onConfirmed: onConfirmedRating);
+      },
+    ),
+  if (categoryKey == 'humidityPerception')
+  Text(
+    humidityLabels[i] ?? '',
+    style: const TextStyle(fontSize: 10),
+  ),
+
+if (categoryKey == 'temperaturePerception')
+  Text(
+    temperatureLabels[i] ?? '',
+    style: const TextStyle(fontSize: 10),
+  ),
+
+
+
+
+  ],
+);
+
             }),
           ),
         ],
@@ -213,14 +293,14 @@ class _FeedbackPageState extends State<FeedbackPage> {
             'temperaturePerception',
             tempRating,
             (r) => setState(() => tempRating = r),
-            icons: List.filled(5, Icons.device_thermostat),
+            icons: tempIcons,
           ),
           const SizedBox(height: 16),
           buildRatingSection(
             'humidityPerception',
             humRating,
             (r) => setState(() => humRating = r),
-            icons: List.filled(5, Icons.water_drop),
+            icons: humidityIcons,
           ),
           const SizedBox(height: 16),
           buildRatingSection(
@@ -253,4 +333,5 @@ class _FeedbackPageState extends State<FeedbackPage> {
     );
   }
 }
+
 
