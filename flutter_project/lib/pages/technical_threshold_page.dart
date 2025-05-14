@@ -7,11 +7,13 @@ import '../widgets/suggestions_bell.dart';
 class TechnicalThresholdPage extends StatefulWidget {
   final String username;
   final String? location;
+  final String? apartmentName;
 
   const TechnicalThresholdPage({
     Key? key,
     required this.username,
     required this.location,
+    this.apartmentName,
   }) : super(key: key);
 
   @override

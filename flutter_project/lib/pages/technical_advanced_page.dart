@@ -9,11 +9,13 @@ import '../widgets/suggestions_bell.dart';
 class TechnicalAdvancePage extends StatefulWidget {
   final String username;
   final String? location;
+  final String? apartmentName;
 
   const TechnicalAdvancePage({
     Key? key,
     required this.username,
     required this.location,
+    this.apartmentName,
   }) : super(key: key);
 
   @override

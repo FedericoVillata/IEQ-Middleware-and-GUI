@@ -24,7 +24,12 @@
       "permissions": "Technical",
       "apartments": [
         "apartment1",
-        "apartment3"
+        "apartment3",
+        "apartment2",
+        "apartment4",
+        "apartment5",
+        "apartment6",
+        "apartment7"
       ]
     },
     {
@@ -2327,7 +2332,8 @@
     },
     {
       "users": [
-        "1C"
+        "1C",
+        "user1"
       ],
       "apartmentId": "apartment2",
       "apartmentName": "1C",
@@ -2796,7 +2802,8 @@
     },
     {
       "users": [
-        "Terza"
+        "Terza",
+        "user1"
       ],
       "apartmentId": "apartment4",
       "apartmentName": "Terza",
@@ -3275,7 +3282,8 @@
     },
     {
       "users": [
-        "2C"
+        "2C",
+        "user1"
       ],
       "apartmentId": "apartment5",
       "apartmentName": "2C",
@@ -3753,7 +3761,8 @@
     },
     {
       "users": [
-        "1D"
+        "1D",
+        "user1"
       ],
       "apartmentId": "apartment6",
       "apartmentName": "1D",
@@ -4231,7 +4240,8 @@
     },
     {
       "users": [
-        "Technical"
+        "Technical",
+        "user1"
       ],
       "apartmentId": "apartment7",
       "apartmentName": "Valentino",
