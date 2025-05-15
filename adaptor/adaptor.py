@@ -202,6 +202,36 @@ class Adaptor(object):
                         raise cherrypy.HTTPError("400", "Invalid plantCode")                    
                 else:
                     raise cherrypy.HTTPError("400", "Invalid User")
+            elif uri[0] == "getSensorData":
+                #http://localhost:8080/getSensorData/userId/aptId/sensorId?measurement=humidity&duration=1 
+                if self.checkUserPresent(uri[1]):
+                    if self.checkApartmentPresent(uri[1],uri[2]): 
+                        if params["measurement"] in self.possMeasures:
+                            try:
+                                duration = int(params["duration"])
+                            except:
+                                raise cherrypy.HTTPError("400", "invalid duration")
+                            if self.test == 1:
+                                timeInterval = "m"
+                            else:
+                                timeInterval = "h"
+                            bucket =  uri[2]
+                            query = f'from(bucket: "{bucket}") \
+                                |> range(start: -{duration}{timeInterval}) \
+                                    |> filter(fn: (r) => r["MAC"] == "{uri[3]}") \
+                                        |> filter(fn: (r) => r["_field"] == "{params["measurement"]}")'
+                            tables = self.client.query_api().query(org=self.org, query=query)
+                            out = []
+                            tz = requests.get(f"{self.registryBaseUrl}/apartments/{uri[2]}").json()["timezone"]
+                            for table in tables:
+                                for row in table.records:
+                                    line = {"t": row.get_time().astimezone(ZoneInfo(tz)).strftime("%m/%d/%Y, %H:%M:%S"), "v": row.get_value()}
+                                    out.append(line)
+                            return json.dumps(out)
+                    else:
+                        raise cherrypy.HTTPError("400", "Invalid plantCode")                    
+                else:
+                    raise cherrypy.HTTPError("400", "Invalid User")
             elif uri[0] == "getAllRoomData":
                 #http://localhost:8080/getAllRoomData/userId/aptId/roomCode?duration=1 
                 if self.checkUserPresent(uri[1]):
