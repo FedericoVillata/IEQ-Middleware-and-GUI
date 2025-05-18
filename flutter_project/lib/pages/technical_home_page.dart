@@ -60,6 +60,12 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
   List<String> availableRooms = [];
   String? selectedRoom;
 
+  // Sensors ---------------------------------------------------------------
+  List<String> availableSensors = [];
+  String? selectedSensor;
+
+  bool isSensorsLoading = false;
+
   // Error / loading flags
   String? errorMessage;
   bool isLoadingRooms = false;
@@ -98,6 +104,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
                   availableRooms = foundRooms;
                   selectedRoom = foundRooms.first;
                 }
+                _fetchSensorsForRoom(apartmentId, selectedRoom);
                 isLoadingRooms = false;
               });
               return;
@@ -117,6 +124,59 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
         errorMessage = "Connection error: $e";
       });
     }
+  }
+
+  Future<void> _fetchSensorsForRoom(String apartmentId, String? roomId) async {
+    // ---------- start: reset UI & show progress spinner ----------
+    setState(() {
+      availableSensors = [];
+      selectedSensor   = null;
+      isSensorsLoading = true;          // ← NEW
+    });
+    // --------------------------------------------------------------
+
+    if (roomId == null) {
+      // no room chosen – nothing else to do
+      setState(() => isSensorsLoading = false);
+      return;
+    }
+
+    try {
+      final r = await http.get(Uri.parse(AppConfig.registryUrl + "/apartments"));
+      if (r.statusCode == 200) {
+        final arr = json.decode(r.body);
+        if (arr is List) {
+          for (var apt in arr) {
+            if (apt["apartmentId"] == apartmentId) {
+              for (var room in apt["rooms"]) {
+                if (room["roomId"] == roomId) {
+                  final sensors = room["sensors"] as List<dynamic>;
+                  final ids = sensors.map((s) => s["sensorId"].toString()).toList();
+
+                  setState(() {
+                    if (ids.length > 1) {
+                      availableSensors = ["all", ...ids];
+                      selectedSensor   = "all";
+                    } else {
+                      availableSensors = ids;
+                      selectedSensor   = ids.isNotEmpty ? ids.first : null;
+                    }
+                    isSensorsLoading = false;         // ← NEW
+                  });
+                  return;
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (_) {/* ignore – UI will fall back below */}
+    // ---------- fallback on errors ----------
+    setState(() {
+      availableSensors = ["all"];
+      selectedSensor   = "all";
+      isSensorsLoading = false;         // ← NEW
+    });
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -159,25 +219,65 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
                 ],
               ),
 
-              // Room selector
-              if (availableRooms.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Card(
-                    elevation: 2,
-                    child: ListTile(
-                      title: const Text("Select Room"),
-                      trailing: DropdownButton<String>(
-                        focusColor: Colors.transparent,
-                        value: selectedRoom,
-                        items: availableRooms
-                            .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-                            .toList(),
-                        onChanged: (val) => setState(() => selectedRoom = val),
+              // ── Room + Sensor in one horizontal row ────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: Row(
+                  children: [
+                    // ── Room selector ────────────────────────────────────────────────
+                    Expanded(
+                      child: Card(
+                        elevation: 2,
+                        child: ListTile(
+                          title: const Text("Select Room"),
+                          trailing: DropdownButton<String>(
+                            focusColor: Colors.transparent,
+                            value: selectedRoom,
+                            items: availableRooms.map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                                .toList(),
+                            onChanged: (val) {
+                              // ❶ Immediately clear the old sensor to avoid mismatching room⇄sensor
+                              setState(() {
+                                selectedRoom     = val;
+                                availableSensors = [];
+                                selectedSensor   = null;
+                              });
+
+                              // ❷ Fetch sensors for the new room; this will set the correct defaults
+                              _fetchSensorsForRoom(widget.location ?? "apartment0", val);
+                            },
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+
+                    const SizedBox(width: 12),
+
+                    // ── Sensor selector (shown when we have at least one sensor) ─────
+                    if (availableSensors.isNotEmpty)
+                      Expanded(
+                        child: Card(
+                          elevation: 2,
+                          child: ListTile(
+                            title: const Text("Select Sensor"),
+                            trailing: DropdownButton<String>(
+                              focusColor: Colors.transparent,
+                              value: selectedSensor,
+                              items: availableSensors.map((s) {
+                                final label = (s == "all") ? "All sensors" : s;
+                                return DropdownMenuItem(value: s, child: Text(label));
+                              }).toList(),
+                              onChanged: (val) =>
+                                  setState(() => selectedSensor = val ?? selectedSensor),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
+              ),
+
+
 
               // Duration selector
               Padding(
@@ -195,6 +295,7 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
                       onChanged: (val) {
                         if (val == null) return;
                         setState(() => selectedDuration = val);
+                        _fetchSensorsForRoom(widget.location ?? "apartment0", val);
                       },
                     ),
                   ),
@@ -326,6 +427,11 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
     if (selectedRoom != null && !selectedRoom!.startsWith("(")) {
       url += "&room=$selectedRoom";
     }
+
+    if (selectedSensor != null && selectedSensor != "all" && availableSensors.contains(selectedSensor)) {
+      url += "&sensorId=$selectedSensor";
+    }
+
     // Bypass caches
     url += "&ts=${DateTime.now().millisecondsSinceEpoch}";
     return url;
@@ -333,6 +439,9 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
   
   /// Line chart or carpet without legend
   Widget _buildChartOnly() {
+    if (isSensorsLoading || selectedRoom == null) {
+      return const CircularProgressIndicator();
+    }
     return FutureBuilder<http.Response>(
       future: http.get(Uri.parse(_chartUrl())),
       builder: (context, snapshot) {
@@ -371,6 +480,9 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
 
   /// Carpet plot + legend (legend hidden if no data)
   Widget _buildCarpetChartWithLegend() {
+    if (isSensorsLoading || selectedRoom == null) {
+    return const CircularProgressIndicator();
+  }
     return FutureBuilder<http.Response>(
       future: http.get(Uri.parse(_chartUrl())),
       builder: (context, snapshot) {
@@ -443,16 +555,35 @@ class _TechnicalHomePageState extends State<TechnicalHomePage> {
 
   Future<void> _exportCsv() async {
     final user = widget.username;
-    final apt = widget.location ?? "apartment0";
+    final apt  = widget.location ?? "apartment0";
 
+    // base URL
     String url =
-        "$PLOT_SERVICE_URL/exportCsv?userId=$user&apartmentId=$apt&measure=$selectedMetric&duration=$selectedDuration";
+        "$PLOT_SERVICE_URL/exportCsv?userId=$user"
+        "&apartmentId=$apt"
+        "&measure=$selectedMetric"
+        "&duration=$selectedDuration";
 
+    // add room when one is selected
     if (selectedRoom != null && !selectedRoom!.startsWith("(")) {
       url += "&room=$selectedRoom";
     }
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+
+    // add sensorId only when we are NOT on "all"
+    if (selectedSensor != null &&
+        selectedSensor != "all" &&
+        availableSensors.contains(selectedSensor)) {
+      url += "&sensorId=$selectedSensor";
+    }
+
+    // launch the download in the external browser / OS handler
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Could not launch CSV export")),
+      );
     }
   }
 }

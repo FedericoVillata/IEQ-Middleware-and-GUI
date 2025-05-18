@@ -141,6 +141,7 @@ class PlotService:
         start = kwargs.get("start", None)
         end = kwargs.get("end", None)
         download = kwargs.get("download", None)
+        sensorId = kwargs.get("sensorId", None) 
 
         if duration:
             try:
@@ -174,7 +175,7 @@ class PlotService:
         duration = str(duration_hours)
 
         # 1) Fetch data from the adaptor
-        data = self._fetch_data(userId, apartmentId, measure, start, end, duration, room)
+        data = self._fetch_data(userId, apartmentId, measure, start, end, duration, room, sensorId)
         if room and any("room" in d for d in data):
             data = [d for d in data if d.get("room") == room]
         if not data:
@@ -366,8 +367,9 @@ class PlotService:
         start = kwargs.get("start", None)
         end = kwargs.get("end", None)
         download = kwargs.get("download", None)
+        sensorId = kwargs.get("sensorId", None)
 
-        data = self._fetch_data(userId, apartmentId, measure, start, end, duration_str, room)
+        data = self._fetch_data(userId, apartmentId, measure, start, end, duration_str, room, sensorId)
         if room and any("room" in d for d in data):
             data = [d for d in data if d.get("room") == room]
         if not data:
@@ -458,42 +460,73 @@ class PlotService:
     @cherrypy.expose
     def exportCsv(self, **kwargs):
         """
-        GET /exportCsv?userId=U&apartmentId=A&measure=M&duration=H&room=R
-        Returns a CSV with columns: [timestamp, measureValue].
+        GET /exportCsv
+          ?userId=<u>&apartmentId=<a>&measure=<m>&duration=<h>
+          [&room=<r>][&sensorId=<s>][&start=YYYY-MM-DD&end=YYYY-MM-DD]
+
+        Behaviour
+        ---------
+        • If *sensorId* is supplied (and not "all") → use /getSensorData  
+        • Else if *room* is supplied                 → use /getRoomData  
+        • Else                                       → use /getApartmentData  
+
+        The CSV contains **only** the rows that were effectively plotted:
+        [timestamp ISO, value].  If there are no rows the file has just the
+        header line.
         """
-        try:
-            userId = kwargs["userId"]
-            apartmentId = kwargs["apartmentId"]
-        except KeyError:
+        # ---- mandatory params ------------------------------------------------
+        userId       = kwargs.get("userId")
+        apartmentId  = kwargs.get("apartmentId")
+        if not userId or not apartmentId:
             raise cherrypy.HTTPError(400, "Missing userId or apartmentId")
 
-        measure = kwargs.get("measure", "Temperature")
-        room = kwargs.get("room", None)
-        duration_str = kwargs.get("duration", None)
-        start = kwargs.get("start", None)
-        end = kwargs.get("end", None)
+        # ---- optional params --------------------------------------------------
+        measure      = kwargs.get("measure", "Temperature")
+        room         = kwargs.get("room")
+        sensorId_raw = kwargs.get("sensorId")
+        sensorId     = sensorId_raw if sensorId_raw and sensorId_raw != "all" else None
 
-        data = self._fetch_data(userId, apartmentId, measure, start, end, duration_str)
-        if room:
+        start        = kwargs.get("start")
+        end          = kwargs.get("end")
+        duration_str = kwargs.get("duration")      # e.g. "168"  (hours)
+
+        # ---- pull the data ----------------------------------------------------
+        data = self._fetch_data(
+            userId,
+            apartmentId,
+            measure,
+            start,
+            end,
+            duration_str,
+            room,
+            sensorId
+        )
+
+        # keep only the desired room **when** we asked for a room-level slice
+        if room and sensorId is None:
             data = [d for d in data if d.get("room") == room]
 
-        cherrypy.response.headers["Content-Type"] = "text/csv; charset=utf-8"
-        cherrypy.response.headers["Content-Disposition"] = f'attachment; filename="{measure}_data.csv"'
+        # ---- build the CSV ----------------------------------------------------
+        cherrypy.response.headers["Content-Type"]        = "text/csv; charset=utf-8"
+        cherrypy.response.headers["Content-Disposition"] = (
+            f'attachment; filename="{measure}_data.csv"'
+        )
 
         output = StringIO()
         writer = csv.writer(output, delimiter=';', lineterminator='\n')
         writer.writerow(["timestamp", measure])
+
         for item in data:
-            dt = self._parse_time(item["t"])
-            val = item["v"]
-            if dt:
-                writer.writerow([dt.isoformat(), val])
+            dt = self._parse_time(item.get("t", ""))
+            if dt:                                 # skip rows with unparsable date
+                writer.writerow([dt.isoformat(), item.get("v")])
+
         return output.getvalue()
 
     # ------------------------------------------------
     # Internal Helper Methods
     # ------------------------------------------------
-    def _fetch_data(self, userId, apartmentId, measure, start, end, duration, room=None):
+    def _fetch_data(self, userId, apartmentId, measure, start, end, duration, room=None, sensorId=None):
         """
         If start/end => /getDatainPeriod
         else => /getApartmentData
@@ -506,7 +539,10 @@ class PlotService:
                 "stop":  f"{end}T23:59:59Z"
             }
         else:
-            if room: 
+            if sensorId:                               
+                url  = (f"{self.ADAPTOR_BASE}/getSensorData/"
+                        f"{userId}/{apartmentId}/{sensorId}")
+            elif room: 
                 url = f"{self.ADAPTOR_BASE}/getRoomData/{userId}/{apartmentId}/{room}"
             else:
                 url = f"{self.ADAPTOR_BASE}/getApartmentData/{userId}/{apartmentId}"

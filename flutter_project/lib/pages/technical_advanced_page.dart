@@ -70,7 +70,7 @@ class _TechnicalAdvancePageState extends State<TechnicalAdvancePage> {
     "1 year": "8760",
     "all": "999999",
   };
-  String selectedDuration = "24";
+  String selectedDuration = "168";
 
   // Rooms
   List<String> availableRooms = [];
