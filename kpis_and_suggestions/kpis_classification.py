@@ -1,6 +1,8 @@
 #kpis_classification.py
 import numpy as np
 from datetime import datetime
+from pythermalcomfort import pmv_ppd  
+from math import exp
 
 
 def log(message, level="INFO", context=None):
@@ -154,32 +156,53 @@ def running_mean_temperature(temps):
 # PMV and PPD Calculations
 # -----------------------------
 
-def calculate_pmv(season, ta, tr, vel, rh, settings):
-    values = settings["values"]
-    met = values.get("met", 1.2)
-    clo_key = "clo_warm" if season == "warm" else "clo_cold"
-    clo = values.get(clo_key, 1.0)
+# def calculate_pmv(season, ta, tr, vel, rh, settings):
+#     values = settings["values"]
+#     met = values.get("met", 1.2)
+#     clo_key = "clo_warm" if season == "warm" else "clo_cold"
+#     clo = values.get(clo_key, 1.0)
 
-    pa = rh * 10 * np.exp(16.6536 - 4030.183 / (ta + 235))
-    icl = 0.155 * clo
-    m = met * 58.15
-    w = 0
-    fcl = 1 + 1.29 * icl if icl < 0.078 else 1.05 + 0.645 * icl
-    t_cl = ta
-    for _ in range(5):
-        hc = max(12.1 * np.sqrt(vel), 2.38 * abs(t_cl - ta) ** 0.25)
-        t_cl = (35.7 - 0.028 * (m - w)) / (3.96e-8 * fcl * ((t_cl + 273) ** 4 - (tr + 273) ** 4) + hc * fcl)
+#     pa = rh * 10 * np.exp(16.6536 - 4030.183 / (ta + 235))
+#     icl = 0.155 * clo
+#     m = met * 58.15
+#     w = 0
+#     fcl = 1 + 1.29 * icl if icl < 0.078 else 1.05 + 0.645 * icl
+#     t_cl = ta
+#     for _ in range(5):
+#         hc = max(12.1 * np.sqrt(vel), 2.38 * abs(t_cl - ta) ** 0.25)
+#         t_cl = (35.7 - 0.028 * (m - w)) / (3.96e-8 * fcl * ((t_cl + 273) ** 4 - (tr + 273) ** 4) + hc * fcl)
 
-    hr = 3.96e-8 * fcl * ((t_cl + 273) ** 4 - (tr + 273) ** 4)
-    c = hc * fcl * (t_cl - ta)
-    e = 0.42 * (m - w - 58.15) if m > 58.15 else 0
-    res = 0.0014 * m * (34 - ta) + 0.0173 * m * (5.87 - pa)
-    l = max(-30, min(30, m - w - hr - c - e - res))
-    pmv = (0.303 * np.exp(-0.036 * m) + 0.028) * l
+#     hr = 3.96e-8 * fcl * ((t_cl + 273) ** 4 - (tr + 273) ** 4)
+#     c = hc * fcl * (t_cl - ta)
+#     e = 0.42 * (m - w - 58.15) if m > 58.15 else 0
+#     res = 0.0014 * m * (34 - ta) + 0.0173 * m * (5.87 - pa)
+#     l = max(-30, min(30, m - w - hr - c - e - res))
+#     pmv = (0.303 * np.exp(-0.036 * m) + 0.028) * l
+#     return pmv
+
+# def calculate_ppd(pmv):
+#     return 100 - 95 * np.exp(-0.03353 * (pmv ** 4) - 0.2179 * (pmv ** 2))
+
+def calculate_pmv(season: str, ta: float, tr: float, vel: float,
+                  rh: float, settings: dict) -> float:
+    """PMV conforme ISO 7730 / ASHRAE 55 (usa pythermalcomfort)."""
+    vals = settings["values"]
+    met = vals.get("met", 1.2)
+    clo = vals.get("clo_warm" if season == "warm" else "clo_cold", 0.5)
+
+    res = pmv_ppd(
+        tdb=ta, tr=tr, vr=vel, rh=rh,
+        met=met, clo=clo, wme=0, standard="ISO"
+    )
+    pmv = res["pmv"]
+    log(f"PMV input: ta={ta:.2f}, rh={rh:.2f} → pmv={pmv:.3f}", context="debug_pmv")
     return pmv
 
-def calculate_ppd(pmv):
-    return 100 - 95 * np.exp(-0.03353 * (pmv ** 4) - 0.2179 * (pmv ** 2))
+
+def calculate_ppd(pmv: float) -> float:
+    """PPD secondo ISO 7730 (puoi anche usare res['ppd'])"""
+    return 100 - 95 * exp(-0.03353 * pmv*4 - 0.2179 * pmv*2)
+
 
 # -----------------------------
 # IAQ Indices

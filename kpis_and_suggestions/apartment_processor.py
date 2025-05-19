@@ -332,6 +332,12 @@ def process_room(room, apartment_id, apartment_timezone, user_id, adaptor_base, 
         room, catalog, mapped_classifications, avg_values, t_ext_rm, settings,
         season, weather_info, trends
         )
+    
+    log(
+        f"Publishing KPIs | Apartment: {apartment_id} | "
+        f"Room: {room_id} | PMV: {pmv:.2f} | PPD: {ppd:.2f}",
+        level="INFO"
+    )
 
     publish_detailed_room_metrics(
         publisher,

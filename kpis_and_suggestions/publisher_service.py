@@ -57,6 +57,38 @@ def publish_room_metrics(publisher, base_topic, apartment_id, room_id, metrics):
         log(f"Publishing event: {event['n']}", level="DEBUG", context=f"{apartment_id}/{room_id}")
         #print(json.dumps(payload, indent=2))
         publisher.myPublish(json.dumps(payload), topic)
+    
+def publish_detailed_room_metrics(
+        publisher, base_topic, apartment_id, room_id,
+        avg_values, classifications, pmv, ppd,
+        icone, ieqi, adaptive_comfort, env_score, env_class):
+
+    metrics = {
+        "avg_temp":        avg_values["avg_temp"],
+        "temp_class":      classifications.get("temp_class"),
+        "avg_humidity":    avg_values["avg_humidity"],
+        "hum_class":       classifications.get("hum_class"),
+        "avg_co2":         avg_values["avg_co2"],
+        "co2_class":       classifications.get("co2_class"),
+        "pmv":             pmv,
+        "pmv_class":       classifications.get("pmv_class"),
+        "ppd":             ppd,
+        "ppd_class":       classifications.get("ppd_class"),
+        "icone":           icone,
+        "icone_class":     classifications.get("icone_class"),
+        "ieqi":            ieqi,
+        "ieqi_class":      classifications.get("ieqi_class"),
+        "env_score":       env_score,
+        "env_classification": env_class, 
+        "adaptive_comfort": adaptive_comfort
+    }
+
+    log(
+        f"Publishing KPIs | Apartment: {apartment_id} | Room: {room_id} | PMV: {pmv:.2f} | PPD: {ppd:.2f}",
+        level="INFO"
+    )
+
+    publish_room_metrics(publisher, base_topic, apartment_id, room_id, metrics)
 
 
 def publish_tenant_suggestions(publisher, base_topic, apartment_id, room_id, suggestions):
@@ -135,7 +167,11 @@ def publish_alerts(publisher, base_topic, apartment_id, room_id, classifications
                     "v": alert["message"]
                 }]
             }
-            log(f"Sensor Alert | Apartment: {apartment_id} | Room/Sensor: {alert["sensor_name"]} | Issue: {alert['message']}", level="WARN")
+            log(
+                f"Sensor Alert | Apartment: {apartment_id} | "
+                f"Room/Sensor: {alert['sensor_name']} | Issue: {alert['message']}",
+                level="WARN"
+            )
             publisher.myPublish(json.dumps(alert_event), topic)        
 
 
