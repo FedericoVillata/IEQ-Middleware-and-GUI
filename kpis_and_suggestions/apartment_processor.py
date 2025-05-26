@@ -9,10 +9,11 @@ from publisher_service import (
     publish_alerts,
 )
 
-from data_fetcher import fetch_data, fetch_feedback  
+from data_fetcher import fetch_data, fetch_feedback, fetch_daily_exterior_temps  
 from tenant_suggestions import get_tenant_suggestions, detect_trend  
 from technical_suggestions import get_technical_suggestions
 from kpis_classification import *
+from weather_service import get_past_7days_weather
 
 import numpy as np
 from datetime import datetime, timedelta
@@ -141,6 +142,9 @@ def check_sensor_updates(room, apartment_timezone, threshold_minutes=24 * 60):
 def process_apartment(apartment, catalog, weather_info, publisher,
                       base_topic, adaptor_base, base_settings=None, first_iteration=False):
     apartment_id = apartment['apartmentId']
+    coords = apartment.get("coordinates", {})
+    lat, lon = coords.get("lat"), coords.get("long")
+    log(f"Apartment {apartment_id} coordinates: {coords}", context=apartment_id)
     apartment_timezone = apartment.get("timezone", catalog.get("timezone", "UTC"))
 
     log("Processing apartment", context=apartment_id)
@@ -159,21 +163,32 @@ def process_apartment(apartment, catalog, weather_info, publisher,
     # --- Get exterior room temperature series if available ---
     external_temp_series = []
 
-    for room in apartment.get("rooms", []):
-        if room.get("roomId") == "exterior":
-            ext_data = fetch_room_data("exterior", apartment_id, user_id, adaptor_base)
-            if ext_data and "Temperature" in ext_data:
-                external_temp_series = [float(d["v"]) for d in ext_data["Temperature"] if "v" in d]
-                log(f"Using exterior room temperatures: {external_temp_series[-7:]}", context=apartment_id)
-            else:
-                log("No valid temperature data in 'exterior' room", level="WARN", context=apartment_id)
-            break
+    # Check if apartment has exterior sensor
+    has_exterior_sensor = any(room.get("roomId") == "exterior" for room in apartment.get("rooms", []))
 
-    # fallback: use weather temperature repeated
+    if has_exterior_sensor:
+        external_temp_series = fetch_daily_exterior_temps(adaptor_base, user_id, apartment_id)
+        log(f"Using daily exterior temperatures: {external_temp_series}", context=apartment_id)
+
+    if external_temp_series and len(external_temp_series) < 7:
+        log(f"Sensor data has only {len(external_temp_series)} values, completing with weather data", context=apartment_id)
+        if lat is not None and lon is not None:
+            weather_data = get_past_7days_weather(lat, lon)
+            needed = 7 - len(external_temp_series)
+            external_temp_series += weather_data[-needed:]
+            log(f"Completed sensor data with weather data: {external_temp_series}", context=apartment_id)
+        else:
+            log("No coordinates available, cannot complete with weather data", level="WARN", context=apartment_id)
+
     if not external_temp_series:
-        fallback_temp = weather_info.get("temperature", -999)
-        external_temp_series = [fallback_temp] * 7
-        log(f"Using fallback weather temperature series: {external_temp_series}", context=apartment_id)
+        if lat is not None and lon is not None:
+            external_temp_series = get_past_7days_weather(lat, lon)
+            log(f"Using fallback weather temperature series: {external_temp_series}", context=apartment_id)
+        else:
+            log("No coordinates available, using default fallback temperature", level="WARN", context=apartment_id)
+            fallback_temp = weather_info.get("temperature", -999)
+            external_temp_series = [fallback_temp] * 7
+
 
 
     feedback = fetch_feedback(adaptor_base, user_id, apartment_id)

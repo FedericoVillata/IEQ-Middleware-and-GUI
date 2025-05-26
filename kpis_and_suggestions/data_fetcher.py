@@ -87,3 +87,20 @@ def fetch_feedback(adaptor_base, user_id, apartment_id, duration=168):
     except Exception as e:
         log(f"Error fetching feedback: {e}", level="ERROR", context="Feedback")
     return {}
+
+def fetch_daily_exterior_temps(adaptor_base, user_id, apartment_id, days=7):
+    try:
+        room_id = "exterior"
+        url = f"{adaptor_base}/getDailyAverages/{user_id}/{apartment_id}/{room_id}"
+        params = {"measurement": "Temperature", "days": days}
+        log(f"Fetching daily exterior temperatures with params: {params}", level="DEBUG", context=f"{apartment_id}")
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        temps = [float(e["v"]) for e in data if "v" in e]
+        log(f"Received daily exterior temperatures: {temps}", context=apartment_id)
+        return temps
+    except Exception as e:
+        log(f"Error fetching daily exterior temps: {e}", level="ERROR", context="data_fetcher")
+        return []
+

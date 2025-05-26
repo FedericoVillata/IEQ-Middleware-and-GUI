@@ -58,3 +58,30 @@ def get_external_weather(lat, lon):
             "temp_drop": False,
             "bad_days": 0
         }
+    
+
+def get_past_7days_weather(lat, lon):
+    try:
+        url = (
+            f"https://api.open-meteo.com/v1/forecast"
+            f"?latitude={lat}&longitude={lon}"
+            f"&daily=temperature_2m_max,temperature_2m_min"
+            f"&timezone=auto&past_days=7"
+        )
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        temps = []
+        today = datetime.now().date().isoformat()  # es. '2025-05-26'
+        
+        for day, min_t, max_t in zip(data["daily"]["time"], data["daily"]["temperature_2m_min"], data["daily"]["temperature_2m_max"]):
+            if day <= today:
+                temps.append((min_t + max_t) / 2)
+
+        temps = temps[-7:]
+        
+        return temps
+    except Exception as e:
+        log(f"Weather 7-day fetch failed: {e}", level="ERROR", context="weather_service")
+        return [-999] * 7
