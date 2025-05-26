@@ -11,6 +11,7 @@ import '../mqtt_alert_manager.dart';
 import 'package:provider/provider.dart'; 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../utils/alert_catalog.dart';
+import 'package:weather_icons/weather_icons.dart';
 
 
 
@@ -138,10 +139,16 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
       final temps = d['hourly']['temperature_2m'] as List<dynamic>;
       final codes = d['hourly']['weather_code']   as List<dynamic>;
       final h     = DateTime.now().hour;
+      debugPrint('🕒 Ora corrente: $h');
+      debugPrint('🌡️ Temperature orarie: $temps');
+      debugPrint('🌤️ Codici meteo orari: $codes');
+
 
       setState(() {
         externalTemp = '${(temps[h] as num).toStringAsFixed(1)}°C';
         weatherCode  = codes[h];
+        //weatherCode = 3;
+        debugPrint('✅ Meteo attuale settato: codice $weatherCode');
       });
     }
   } catch (e) {
@@ -234,26 +241,32 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   // ─────────────────────────────── UI helpers
-  IconData _getWeatherIcon(int code) {
-    if (code == 0) return Icons.wb_sunny;
-    if (code == 1 || code == 2) return Icons.cloud;
-    if (code == 3) return Icons.cloud_queue;
-    if (code >= 45 && code <= 48) return Icons.foggy;
-    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return Icons.grain;
-    if (code >= 71 && code <= 77) return Icons.ac_unit;
-    if (code >= 95) return Icons.bolt;
-    return Icons.wb_cloudy;
+
+  IconData _getWeatherIcon(int code, bool isDay) {
+    if (code == 0) return isDay ? WeatherIcons.day_sunny : WeatherIcons.night_clear;
+    if (code == 1) return isDay ? WeatherIcons.day_sunny_overcast : WeatherIcons.night_alt_partly_cloudy;
+    if (code == 2) return isDay ? WeatherIcons.day_cloudy : WeatherIcons.night_alt_cloudy;
+    if (code == 3) return WeatherIcons.cloudy;
+    if (code >= 45 && code <= 48) return WeatherIcons.fog;
+    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return WeatherIcons.rain;
+    if (code >= 71 && code <= 77) return WeatherIcons.snow;
+    if (code >= 95) return WeatherIcons.thunderstorm;
+    return WeatherIcons.cloud;
   }
 
+
+
   Color _getWeatherColor(int code) {
-    if (code == 0) return Colors.orange;
-    if (code == 1 || code == 2 || code == 3) return Colors.blueGrey;
-    if (code >= 45 && code <= 48) return Colors.grey;
-    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return Colors.blue;
-    if (code >= 71 && code <= 77) return Colors.lightBlueAccent;
-    if (code >= 95) return Colors.purple;
-    return Colors.blueGrey;
-  }
+  if (code == 0) return Colors.yellow.shade700;          // ☀️ Sole pieno
+  if (code == 1) return Colors.orangeAccent;             // 🌤️ Sole con qualche nuvola
+  if (code == 2) return Colors.lightBlue.shade400;       // 🌥️ Nuvoloso parziale
+  if (code == 3) return Colors.blueGrey.shade600;        // ☁️ Coperto
+  if (code >= 45 && code <= 48) return Colors.grey.shade700; // 🌫️ Nebbia
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return Colors.indigo; // 🌧️ Pioggia
+  if (code >= 71 && code <= 77) return Colors.cyan;      // ❄️ Neve
+  if (code >= 95) return Colors.deepPurple;              // ⛈️ Temporale
+  return Colors.blueGrey;
+}
 
   Color _colorFromClass(String cls) {
   switch (cls) {
@@ -462,8 +475,10 @@ Widget _buildAlertBanner(AlertMessage alert, MqttAlertManager manager, String ro
         ? (loc?.externalTemperatureSensor ?? 'External Temperature • Sensor')
         : (loc?.indoorTemperature         ?? 'Indoor Temperature');
   final tWelcome         = loc?.welcome                    ?? 'Welcome';
-    final alertManager = Provider.of<MqttAlertManager>(context);
+  final alertManager = Provider.of<MqttAlertManager>(context);
 final now = DateTime.now();
+final hour = now.hour;
+final isDay = hour >= 6 && hour <= 19;
 final relevantAlerts = alertManager.allAlerts.where((a) {
   final sameApartment = a.apartmentId == selectedApartment;
   final correctRoom = apartmentType == 'House' || a.roomId == selectedRoom;
@@ -538,27 +553,30 @@ final relevantAlerts = alertManager.allAlerts.where((a) {
 
               const SizedBox(height: 10),
               _buildDropdown(
-                tSelectRoom,
-                selectedRoom,
-                widget.rooms[selectedApartment] ?? ['Unknown'],
-                (v) {
-                  if (v == null) return;
-                  setState(() {
-                    selectedRoom = v;
-                    widget.onRoomChanged(v);
-                    showDropdown = false;
-                    _fetchRoomData();
-                    _fetchApartmentCoordinates();
-                  });
-                },
-              ),
+                    tSelectRoom,
+                    selectedRoom,
+                    (widget.rooms[selectedApartment] ?? ['Unknown'])
+                      .where((room) => room.toLowerCase() != 'exterior')
+                      .toList(),
+                    (v) {
+                      if (v == null) return;
+                      setState(() {
+                        selectedRoom = v;
+                        widget.onRoomChanged(v);
+                        showDropdown = false;
+                        _fetchRoomData();
+                        _fetchApartmentCoordinates();
+                      });
+                    },
+                  ),
+
               const SizedBox(height: 20),
             ],
 
             _buildInfoCard(
               tExtMeteo,
               externalTemp,
-              _getWeatherIcon(weatherCode),
+              _getWeatherIcon(weatherCode, isDay),
               _getWeatherColor(weatherCode),
             ),
             const SizedBox(height: 12),
