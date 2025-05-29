@@ -1,5 +1,5 @@
 # apartment_processor.py
-
+from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 
 from publisher_service import (
@@ -614,11 +614,20 @@ def generate_technical_suggestions(apartment_id, apartment_classifications,
         t_int                                     
     )
 
+    # --- Maps classes' name to key expected from the function --- 
+    class_map = {
+        "temperature":   reduced_classifications.get("temp_class"),
+        "humidity":      reduced_classifications.get("hum_class"),
+        "pmv":           reduced_classifications.get("pmv_class"),
+        "overall_score": reduced_classifications.get("env_score") or "Unknown",
+    }
+
     tech_suggestions = get_technical_suggestions(
-        classifications=reduced_classifications,
+        classifications=class_map,
         feedback=feedback,
         metrics={
             "temperature": t_int,
+            "humidity": safe_mean(apartment_metrics["humidity"]),
             "t_ext": t_ext
         },
         settings=settings

@@ -1,5 +1,36 @@
 #technical_suggestions.py
-from datetime import datetime
+from datetime import datetime, timedelta
+from statistics import mean, mode, StatisticsError
+
+def _aggregate_feedback(fb_list, hours=4, method="mean"):
+    if not fb_list:
+        return None
+
+    now = datetime.utcnow()
+    recent = []
+    for item in fb_list:
+        try:
+            ts = datetime.strptime(item["time"], "%m/%d/%Y, %H:%M:%S")
+        except Exception:
+            continue
+        if now - ts <= timedelta(hours=hours):
+            recent.append(int(item["type"]))
+
+    if not recent:
+        return None
+
+    if method == "mode":
+        try:
+            return mode(recent)
+        except StatisticsError:
+            return round(mean(recent))
+    elif method == "median":
+        recent.sort()
+        mid = len(recent) // 2
+        return recent[mid] if len(recent) % 2 else round((recent[mid-1] + recent[mid]) / 2)
+    else:
+        return round(mean(recent))
+
 
 def log(message, level="INFO", context=None):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -17,15 +48,13 @@ def get_technical_suggestions(classifications, feedback, metrics, settings):
     hum_fb = feedback.get("humidity_perception", [])
     env_fb = feedback.get("enviromental_satisfaction", [])
 
-    # Get last known feedback value for each category (if any)
-    def last_feedback(feedback_list):
-        if not feedback_list:
-            return None
-        return int(feedback_list[-1]["type"])
+    hours = 4
+    method = "mean"
 
-    temp_perc = last_feedback(temp_fb)
-    hum_perc = last_feedback(hum_fb)
-    env_perc = last_feedback(env_fb)
+    temp_perc = _aggregate_feedback(temp_fb, hours=hours, method=method) or 3
+    hum_perc  = _aggregate_feedback(hum_fb,  hours=hours, method=method) or 3
+    env_perc  = _aggregate_feedback(env_fb,  hours=hours, method=method) or 3
+    log(f"Aggregated feedback → Temperature: {temp_perc}, Humidity: {hum_perc}, Environment: {env_perc}", context="Technical")
 
     temp_class = classifications.get("temperature")
     hum_class = classifications.get("humidity")

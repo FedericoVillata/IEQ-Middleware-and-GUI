@@ -66,7 +66,7 @@ def fetch_data(adaptor_base, user_id, apartment_id, measure, start=None, end=Non
     return []
 
 
-def fetch_feedback(adaptor_base, user_id, apartment_id, duration: int = 168):
+def fetch_feedback(adaptor_base, user_id, apartment_id, duration: int = 4):
     """
     Retrieve the four feedback streams (temperature-, humidity-, environmental-
     satisfaction and service-rating) from the adaptor and return them in
