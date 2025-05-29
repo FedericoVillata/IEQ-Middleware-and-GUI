@@ -199,9 +199,14 @@ def calculate_pmv(season: str, ta: float, tr: float, vel: float,
     return pmv
 
 
-def calculate_ppd(pmv: float) -> float:
-    """PPD secondo ISO 7730 (puoi anche usare res['ppd'])"""
-    return 100 - 95 * exp(-0.03353 * pmv*4 - 0.2179 * pmv*2)
+def calculate_ppd(pmv):
+    try:
+        ppd = 100 - 95 * np.exp(-0.03353 * pmv ** 4 - 0.2179 * pmv ** 2)
+        ppd = max(0.0, min(100.0, ppd))
+        return round(ppd, 2)
+    except Exception as e:
+        log(f"[ERROR] calculate_ppd() failed: pmv={pmv} | err={e}", level="ERROR")
+        return None
 
 
 # -----------------------------

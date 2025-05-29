@@ -110,6 +110,8 @@ services:
       - net
       #net:
         #ipv4_address: 192.68.0.30
+    environment:
+      PYTHONUNBUFFERED: "1"
     restart: on-failure
 
   mqtt_aggregator:

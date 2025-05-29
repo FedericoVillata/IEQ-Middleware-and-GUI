@@ -100,10 +100,11 @@ if __name__ == "__main__":
 
      # wait_for_data()  # Commented out for debug purposes
 
-    INTERVAL_SECONDS = 60 * 60
+    INTERVAL_SECONDS = 1 * 60
     first_iteration = True
 
     while True:
+        start = time.time()
         log("Starting new KPI cycle...")
         log(f"First iteration: {first_iteration}")
         try:
@@ -113,6 +114,7 @@ if __name__ == "__main__":
             log(f"Error during KPI cycle: {e}", level="ERROR")
 
         first_iteration = False  # da ora in poi non sarà più la prima
-        log(f"Waiting {INTERVAL_SECONDS / 60} minutes before next cycle...")
-        time.sleep(INTERVAL_SECONDS)
+        elapsed = time.time() - start
+        log(f"Cycle completed in {elapsed:.2f} seconds. Waiting {max(0, (INTERVAL_SECONDS - elapsed) / 60):.2f} minutes before next cycle...")
+        time.sleep(max(0, INTERVAL_SECONDS - elapsed))
 

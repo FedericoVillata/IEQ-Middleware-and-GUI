@@ -29,7 +29,7 @@ def get_catalog(registry_url, retries=10, delay=3):
     exit(1)
 
 #BE CAREFUL, if test=0 duration is in h, if test=1 duration is in m 
-def fetch_data(adaptor_base, user_id, apartment_id, measure, start=None, end=None, duration="1", retries=3, delay=2): #change duration as needed
+def fetch_data(adaptor_base, user_id, apartment_id, measure, start=None, end=None, duration="4", retries=3, delay=2): #change duration as needed
     if start and end:
         url = f"{adaptor_base}/getDatainPeriod/{user_id}/{apartment_id}"
         params = {
@@ -66,27 +66,52 @@ def fetch_data(adaptor_base, user_id, apartment_id, measure, start=None, end=Non
     return []
 
 
-def fetch_feedback(adaptor_base, user_id, apartment_id, duration=168):
-    try:
-        url = f"{adaptor_base}/getApartmentData/{user_id}/{apartment_id}?measurement=feedback&duration={duration}"
-        response = requests.get(url)
-        if response.status_code == 200:
-            raw_data = response.json()
+def fetch_feedback(adaptor_base, user_id, apartment_id, duration: int = 168):
+    """
+    Retrieve the four feedback streams (temperature-, humidity-, environmental-
+    satisfaction and service-rating) from the adaptor and return them in
+    the format expected by technical_suggestions.py
 
-            feedback_dict = {}
-            for entry in raw_data:
-                if "v" in entry and isinstance(entry["v"], str) and ":" in entry["v"]:
-                    category, value = entry["v"].split(":", 1)
-                    feedback_dict.setdefault(category.strip(), []).append({
-                        "type": value.strip(),
-                        "time": entry.get("t")
-                    })
-            return feedback_dict
-        else:
-            log(f"Unexpected status code: {response.status_code}", level="WARN", context="Feedback")
-    except Exception as e:
-        log(f"Error fetching feedback: {e}", level="ERROR", context="Feedback")
-    return {}
+    Returns
+    -------
+    dict
+        {
+          "temperature_perception": [ {"type": 3, "time": "05/23/2025, 10:25:12"}, …],
+          "humidity_perception":    [ … ],
+          "enviromental_satisfaction": [ … ],   # ← keep the historical typo
+          "service_rating":         [ … ]
+        }
+    """
+    category_map = {
+        "temperature_perception": "Temperature",
+        "humidity_perception":    "Humidity",
+        "enviromental_satisfaction": "Environment",  
+        "service_rating":         "Service",
+    }
+
+    feedback_dict = {}
+    for cat_key, measure in category_map.items():
+        try:
+            url = f"{adaptor_base}/getApartmentData/{user_id}/{apartment_id}"
+            params = {"measurement": measure, "duration": duration}
+            resp = requests.get(url, params=params, timeout=10)
+            resp.raise_for_status()
+
+            # keep only rows coming from the virtual “Feedback” room
+            rows = [
+                {"type": int(item["v"]), "time": item["t"]}
+                for item in resp.json()
+                if str(item.get("room", "")).lower() == "feedback"
+                   and "v" in item
+            ]
+            feedback_dict[cat_key] = rows
+            log(f"[DEBUG] {cat_key}: {len(rows)} feedbacks fetched", context="fetch_feedback")
+
+        except Exception as e:
+            log(f"Error fetching {measure} feedback: {e}", level="ERROR", context="fetch_feedback")
+            feedback_dict[cat_key] = []
+
+    return feedback_dict
 
 def fetch_daily_exterior_temps(adaptor_base, user_id, apartment_id, days=7):
     try:

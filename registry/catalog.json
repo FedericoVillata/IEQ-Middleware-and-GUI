@@ -2306,7 +2306,7 @@
         "values": {
           "met": 1.2,
           "clo_warm": 0.5,
-          "clo_cold": 1.0,
+          "clo_cold": 0.7,
           "ventilation": "nat",
           "temp_opt": 22,
           "hum_opt": 50
@@ -4654,7 +4654,7 @@
         "R": 4.0
       },
       "ppd_classification": {
-        "G": 10,
+        "G": 100,
         "Y": 25,
         "R": 75
       },

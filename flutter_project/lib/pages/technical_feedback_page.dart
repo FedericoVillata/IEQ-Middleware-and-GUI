@@ -68,17 +68,10 @@ class _TechnicalFeedbackPageState extends State<TechnicalFeedbackPage> {
   bool _isLoading = false;
   String? _errorMessage;
 
-  // ── Room selector state ──
-List<String> _availableRooms = [];
-String?      _selectedRoom;
-bool         _isLoadingRooms = false;
-String?      _roomError;
-
   @override
   void initState() {
     super.initState();
     _fetchFeedbackData();
-    _fetchRoomsForApartment(widget.location ?? "apartment0");
   }
 
   // -----------------------------------------------------------------------
@@ -138,44 +131,6 @@ String?      _roomError;
     }
   }
 
-  Future<void> _fetchRoomsForApartment(String apartmentId) async {
-  setState(() {
-    _isLoadingRooms = true;
-    _roomError      = null;
-    _availableRooms = [];
-    _selectedRoom   = null;
-  });
-
-  try {
-    final resp = await http.get(Uri.parse("$_registryUrl/apartments"));
-    if (resp.statusCode == 200) {
-      final List<dynamic> arr = jsonDecode(resp.body);
-      for (final apt in arr) {
-        if (apt["apartmentId"] == apartmentId) {
-          final rooms = (apt["rooms"] as List<dynamic>)
-              .map((r) => r["roomId"].toString())
-              .toList();
-          setState(() {
-            _availableRooms = rooms.isEmpty ? ["(No rooms)"] : rooms;
-            _selectedRoom   = rooms.isEmpty ? null : rooms.first;
-            _isLoadingRooms = false;
-          });
-          return;
-        }
-      }
-    }
-    setState(() {
-      _roomError      = "Unable to load rooms list.";
-      _isLoadingRooms = false;
-    });
-  } catch (e) {
-    setState(() {
-      _roomError      = "Connection error: $e";
-      _isLoadingRooms = false;
-    });
-  }
-}
-
 
   // -----------------------------------------------------------------------
   //  Data Fetch ------------------------------------------------------------
@@ -190,16 +145,12 @@ String?      _roomError;
 
     final String apartmentId = widget.location ?? "apartment0";
     final String fieldNeeded = _mapFeedbackToField(_selectedFeedback);
-    final String roomParam = (_selectedRoom != null && !_selectedRoom!.startsWith("("))
-                           ? "&room=$_selectedRoom"
-                           : "";
-
     final Uri url = Uri.parse(
     "$_plotServiceUrl/feedbackHistogram"
     "?userId=${widget.username}"
     "&apartmentId=$apartmentId"
     "&field=$fieldNeeded"
-    "&duration=$_selectedDuration$roomParam",
+    "&duration=$_selectedDuration",
   );
 
     try {
@@ -292,8 +243,6 @@ Widget build(BuildContext context) {
               ),
             ),
 
-            if (_availableRooms.isNotEmpty) _roomSelector(),
-
             // Chart / loading / error ------------------------------------------
             Expanded(
               child: Center(
@@ -321,32 +270,6 @@ Widget build(BuildContext context) {
     ),
   );
 }
-
-Widget _roomSelector() => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Card(
-        elevation: 2,
-        child: ListTile(
-          title: const Text("Select Room"),
-          trailing: _isLoadingRooms
-              ? const SizedBox(
-                  height: 24, width: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : DropdownButton<String>(
-                  focusColor: Colors.transparent,
-                  value: _selectedRoom,
-                  items: _availableRooms
-                      .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-                      .toList(),
-                  onChanged: (val) async {
-                    setState(() => _selectedRoom = val);
-                    await _fetchFeedbackData();
-                  },
-                ),
-        ),
-      ),
-    );
 
 
   // -------------------------- Chart --------------------------------------
